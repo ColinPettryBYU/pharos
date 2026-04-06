@@ -1,0 +1,201 @@
+
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Pharos.Api.Data;
+using Pharos.Api.Middleware;
+using Pharos.Api.Models;
+using Pharos.Api.Services;
+
+DotNetEnv.Env.Load();
+
+var builder = WebApplication.CreateBuilder(args);
+
+// ── Database Contexts ──
+builder.Services.AddDbContext<PharosDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PharosDb")));
+
+builder.Services.AddDbContext<PharosIdentityDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("IdentityDb")));
+
+// ── ASP.NET Identity ──
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Password policy — 14 character minimum, no other requirements
+    options.Password.RequiredLength = 14;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredUniqueChars = 1;
+
+    // Account lockout
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.AllowedForNewUsers = true;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<PharosIdentityDbContext>()
+.AddDefaultTokenProviders()
+.AddPasswordValidator<CommonPasswordValidator<ApplicationUser>>();
+
+// ── Cookie Authentication ──
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None; // None required for cross-origin (Vercel→Azure)
+    options.Cookie.Name = "Pharos.Auth";
+    options.ExpireTimeSpan = TimeSpan.FromHours(24);
+    options.SlidingExpiration = true;
+
+    // Return 401/403 JSON instead of redirecting to a login page
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+// ── Google OAuth (placeholder — configure secrets in Azure App Settings) ──
+var googleClientId = builder.Configuration["Google:ClientId"];
+var googleClientSecret = builder.Configuration["Google:ClientSecret"];
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    builder.Services.AddAuthentication()
+        .AddGoogle(options =>
+        {
+            options.ClientId = googleClientId;
+            options.ClientSecret = googleClientSecret;
+        });
+}
+
+// ── CORS ──
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? Array.Empty<string>();
+        policy.WithOrigins(
+                new[] {
+                    "http://localhost:5173",
+                    "http://localhost:3000",
+                }.Concat(allowedOrigins).ToArray())
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+// ── HSTS ──
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+    options.Preload = true;
+});
+
+// ── Application Services ──
+builder.Services.AddScoped<ISafehouseService, SafehouseService>();
+builder.Services.AddScoped<IDonorService, DonorService>();
+builder.Services.AddScoped<IResidentService, ResidentService>();
+builder.Services.AddScoped<ISocialMediaService, SocialMediaService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IPartnerService, PartnerService>();
+builder.Services.AddScoped<IMLService, MLService>();
+
+// ── Controllers & Swagger ──
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "Pharos API",
+        Version = "v1",
+        Description = "Backend API for the Pharos nonprofit safehouse management platform."
+    });
+});
+
+var app = builder.Build();
+
+// ── Middleware Pipeline ──
+
+// Error handling — first in pipeline to catch all exceptions
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// HTTPS redirect and HSTS
+if (app.Environment.IsProduction())
+{
+    app.UseHsts();
+}
+app.UseHttpsRedirection();
+
+// Security headers (CSP, X-Content-Type-Options, etc.)
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+// Swagger — available in development only
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// CORS
+app.UseCors("Frontend");
+
+// Auth
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Controllers
+app.MapControllers();
+
+// ── Database Initialization & Seeding ──
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        // Apply migrations
+        var pharosDb = services.GetRequiredService<PharosDbContext>();
+        await pharosDb.Database.MigrateAsync();
+        logger.LogInformation("PharosDb migrations applied.");
+
+        var identityDb = services.GetRequiredService<PharosIdentityDbContext>();
+        await identityDb.Database.MigrateAsync();
+        logger.LogInformation("IdentityDb migrations applied.");
+
+        // Seed data from CSVs
+        var csvPath = Path.Combine(app.Environment.ContentRootPath, "..", "lighthouse_csv_v7");
+        if (Directory.Exists(csvPath))
+        {
+            await DataSeeder.SeedAsync(pharosDb, csvPath, logger);
+        }
+        else
+        {
+            logger.LogWarning("CSV directory not found at {Path}. Skipping data seeding.", csvPath);
+        }
+
+        // Seed Identity users
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var config = services.GetRequiredService<IConfiguration>();
+        await IdentitySeeder.SeedAsync(userManager, roleManager, config, logger);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred during database initialization.");
+    }
+}
+
+app.Run();

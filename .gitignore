@@ -1,0 +1,49 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Local.json
+
+# .NET
+backend/bin/
+backend/obj/
+backend/publish/
+*.user
+*.suo
+*.pfx
+*.key
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+frontend/.vercel/
+
+# Python / ML
+ml-pipelines/__pycache__/
+ml-pipelines/.ipynb_checkpoints/
+ml-pipelines/*.pkl
+ml-pipelines/*.onnx
+ml-pipelines/*.joblib
+*.pyc
+.venv/
+venv/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Azure
+*.pubxml
+*.publishproj
+
+# Misc
+deploy.zip
