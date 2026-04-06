@@ -67,7 +67,7 @@ export function PublicLayout() {
               {user ? (
                 <Link
                   to={
-                    user.roles.includes("Admin")
+                    user.roles?.includes("Admin")
                       ? "/admin"
                       : "/donor/dashboard"
                   }
@@ -114,7 +114,7 @@ export function PublicLayout() {
                     {user ? (
                       <Link
                         to={
-                          user.roles.includes("Admin")
+                          user.roles?.includes("Admin")
                             ? "/admin"
                             : "/donor/dashboard"
                         }

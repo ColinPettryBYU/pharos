@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = useCallback(async () => {
     try {
-      const data = await api.get<User>("/auth/me");
-      setUser(data);
+      const data = await api.get<{ user: User | null }>("/auth/me");
+      setUser(data.user ?? null);
     } catch {
       setUser(null);
     } finally {
@@ -82,10 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const isAdmin = user?.roles.includes("Admin") ?? false;
+  const isAdmin = user?.roles?.includes("Admin") ?? false;
   const isStaff =
-    (user?.roles.includes("Staff") ?? false) || isAdmin;
-  const isDonor = user?.roles.includes("Donor") ?? false;
+    (user?.roles?.includes("Staff") ?? false) || isAdmin;
+  const isDonor = user?.roles?.includes("Donor") ?? false;
 
   return (
     <AuthContext.Provider
