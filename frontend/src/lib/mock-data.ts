@@ -289,7 +289,7 @@ export const mockSocialComments: SocialMediaComment[] = Array.from({ length: 15 
     "Shared with my church group!",
     "Can I volunteer remotely?",
   ][i % 5],
-  timestamp: `2024-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}T${String(8 + (i % 12))}:00:00Z`,
+  timestamp: `2024-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}T${String(8 + (i % 12)).padStart(2, "0")}:00:00.000Z`,
   is_read: i < 8,
   sentiment: i % 3 === 0 ? "positive" : i % 5 === 0 ? "question" : "positive",
 }));

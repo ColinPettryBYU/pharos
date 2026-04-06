@@ -27,7 +27,7 @@ import {
   Send, Upload, Hash, Calendar, Sparkles, MessageCircle,
   Eye, MousePointerClick, Heart, TrendingUp, DollarSign,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { toast } from "sonner";
 import type { Platform } from "@/types";
 import type { ReactElement } from "react";
@@ -50,6 +50,20 @@ const item = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0 },
 };
+
+/** Avoid RangeError from date-fns when strings parse as Invalid Date (Safari / bad API data). */
+function formatSafe(
+  value: string | null | undefined,
+  dateFormat: string,
+  fallback = "—"
+): string {
+  if (value == null || value.trim() === "") return fallback;
+  const trimmed = value.trim();
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
+    ? parseISO(trimmed)
+    : new Date(trimmed);
+  return isValid(d) ? format(d, dateFormat) : fallback;
+}
 
 export default function SocialMediaPage() {
   const [activePlatform, setActivePlatform] = useState<Platform | "All">("All");
@@ -77,8 +91,13 @@ export default function SocialMediaPage() {
 
   // Engagement over time
   const engagementOverTime = filteredPosts
+    .filter((p) => p.created_at)
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map((p) => ({ date: format(new Date(p.created_at), "MMM d"), engagement: p.engagement_rate, reach: p.reach }));
+    .map((p) => ({
+      date: formatSafe(p.created_at, "MMM d"),
+      engagement: p.engagement_rate,
+      reach: p.reach,
+    }));
 
   // Scatter: engagement vs donation referrals
   const scatterData = filteredPosts.map((p) => ({ engagement: p.engagement_rate, referrals: p.donation_referrals, name: p.post_type }));
@@ -88,7 +107,9 @@ export default function SocialMediaPage() {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   days.forEach((day) => {
     for (let hour = 6; hour <= 22; hour++) {
-      const matching = filteredPosts.filter((p) => p.day_of_week.startsWith(day) && p.post_hour === hour);
+      const matching = filteredPosts.filter(
+        (p) => (p.day_of_week ?? "").startsWith(day) && p.post_hour === hour
+      );
       const avgEng = matching.length > 0 ? matching.reduce((s, p) => s + p.engagement_rate, 0) / matching.length : 0;
       heatmapData.push({ day, hour, value: +avgEng.toFixed(2) });
     }
@@ -348,7 +369,9 @@ export default function SocialMediaPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm">{comment.commenter_name}</span>
                           <Badge variant="outline" className="text-xs">{comment.platform}</Badge>
-                          <span className="text-xs text-muted-foreground ml-auto">{format(new Date(comment.timestamp), "MMM d, h:mm a")}</span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {formatSafe(comment.timestamp, "MMM d, h:mm a")}
+                          </span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">{comment.comment_text}</p>
                         <div className="mt-2 flex gap-2">
