@@ -10,7 +10,15 @@ public record DonationReportDto(
     IEnumerable<ChannelSummaryDto> ChannelSummaries
 );
 
-public record MonthlyDonationTrendDto(string Month, decimal Total, int Count);
+public record MonthlyDonationTrendDto(
+    string Month,
+    decimal Total,
+    int Count,
+    decimal Monetary,
+    decimal InKind,
+    decimal Recurring,
+    decimal OneTime
+);
 
 public record CampaignSummaryDto(string CampaignName, decimal Total, int Count);
 
@@ -23,12 +31,27 @@ public record OutcomesReportDto(
     IEnumerable<RiskLevelBreakdownDto> RiskLevelBreakdown,
     IEnumerable<ReintegrationBreakdownDto> ReintegrationBreakdown,
     decimal AvgHealthScore,
-    decimal AvgEducationProgress
+    decimal AvgEducationProgress,
+    IEnumerable<MonthlyProgressDto> EducationProgress,
+    IEnumerable<MonthlyProgressDto> HealthTrends,
+    IEnumerable<NameCountDto> EmotionalDistribution,
+    IEnumerable<InterventionCompletionDto> InterventionCompletion
 );
+
+public record MonthlyProgressDto(string Month, decimal AvgValue);
+
+public record NameCountDto(string Name, int Count);
+
+public record InterventionCompletionDto(string Category, int Completed, int Total);
 
 public record RiskLevelBreakdownDto(string RiskLevel, int Count);
 
 public record ReintegrationBreakdownDto(string Status, int Count);
+
+public record SafehouseReportResponseDto(
+    IEnumerable<SafehouseReportDto> Data,
+    IEnumerable<SafehouseMonthlyMetricSummaryDto> MonthlyMetrics
+);
 
 public record SafehouseReportDto(
     int SafehouseId,
@@ -43,6 +66,18 @@ public record SafehouseReportDto(
     int RecentHomeVisitations
 );
 
+public record SafehouseMonthlyMetricSummaryDto(
+    int SafehouseId,
+    string SafehouseName,
+    DateTime MonthStart,
+    int ActiveResidents,
+    decimal? AvgEducationProgress,
+    decimal? AvgHealthScore,
+    int ProcessRecordingCount,
+    int HomeVisitationCount,
+    int IncidentCount
+);
+
 public record SocialMediaReportDto(
     int TotalPosts,
     decimal AvgEngagementRate,
@@ -52,8 +87,20 @@ public record SocialMediaReportDto(
     string? BestPostType,
     string? BestContentTopic,
     int? BestPostHour,
-    string? BestDayOfWeek
+    string? BestDayOfWeek,
+    IEnumerable<ReportPlatformBreakdownDto> PlatformBreakdown,
+    IEnumerable<PostTypePerformanceDto> PostTypePerformance,
+    IEnumerable<EngagementTrendDto> EngagementTrends,
+    IEnumerable<DonationAttributionDto> DonationAttribution
 );
+
+public record ReportPlatformBreakdownDto(string Platform, int PostCount, decimal AvgEngagement, int DonationReferrals);
+
+public record PostTypePerformanceDto(string PostType, int PostCount, decimal AvgEngagement, int DonationReferrals);
+
+public record EngagementTrendDto(string Month, decimal AvgEngagement, int PostCount);
+
+public record DonationAttributionDto(string Platform, int Referrals, decimal EstimatedValue);
 
 public record PublicImpactSnapshotDto(
     int SnapshotId,

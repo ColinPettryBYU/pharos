@@ -233,7 +233,7 @@ export function AdminLayout() {
     navigate("/login");
   };
 
-  const initials = user?.displayName
+  const initials = user?.display_name
     ?.split(" ")
     .map((n) => n[0])
     .join("")
@@ -320,7 +320,7 @@ export function AdminLayout() {
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">
-                        {user?.displayName}
+                        {user?.display_name}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {user?.email}

@@ -132,7 +132,11 @@ builder.Services.AddScoped<ISocialPlatformClient, TwitterClient>();
 builder.Services.AddScoped<IPlatformClientFactory, PlatformClientFactory>();
 
 // ── Controllers & Swagger ──
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

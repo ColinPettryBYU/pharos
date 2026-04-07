@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    if (data.requiresMfa) {
+    if (data.requires_mfa) {
       throw new Error("MFA_REQUIRED");
     }
     setUser(data.user);
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await api.post<AuthResponse>("/auth/register", {
       email,
       password,
-      displayName,
+      display_name: displayName,
     });
     setUser(data.user);
   };

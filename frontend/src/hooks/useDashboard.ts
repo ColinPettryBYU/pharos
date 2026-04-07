@@ -33,35 +33,34 @@ export function useDashboard() {
 
       const s = raw?.stats ?? {};
       const stats: DashboardStats = {
-        activeResidents: s.activeResidents ?? 0,
-        monthlyDonations: s.monthlyDonationTotal ?? s.monthlyDonations ?? 0,
-        casesNeedingReview: s.casesNeedingReview ?? 0,
-        socialEngagement: s.avgSocialEngagement ?? s.socialEngagement ?? 0,
-        activeResidentsTrend: s.activeResidentsTrend ?? 0,
-        monthlyDonationsTrend: s.monthlyDonationChange ?? s.monthlyDonationsTrend ?? 0,
-        casesNeedingReviewTrend: s.casesNeedingReviewTrend ?? 0,
-        socialEngagementTrend: s.socialEngagementChange ?? s.socialEngagementTrend ?? 0,
+        activeResidents: s.active_residents ?? 0,
+        monthlyDonations: s.monthly_donation_total ?? 0,
+        casesNeedingReview: s.cases_needing_review ?? 0,
+        socialEngagement: s.avg_social_engagement ?? 0,
+        activeResidentsTrend: 0,
+        monthlyDonationsTrend: s.monthly_donation_change ?? 0,
+        casesNeedingReviewTrend: 0,
+        socialEngagementTrend: s.social_engagement_change ?? 0,
       };
 
-      const rawActivity = raw?.recentActivity ?? raw?.activityFeed ?? [];
+      const rawActivity = raw?.recent_activity ?? [];
       const activityFeed: ActivityFeedItem[] = rawActivity.map((a: any, i: number) => ({
-        id: String(a.relatedId ?? a.id ?? i),
+        id: String(a.related_id ?? i),
         type: (a.type ?? "donation").toLowerCase(),
-        title: a.title ?? a.description ?? "",
+        title: a.description ?? "",
         description: a.description ?? "",
         timestamp: a.timestamp,
-        link: a.link,
       }));
 
-      const rawAlerts = raw?.riskAlerts ?? [];
+      const rawAlerts = raw?.risk_alerts ?? [];
       const riskAlerts: RiskAlert[] = rawAlerts.map((a: any, i: number) => ({
-        id: String(a.relatedId ?? a.id ?? i),
-        type: mapAlertType(a.alertType ?? a.type ?? ""),
+        id: String(a.related_id ?? i),
+        type: mapAlertType(a.alert_type ?? ""),
         name: a.name ?? "",
-        riskScore: a.riskScore ?? 0,
-        riskLevel: a.riskLevel ?? scoreToRiskLevel(a.riskScore ?? 0),
-        recommendedAction: a.recommendedAction ?? "",
-        link: a.link ?? alertLink(a.alertType ?? a.type ?? "", a.relatedId ?? 0),
+        riskScore: a.risk_score ?? 0,
+        riskLevel: scoreToRiskLevel(a.risk_score ?? 0),
+        recommendedAction: a.recommended_action ?? "",
+        link: alertLink(a.alert_type ?? "", a.related_id ?? 0),
       }));
 
       return { stats, activityFeed, riskAlerts };

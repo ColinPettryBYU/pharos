@@ -24,10 +24,10 @@ export function useSocialMediaRecommendations() {
       const raw: any = await api.get("/ml/social-media-recommendations");
       return {
         best_post_time: {
-          day: raw?.recommendedDayOfWeek ?? raw?.best_post_time?.day ?? "Tuesday",
-          hour: raw?.recommendedPostHour ?? raw?.best_post_time?.hour ?? 10,
+          day: raw?.recommended_day_of_week ?? raw?.best_post_time?.day ?? "Tuesday",
+          hour: raw?.recommended_post_hour ?? raw?.best_post_time?.hour ?? 10,
         },
-        recommended_content_type: raw?.recommendedPostType ?? raw?.recommended_content_type ?? "ImpactStory",
+        recommended_content_type: raw?.recommended_post_type ?? raw?.recommended_content_type ?? "ImpactStory",
         predicted_engagement_rate: raw?.predicted_engagement_rate ?? 0,
         campaign_insights: raw?.insights?.map((i: any) => i.description) ?? raw?.campaign_insights ?? [],
       };
@@ -41,16 +41,16 @@ export function useInterventionEffectiveness() {
     queryFn: async (): Promise<InterventionEffectiveness[]> => {
       const raw: any = await api.get("/ml/intervention-effectiveness");
 
-      const byCategory: any[] = raw?.byCategory ?? [];
+      const byCategory: any[] = raw?.by_category ?? [];
       const insights: any[] = raw?.insights ?? [];
 
       if (byCategory.length > 0) {
         return byCategory.map((c: any) => ({
           plan_category: c.category ?? c.plan_category ?? "Unknown",
-          effectiveness_score: (c.avgOutcomeImprovement ?? c.effectiveness_score ?? 0) / 100,
-          key_factors: [c.mostEffectiveService].filter(Boolean),
+          effectiveness_score: (c.avg_outcome_improvement ?? c.effectiveness_score ?? 0) / 100,
+          key_factors: [c.most_effective_service].filter(Boolean),
           recommendations: insights
-            .filter((i: any) => i.interventionType === c.category)
+            .filter((i: any) => i.intervention_type === c.category)
             .map((i: any) => i.description)
             .filter(Boolean),
         }));

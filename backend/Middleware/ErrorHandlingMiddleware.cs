@@ -59,7 +59,7 @@ public class ErrorHandlingMiddleware
 
         var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         });
 
         await context.Response.WriteAsync(json);

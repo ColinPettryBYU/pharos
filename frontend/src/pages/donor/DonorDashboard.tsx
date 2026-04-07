@@ -48,7 +48,7 @@ export default function DonorDashboard() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">
-          Thank you, {user?.displayName || profile?.display_name || "Valued Supporter"}.
+          Thank you, {user?.display_name || profile?.display_name || "Valued Supporter"}.
         </h1>
         <p className="mt-1 text-lg text-muted-foreground">Here's the impact of your generosity.</p>
       </motion.div>

@@ -5,7 +5,7 @@ namespace Pharos.Api.DTOs;
 /// </summary>
 public record PagedResult<T>(
     IEnumerable<T> Data,
-    int TotalCount,
+    int Total,
     int Page,
     int PageSize,
     int TotalPages

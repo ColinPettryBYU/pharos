@@ -104,11 +104,11 @@ export default function UserManagementPage() {
                 <CardContent className="p-4 flex items-center gap-4">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                      {user.displayName?.split(" ").map((n) => n[0]).join("").slice(0, 2) ?? "U"}
+                      {user.display_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) ?? "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">{user.displayName}</p>
+                    <p className="font-medium">{user.display_name}</p>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-2">

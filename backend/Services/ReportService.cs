@@ -19,10 +19,19 @@ public class ReportService : IReportService
         var donations = await query.ToListAsync();
         var monetary = donations.Where(d => d.Amount.HasValue).ToList();
 
-        var monthlyTrends = monetary
+        var monthlyTrends = donations
             .GroupBy(d => d.DonationDate.ToString("yyyy-MM"))
             .OrderBy(g => g.Key)
-            .Select(g => new MonthlyDonationTrendDto(g.Key, g.Sum(d => d.Amount!.Value), g.Count()));
+            .Select(g =>
+            {
+                var monetaryAmt = g.Where(d => d.DonationType == "Monetary" && d.Amount.HasValue).Sum(d => d.Amount!.Value);
+                var inKindAmt = g.Where(d => d.DonationType != "Monetary" && d.Amount.HasValue).Sum(d => d.Amount!.Value);
+                var recurringAmt = g.Where(d => d.IsRecurring && d.Amount.HasValue).Sum(d => d.Amount!.Value);
+                var total = g.Where(d => d.Amount.HasValue).Sum(d => d.Amount!.Value);
+                return new MonthlyDonationTrendDto(
+                    g.Key, total, g.Count(),
+                    monetaryAmt, inKindAmt, recurringAmt, total - recurringAmt);
+            });
 
         var campaigns = monetary
             .Where(d => d.CampaignName != null)
@@ -44,14 +53,19 @@ public class ReportService : IReportService
     public async Task<OutcomesReportDto> GetOutcomesReportAsync()
     {
         var residents = await _db.Residents.ToListAsync();
-        var healthRecords = await _db.HealthWellbeingRecords
+        var allHealthRecords = await _db.HealthWellbeingRecords.ToListAsync();
+        var allEducationRecords = await _db.EducationRecords.ToListAsync();
+        var allProcessRecordings = await _db.ProcessRecordings.ToListAsync();
+        var allInterventionPlans = await _db.InterventionPlans.ToListAsync();
+
+        var latestHealth = allHealthRecords
             .GroupBy(h => h.ResidentId)
             .Select(g => g.OrderByDescending(h => h.RecordDate).First())
-            .ToListAsync();
-        var educationRecords = await _db.EducationRecords
+            .ToList();
+        var latestEducation = allEducationRecords
             .GroupBy(e => e.ResidentId)
             .Select(g => g.OrderByDescending(e => e.RecordDate).First())
-            .ToListAsync();
+            .ToList();
 
         var riskBreakdown = residents
             .Where(r => r.CurrentRiskLevel != null)
@@ -63,26 +77,51 @@ public class ReportService : IReportService
             .GroupBy(r => r.ReintegrationStatus!)
             .Select(g => new ReintegrationBreakdownDto(g.Key, g.Count()));
 
+        var educationProgress = allEducationRecords
+            .Where(e => e.ProgressPercent.HasValue)
+            .GroupBy(e => e.RecordDate.ToString("yyyy-MM"))
+            .OrderBy(g => g.Key)
+            .Select(g => new MonthlyProgressDto(g.Key, (decimal)g.Average(e => e.ProgressPercent!.Value)));
+
+        var healthTrends = allHealthRecords
+            .GroupBy(h => h.RecordDate.ToString("yyyy-MM"))
+            .OrderBy(g => g.Key)
+            .Select(g => new MonthlyProgressDto(g.Key, (decimal)g.Average(h => h.GeneralHealthScore)));
+
+        var emotionalDistribution = allProcessRecordings
+            .Where(p => p.EmotionalStateObserved != null)
+            .GroupBy(p => p.EmotionalStateObserved!)
+            .Select(g => new NameCountDto(g.Key, g.Count()))
+            .OrderByDescending(x => x.Count);
+
+        var interventionCompletion = allInterventionPlans
+            .GroupBy(p => p.PlanCategory)
+            .Select(g => new InterventionCompletionDto(
+                g.Key,
+                g.Count(p => p.Status == "Achieved" || p.Status == "Closed"),
+                g.Count()));
+
         return new OutcomesReportDto(
             residents.Count,
             residents.Count(r => r.CaseStatus == "Active"),
             residents.Count(r => r.ReintegrationStatus == "Completed"),
             riskBreakdown, reintegrationBreakdown,
-            healthRecords.Count > 0 ? healthRecords.Average(h => h.GeneralHealthScore) : 0,
-            educationRecords.Where(e => e.ProgressPercent.HasValue).Select(e => e.ProgressPercent!.Value).DefaultIfEmpty(0).Average());
+            latestHealth.Count > 0 ? (decimal)latestHealth.Average(h => h.GeneralHealthScore) : 0,
+            latestEducation.Where(e => e.ProgressPercent.HasValue).Select(e => e.ProgressPercent!.Value).DefaultIfEmpty(0).Average(),
+            educationProgress, healthTrends, emotionalDistribution, interventionCompletion);
     }
 
-    public async Task<IEnumerable<SafehouseReportDto>> GetSafehouseReportAsync()
+    public async Task<SafehouseReportResponseDto> GetSafehouseReportAsync()
     {
         var safehouses = await _db.Safehouses
             .Include(s => s.Residents)
-            .Include(s => s.MonthlyMetrics.OrderByDescending(m => m.MonthStart).Take(1))
+            .Include(s => s.MonthlyMetrics)
             .Include(s => s.IncidentReports)
             .ToListAsync();
 
-        return safehouses.Select(s =>
+        var safehouseList = safehouses.Select(s =>
         {
-            var latestMetric = s.MonthlyMetrics.FirstOrDefault();
+            var latestMetric = s.MonthlyMetrics.OrderByDescending(m => m.MonthStart).FirstOrDefault();
             var activeResidents = s.Residents.Count(r => r.CaseStatus == "Active");
             return new SafehouseReportDto(
                 s.SafehouseId, s.Name, activeResidents, s.CapacityGirls,
@@ -92,6 +131,15 @@ public class ReportService : IReportService
                 latestMetric?.ProcessRecordingCount ?? 0,
                 latestMetric?.HomeVisitationCount ?? 0);
         });
+
+        var monthlyMetrics = safehouses.SelectMany(s =>
+            s.MonthlyMetrics.Select(m => new SafehouseMonthlyMetricSummaryDto(
+                s.SafehouseId, s.Name, m.MonthStart,
+                m.ActiveResidents, m.AvgEducationProgress, m.AvgHealthScore,
+                m.ProcessRecordingCount, m.HomeVisitationCount, m.IncidentCount)))
+            .OrderBy(m => m.MonthStart);
+
+        return new SafehouseReportResponseDto(safehouseList, monthlyMetrics);
     }
 
     public async Task<SocialMediaReportDto> GetSocialMediaReportAsync(DateTime? from, DateTime? to)
@@ -102,7 +150,11 @@ public class ReportService : IReportService
 
         var posts = await query.ToListAsync();
         if (!posts.Any())
-            return new SocialMediaReportDto(0, 0, 0, 0, null, null, null, null, null);
+            return new SocialMediaReportDto(0, 0, 0, 0, null, null, null, null, null,
+                Enumerable.Empty<ReportPlatformBreakdownDto>(),
+                Enumerable.Empty<PostTypePerformanceDto>(),
+                Enumerable.Empty<EngagementTrendDto>(),
+                Enumerable.Empty<DonationAttributionDto>());
 
         var bestPlatform = posts.GroupBy(p => p.Platform)
             .OrderByDescending(g => g.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average())
@@ -124,12 +176,44 @@ public class ReportService : IReportService
             .OrderByDescending(g => g.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average())
             .FirstOrDefault()?.Key;
 
+        var platformBreakdown = posts.GroupBy(p => p.Platform)
+            .Select(g => new ReportPlatformBreakdownDto(
+                g.Key, g.Count(),
+                g.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average(),
+                g.Sum(p => p.DonationReferrals ?? 0)))
+            .OrderByDescending(x => x.PostCount);
+
+        var postTypePerformance = posts.GroupBy(p => p.PostType)
+            .Select(g => new PostTypePerformanceDto(
+                g.Key, g.Count(),
+                g.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average(),
+                g.Sum(p => p.DonationReferrals ?? 0)))
+            .OrderByDescending(x => x.AvgEngagement);
+
+        var engagementTrends = posts
+            .GroupBy(p => p.CreatedAt.ToString("yyyy-MM"))
+            .OrderBy(g => g.Key)
+            .Select(g => new EngagementTrendDto(
+                g.Key,
+                g.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average(),
+                g.Count()));
+
+        var donationAttribution = posts
+            .Where(p => (p.DonationReferrals ?? 0) > 0)
+            .GroupBy(p => p.Platform)
+            .Select(g => new DonationAttributionDto(
+                g.Key,
+                g.Sum(p => p.DonationReferrals ?? 0),
+                g.Sum(p => p.EstimatedDonationValuePhp ?? 0)))
+            .OrderByDescending(x => x.Referrals);
+
         return new SocialMediaReportDto(
             posts.Count,
             posts.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average(),
             posts.Sum(p => p.DonationReferrals ?? 0),
             posts.Sum(p => p.EstimatedDonationValuePhp ?? 0),
-            bestPlatform, bestPostType, bestTopic, bestHour, bestDay);
+            bestPlatform, bestPostType, bestTopic, bestHour, bestDay,
+            platformBreakdown, postTypePerformance, engagementTrends, donationAttribution);
     }
 
     public async Task<PagedResult<PublicImpactSnapshotDto>> GetImpactSnapshotsAsync(int page, int pageSize)

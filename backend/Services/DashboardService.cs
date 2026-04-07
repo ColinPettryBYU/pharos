@@ -84,7 +84,14 @@ public class DashboardService : IDashboardService
         return donations
             .GroupBy(d => d.DonationDate.ToString("yyyy-MM"))
             .OrderBy(g => g.Key)
-            .Select(g => new MonthlyDonationTrendDto(g.Key, g.Sum(d => d.Amount ?? 0), g.Count()));
+            .Select(g =>
+            {
+                var total = g.Sum(d => d.Amount ?? 0);
+                var monetaryAmt = g.Where(d => d.DonationType == "Monetary").Sum(d => d.Amount ?? 0);
+                var inKindAmt = total - monetaryAmt;
+                var recurringAmt = g.Where(d => d.IsRecurring).Sum(d => d.Amount ?? 0);
+                return new MonthlyDonationTrendDto(g.Key, total, g.Count(), monetaryAmt, inKindAmt, recurringAmt, total - recurringAmt);
+            });
     }
 
     private async Task<IEnumerable<SafehouseOccupancyDto>> BuildOccupancyAsync()

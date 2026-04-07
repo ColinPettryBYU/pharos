@@ -34,7 +34,7 @@ public class ReportsController : ControllerBase
 
     [HttpGet("safehouses")]
     [Authorize(Roles = "Admin,Staff")]
-    public async Task<ActionResult<IEnumerable<SafehouseReportDto>>> GetSafehouseReport()
+    public async Task<ActionResult<SafehouseReportResponseDto>> GetSafehouseReport()
     {
         var result = await _service.GetSafehouseReportAsync();
         return Ok(result);

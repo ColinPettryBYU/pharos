@@ -6,9 +6,9 @@
 export interface User {
   id: string;
   email: string;
-  displayName: string;
+  display_name: string;
   roles: string[];
-  linkedSupporterId?: number;
+  linked_supporter_id?: number;
 }
 
 export interface LoginRequest {
@@ -19,12 +19,12 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  displayName: string;
+  display_name: string;
 }
 
 export interface AuthResponse {
   user: User;
-  requiresMfa?: boolean;
+  requires_mfa?: boolean;
 }
 
 // --- API Response Wrapper ---
@@ -38,8 +38,8 @@ export interface PaginatedResponse<T> {
   data: T[];
   total: number;
   page: number;
-  pageSize: number;
-  totalPages: number;
+  page_size: number;
+  total_pages: number;
 }
 
 // --- Safehouses ---
@@ -518,18 +518,18 @@ export interface SocialMediaComment {
 export interface ConnectedAccount {
   id: number;
   platform: Platform;
-  accountName: string;
-  accountId?: string;
-  connectedAt: string;
-  tokenExpiresAt?: string;
+  account_name: string;
+  account_id?: string;
+  connected_at: string;
+  token_expires_at?: string;
   status: string;
 }
 
 export interface CommentInboxResponse {
   comments: SocialMediaComment[];
-  totalCount: number;
+  total_count: number;
   page: number;
-  pageSize: number;
+  page_size: number;
 }
 
 // --- Safehouse Monthly Metrics ---

@@ -247,21 +247,21 @@ export default function SocialAccountsPage() {
                       <div className="mt-4 space-y-2 rounded-lg bg-muted/50 p-3">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Account</span>
-                          <span className="font-medium">{account.accountName}</span>
+                          <span className="font-medium">{account.account_name}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">Connected</span>
                           <span className="text-muted-foreground">
-                            {formatDate(account.connectedAt)}
+                            {formatDate(account.connected_at)}
                           </span>
                         </div>
-                        {account.tokenExpiresAt && (
+                        {account.token_expires_at && (
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">
                               Token Expires
                             </span>
                             <span className="text-muted-foreground">
-                              {formatDate(account.tokenExpiresAt)}
+                              {formatDate(account.token_expires_at)}
                             </span>
                           </div>
                         )}
