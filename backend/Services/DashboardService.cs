@@ -35,13 +35,27 @@ public class DashboardService : IDashboardService
     {
         var activeResidents = await _db.Residents.CountAsync(r => r.CaseStatus == "Active");
 
-        var thisMonthDonations = await _db.Donations
-            .Where(d => d.DonationDate >= thisMonthStart && d.Amount.HasValue)
-            .SumAsync(d => d.Amount ?? 0);
+        var latestDonation = await _db.Donations
+            .Where(d => d.Amount.HasValue || d.EstimatedValue.HasValue)
+            .OrderByDescending(d => d.DonationDate)
+            .Select(d => d.DonationDate)
+            .FirstOrDefaultAsync();
 
-        var lastMonthDonations = await _db.Donations
-            .Where(d => d.DonationDate >= lastMonthStart && d.DonationDate < thisMonthStart && d.Amount.HasValue)
-            .SumAsync(d => d.Amount ?? 0);
+        var effectiveMonthStart = latestDonation != default
+            ? new DateTime(latestDonation.Year, latestDonation.Month, 1, 0, 0, 0, DateTimeKind.Utc)
+            : thisMonthStart;
+        var prevMonthStart = effectiveMonthStart.AddMonths(-1);
+        var effectiveMonthEnd = effectiveMonthStart.AddMonths(1);
+
+        var recentDonations = await _db.Donations
+            .Where(d => d.DonationDate >= effectiveMonthStart && d.DonationDate < effectiveMonthEnd)
+            .ToListAsync();
+        var thisMonthDonations = recentDonations.Sum(d => d.Amount ?? d.EstimatedValue ?? 0);
+
+        var prevDonations = await _db.Donations
+            .Where(d => d.DonationDate >= prevMonthStart && d.DonationDate < effectiveMonthStart)
+            .ToListAsync();
+        var lastMonthDonations = prevDonations.Sum(d => d.Amount ?? d.EstimatedValue ?? 0);
 
         var donationChange = lastMonthDonations > 0
             ? Math.Round((thisMonthDonations - lastMonthDonations) / lastMonthDonations * 100, 1)
@@ -78,18 +92,20 @@ public class DashboardService : IDashboardService
     {
         var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
         var donations = await _db.Donations
-            .Where(d => d.DonationDate >= sixMonthsAgo && d.Amount.HasValue)
+            .Where(d => d.DonationDate >= sixMonthsAgo && (d.Amount.HasValue || d.EstimatedValue.HasValue))
             .ToListAsync();
+
+        decimal eff(Models.Donation d) => d.Amount ?? d.EstimatedValue ?? 0;
 
         return donations
             .GroupBy(d => d.DonationDate.ToString("yyyy-MM"))
             .OrderBy(g => g.Key)
             .Select(g =>
             {
-                var total = g.Sum(d => d.Amount ?? 0);
-                var monetaryAmt = g.Where(d => d.DonationType == "Monetary").Sum(d => d.Amount ?? 0);
-                var inKindAmt = total - monetaryAmt;
-                var recurringAmt = g.Where(d => d.IsRecurring).Sum(d => d.Amount ?? 0);
+                var total = g.Sum(d => eff(d));
+                var monetaryAmt = g.Where(d => d.DonationType == "Monetary").Sum(d => eff(d));
+                var inKindAmt = g.Where(d => d.DonationType == "InKind").Sum(d => eff(d));
+                var recurringAmt = g.Where(d => d.IsRecurring).Sum(d => eff(d));
                 return new MonthlyDonationTrendDto(g.Key, total, g.Count(), monetaryAmt, inKindAmt, recurringAmt, total - recurringAmt);
             });
     }

@@ -91,8 +91,11 @@ public record SocialMediaReportDto(
     IEnumerable<ReportPlatformBreakdownDto> PlatformBreakdown,
     IEnumerable<PostTypePerformanceDto> PostTypePerformance,
     IEnumerable<EngagementTrendDto> EngagementTrends,
-    IEnumerable<DonationAttributionDto> DonationAttribution
+    IEnumerable<DonationAttributionDto> DonationAttribution,
+    IEnumerable<ContentTopicPerformanceDto> ContentTopicPerformance
 );
+
+public record ContentTopicPerformanceDto(string Topic, decimal AvgEngagement, int DonationReferrals);
 
 public record ReportPlatformBreakdownDto(string Platform, int PostCount, decimal AvgEngagement, int DonationReferrals);
 

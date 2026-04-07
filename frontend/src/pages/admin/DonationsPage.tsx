@@ -44,9 +44,9 @@ const columns: ColumnDef<Donation>[] = [
     cell: ({ row }) => <span className="tabular-nums">{fmtDate(row.getValue("donation_date"))}</span>,
   },
   {
-    accessorKey: "supporter",
+    accessorKey: "supporter_name",
     header: "Donor",
-    cell: ({ row }) => <span className="font-medium">{row.original.supporter?.display_name || "Unknown"}</span>,
+    cell: ({ row }) => <span className="font-medium">{row.getValue("supporter_name") || "Unknown"}</span>,
   },
   {
     accessorKey: "donation_type",

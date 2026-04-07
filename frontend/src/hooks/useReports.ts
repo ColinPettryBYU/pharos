@@ -120,7 +120,11 @@ export function useSocialMediaReports(filters: Record<string, unknown> = {}) {
           avgEngagement: p.avg_engagement ?? 0,
           avgReach: 0,
         })),
-        contentTopicPerformance: [],
+        contentTopicPerformance: (raw?.content_topic_performance ?? []).map((c: any) => ({
+          topic: c.topic ?? "",
+          avgEngagement: c.avg_engagement ?? 0,
+          donationReferrals: c.donation_referrals ?? 0,
+        })),
         engagementTrends: (raw?.engagement_trends ?? []).map((e: any) => ({
           month: e.month ?? "",
           avgEngagement: e.avg_engagement ?? 0,

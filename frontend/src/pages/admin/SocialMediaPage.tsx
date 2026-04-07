@@ -84,10 +84,10 @@ export default function SocialMediaPage() {
       ? commentsRaw.comments
       : [];
 
-  const totalReach = posts.reduce((s, p) => s + p.reach, 0);
-  const avgEngagement = posts.length > 0 ? posts.reduce((s, p) => s + p.engagement_rate, 0) / posts.length : 0;
-  const totalClicks = posts.reduce((s, p) => s + p.click_throughs, 0);
-  const totalReferrals = posts.reduce((s, p) => s + p.donation_referrals, 0);
+  const totalReach = posts.reduce((s, p) => s + (p.reach ?? 0), 0);
+  const avgEngagement = posts.length > 0 ? posts.reduce((s, p) => s + (p.engagement_rate ?? 0), 0) / posts.length : 0;
+  const totalClicks = posts.reduce((s, p) => s + (p.click_throughs ?? 0), 0);
+  const totalReferrals = posts.reduce((s, p) => s + (p.donation_referrals ?? 0), 0);
 
   const contentPerformance = Object.entries(
     posts.reduce<Record<string, { count: number; engagement: number }>>((acc, p) => {
