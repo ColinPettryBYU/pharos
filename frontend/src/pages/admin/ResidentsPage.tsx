@@ -138,7 +138,8 @@ export default function ResidentsPage() {
   const residents = Array.isArray(data) ? data : (data?.data ?? []);
 
   const form = useForm<ResidentForm>({
-    resolver: zodResolver(residentSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(residentSchema) as any,
     defaultValues: {
       CaseControlNo: "", InternalCode: "", SafehouseId: 0, CaseStatus: "Active",
       CaseCategory: "", Sex: "Female", DateOfBirth: "", DateOfAdmission: "",
@@ -241,7 +242,7 @@ export default function ResidentsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>Status</Label>
-                    <Select value={form.watch("CaseStatus")} onValueChange={(v) => form.setValue("CaseStatus", v)}>
+                    <Select value={form.watch("CaseStatus") ?? ""} onValueChange={(v) => form.setValue("CaseStatus", v ?? "")}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Active">Active</SelectItem>
@@ -252,7 +253,7 @@ export default function ResidentsPage() {
                   </div>
                   <div className="space-y-1">
                     <Label>Category</Label>
-                    <Select value={form.watch("CaseCategory")} onValueChange={(v) => form.setValue("CaseCategory", v)}>
+                    <Select value={form.watch("CaseCategory") ?? ""} onValueChange={(v) => form.setValue("CaseCategory", v ?? "")}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Abandoned">Abandoned</SelectItem>
@@ -303,7 +304,7 @@ export default function ResidentsPage() {
                 <div className="space-y-1"><Label>Assigned Social Worker</Label><Input {...form.register("AssignedSocialWorker")} /></div>
                 <div className="space-y-1">
                   <Label>Initial Risk Level</Label>
-                  <Select value={form.watch("InitialRiskLevel")} onValueChange={(v) => form.setValue("InitialRiskLevel", v)}>
+                  <Select value={form.watch("InitialRiskLevel") ?? ""} onValueChange={(v) => form.setValue("InitialRiskLevel", v ?? "")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Low">Low</SelectItem>

@@ -91,7 +91,8 @@ export default function DonationsPage() {
   const donations = Array.isArray(data) ? data : (data?.data ?? []);
 
   const form = useForm<DonationForm>({
-    resolver: zodResolver(donationSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(donationSchema) as any,
     defaultValues: {
       SupporterId: 0, DonationType: "", Amount: 0, DonationDate: "",
       IsRecurring: false, CampaignName: "", ChannelSource: "", CurrencyCode: "PHP", Notes: "",
@@ -171,7 +172,7 @@ export default function DonationsPage() {
             </div>
             <div className="space-y-2">
               <Label>Donation Type <span className="text-destructive">*</span></Label>
-              <Select value={form.watch("DonationType")} onValueChange={(v) => form.setValue("DonationType", v)}>
+              <Select value={form.watch("DonationType") ?? ""} onValueChange={(v) => form.setValue("DonationType", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Monetary">Monetary</SelectItem>
@@ -196,7 +197,7 @@ export default function DonationsPage() {
             </div>
             <div className="space-y-2">
               <Label>Campaign</Label>
-              <Select value={form.watch("CampaignName") ?? ""} onValueChange={(v) => form.setValue("CampaignName", v)}>
+              <Select value={form.watch("CampaignName") ?? ""} onValueChange={(v) => form.setValue("CampaignName", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select campaign (optional)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Year-End Hope">Year-End Hope</SelectItem>
@@ -208,7 +209,7 @@ export default function DonationsPage() {
             </div>
             <div className="space-y-2">
               <Label>Channel Source</Label>
-              <Select value={form.watch("ChannelSource") ?? ""} onValueChange={(v) => form.setValue("ChannelSource", v)}>
+              <Select value={form.watch("ChannelSource") ?? ""} onValueChange={(v) => form.setValue("ChannelSource", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select channel" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Campaign">Campaign</SelectItem>

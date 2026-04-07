@@ -261,7 +261,7 @@ function DonationTrendsTab() {
                   {pieData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} innerRadius={50} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} animationBegin={200} animationDuration={1000}>
+                        <Pie data={pieData} cx="50%" cy="50%" outerRadius={100} innerRadius={50} dataKey="value" label={({ name, percent }: any) => `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`} animationBegin={200} animationDuration={1000}>
                           {pieData.map((_, i) => (
                             <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                           ))}
@@ -389,7 +389,7 @@ function ResidentOutcomesTab() {
                   {emotionalStates.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
-                        <Pie data={emotionalStates} cx="50%" cy="50%" outerRadius={100} innerRadius={50} dataKey="count" nameKey="state" label={({ state, percent }) => `${state} ${(percent * 100).toFixed(0)}%`} animationBegin={200} animationDuration={1000}>
+                        <Pie data={emotionalStates} cx="50%" cy="50%" outerRadius={100} innerRadius={50} dataKey="count" nameKey="state" label={({ name, percent }: any) => `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`} animationBegin={200} animationDuration={1000}>
                           {emotionalStates.map((_, i) => (
                             <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                           ))}
@@ -832,7 +832,7 @@ function SocialMediaTab() {
                           innerRadius={50}
                           dataKey="estimatedValue"
                           nameKey="platform"
-                          label={({ platform, percent }) => `${platform} ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }: any) => `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`}
                           animationBegin={200}
                           animationDuration={1000}
                         >

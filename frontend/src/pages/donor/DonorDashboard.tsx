@@ -108,11 +108,11 @@ export default function DonorDashboard() {
             <Gift className="mx-auto h-10 w-10 text-primary mb-3" />
             <h3 className="text-xl font-semibold">Continue Making a Difference</h3>
             <p className="text-muted-foreground mt-1 mb-4">Every donation goes directly to supporting girls in our safehouses.</p>
-            <Button size="lg" className="gap-2" asChild>
-              <a href="https://www.lighthousesanctuary.org/donate" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.lighthousesanctuary.org/donate" target="_blank" rel="noopener noreferrer">
+              <Button size="lg" className="gap-2">
                 <Heart className="h-4 w-4" />Give Again
-              </a>
-            </Button>
+              </Button>
+            </a>
           </CardContent>
         </Card>
       </motion.div>

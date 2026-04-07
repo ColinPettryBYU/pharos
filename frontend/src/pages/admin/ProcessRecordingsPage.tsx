@@ -97,7 +97,8 @@ export default function ProcessRecordingsPage() {
   const recordings = Array.isArray(data) ? data : (data?.data ?? []);
 
   const form = useForm<RecordingForm>({
-    resolver: zodResolver(recordingSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(recordingSchema) as any,
     defaultValues: {
       ResidentId: 0, SessionType: "", SessionDurationMinutes: 45,
       EmotionalStateObserved: "", EmotionalStateEnd: "",
@@ -168,7 +169,7 @@ export default function ProcessRecordingsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Session Type <span className="text-destructive">*</span></Label>
-                <Select value={form.watch("SessionType")} onValueChange={(v) => form.setValue("SessionType", v)}>
+                <Select value={form.watch("SessionType") ?? ""} onValueChange={(v) => form.setValue("SessionType", v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Individual">Individual</SelectItem>
@@ -184,7 +185,7 @@ export default function ProcessRecordingsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Starting State <span className="text-destructive">*</span></Label>
-                <Select value={form.watch("EmotionalStateObserved")} onValueChange={(v) => form.setValue("EmotionalStateObserved", v)}>
+                <Select value={form.watch("EmotionalStateObserved") ?? ""} onValueChange={(v) => form.setValue("EmotionalStateObserved", v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     {emotionalStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -193,7 +194,7 @@ export default function ProcessRecordingsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Ending State <span className="text-destructive">*</span></Label>
-                <Select value={form.watch("EmotionalStateEnd")} onValueChange={(v) => form.setValue("EmotionalStateEnd", v)}>
+                <Select value={form.watch("EmotionalStateEnd") ?? ""} onValueChange={(v) => form.setValue("EmotionalStateEnd", v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     {emotionalStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}

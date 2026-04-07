@@ -52,7 +52,8 @@ export default function UserManagementPage() {
   const userList = Array.isArray(users) ? users : [];
 
   const form = useForm<InviteForm>({
-    resolver: zodResolver(inviteSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(inviteSchema) as any,
     defaultValues: { Email: "", DisplayName: "", Password: "", Role: "", LinkedSupporterId: undefined },
   });
 
@@ -119,7 +120,7 @@ export default function UserManagementPage() {
                     defaultValue={user.roles?.[0] ?? "Staff"}
                     onValueChange={async (value) => {
                       try {
-                        await updateRole.mutateAsync({ userId: user.id, roles: [value] });
+                        await updateRole.mutateAsync({ userId: user.id, roles: [value ?? "Staff"] });
                         toast.success("Role updated");
                       } catch { /* handled by api client */ }
                     }}
@@ -162,7 +163,7 @@ export default function UserManagementPage() {
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
-              <Select value={form.watch("Role")} onValueChange={(v) => form.setValue("Role", v)}>
+              <Select value={form.watch("Role") ?? ""} onValueChange={(v) => form.setValue("Role", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Admin">Admin</SelectItem>

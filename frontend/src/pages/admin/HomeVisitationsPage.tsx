@@ -99,7 +99,8 @@ export default function HomeVisitationsPage() {
   const visitations = Array.isArray(data) ? data : (data?.data ?? []);
 
   const form = useForm<VisitForm>({
-    resolver: zodResolver(visitSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(visitSchema) as any,
     defaultValues: {
       ResidentId: 0, VisitType: "", VisitDate: "", LocationVisited: "",
       FamilyMembersPresent: "", Purpose: "", Observations: "",
@@ -169,7 +170,7 @@ export default function HomeVisitationsPage() {
             </div>
             <div className="space-y-2">
               <Label>Visit Type <span className="text-destructive">*</span></Label>
-              <Select value={form.watch("VisitType")} onValueChange={(v) => form.setValue("VisitType", v)}>
+              <Select value={form.watch("VisitType") ?? ""} onValueChange={(v) => form.setValue("VisitType", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
@@ -187,7 +188,7 @@ export default function HomeVisitationsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Family Cooperation Level <span className="text-destructive">*</span></Label>
-                <Select value={form.watch("FamilyCooperationLevel")} onValueChange={(v) => form.setValue("FamilyCooperationLevel", v)}>
+                <Select value={form.watch("FamilyCooperationLevel") ?? ""} onValueChange={(v) => form.setValue("FamilyCooperationLevel", v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Highly Cooperative">Highly Cooperative</SelectItem>
@@ -199,7 +200,7 @@ export default function HomeVisitationsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Outcome <span className="text-destructive">*</span></Label>
-                <Select value={form.watch("VisitOutcome")} onValueChange={(v) => form.setValue("VisitOutcome", v)}>
+                <Select value={form.watch("VisitOutcome") ?? ""} onValueChange={(v) => form.setValue("VisitOutcome", v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Favorable">Favorable</SelectItem>

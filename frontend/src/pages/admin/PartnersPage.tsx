@@ -66,7 +66,8 @@ export default function PartnersPage() {
   const partners = Array.isArray(data) ? data : (data?.data ?? []);
 
   const form = useForm<PartnerForm>({
-    resolver: zodResolver(partnerSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(partnerSchema) as any,
     defaultValues: {
       PartnerName: "", PartnerType: "", RoleType: "",
       ContactName: "", Email: "", Phone: "",
@@ -123,7 +124,7 @@ export default function PartnersPage() {
             <div className="space-y-2"><Label>Organization Name</Label><Input {...form.register("PartnerName")} placeholder="Organization name" /></div>
             <div className="space-y-2">
               <Label>Partner Type</Label>
-              <Select value={form.watch("PartnerType")} onValueChange={(v) => form.setValue("PartnerType", v)}>
+              <Select value={form.watch("PartnerType") ?? ""} onValueChange={(v) => form.setValue("PartnerType", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Government">Government</SelectItem>

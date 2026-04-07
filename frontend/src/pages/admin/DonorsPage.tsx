@@ -197,7 +197,7 @@ export default function DonorsPage() {
             </div>
             <div className="space-y-2">
               <Label>Supporter Type <span className="text-destructive">*</span></Label>
-              <Select value={form.watch("SupporterType")} onValueChange={(v) => form.setValue("SupporterType", v)}>
+              <Select value={form.watch("SupporterType") ?? ""} onValueChange={(v) => form.setValue("SupporterType", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="MonetaryDonor">Monetary Donor</SelectItem>
@@ -211,7 +211,7 @@ export default function DonorsPage() {
             </div>
             <div className="space-y-2">
               <Label>Acquisition Channel</Label>
-              <Select value={form.watch("AcquisitionChannel") ?? ""} onValueChange={(v) => form.setValue("AcquisitionChannel", v)}>
+              <Select value={form.watch("AcquisitionChannel") ?? ""} onValueChange={(v) => form.setValue("AcquisitionChannel", v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Select channel" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Website">Website</SelectItem>

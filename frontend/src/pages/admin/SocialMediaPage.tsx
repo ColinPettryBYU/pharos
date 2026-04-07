@@ -224,7 +224,7 @@ export default function SocialMediaPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Content Topic</Label>
-                        <Select value={form.watch("ContentTopic") ?? ""} onValueChange={(v) => form.setValue("ContentTopic", v)}>
+                        <Select value={form.watch("ContentTopic") ?? ""} onValueChange={(v) => form.setValue("ContentTopic", v ?? "")}>
                           <SelectTrigger><SelectValue placeholder="Select topic" /></SelectTrigger>
                           <SelectContent>
                             {["Education", "Health", "Reintegration", "DonorImpact", "SafehouseLife", "Gratitude", "AwarenessRaising"].map((t) => (
@@ -235,7 +235,7 @@ export default function SocialMediaPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Call to Action</Label>
-                        <Select value={form.watch("CallToActionType") ?? ""} onValueChange={(v) => form.setValue("CallToActionType", v)}>
+                        <Select value={form.watch("CallToActionType") ?? ""} onValueChange={(v) => form.setValue("CallToActionType", v ?? "")}>
                           <SelectTrigger><SelectValue placeholder="Select CTA" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="DonateNow">Donate Now</SelectItem>
@@ -299,7 +299,7 @@ export default function SocialMediaPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />Comments Inbox
-                <Badge variant="secondary" className="ml-2">{comments.filter((c) => !c.is_read).length} unread</Badge>
+                <Badge variant="secondary" className="ml-2">{comments.filter((c: any) => !c.is_read).length} unread</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -307,7 +307,7 @@ export default function SocialMediaPage() {
                 <p className="text-center text-muted-foreground py-8">No comments yet</p>
               ) : (
                 <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
-                  {comments.map((comment) => {
+                  {comments.map((comment: any) => {
                     const PlatformIcon = platforms.find((p) => p.value === comment.platform)?.icon || MessageCircle;
                     return (
                       <motion.div
