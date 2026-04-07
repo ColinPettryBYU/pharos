@@ -62,25 +62,21 @@ export default function AdminDashboard() {
   const { data: donationReport } = useDonationReports();
   const { data: safehouses } = useSafehouses();
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-muted-foreground mb-4">Failed to load dashboard data</p>
-        <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
-      </div>
-    );
-  }
+  // Don't show full error screen -- degrade gracefully with partial data
+  // The dashboard endpoint may fail if ML tables haven't been migrated yet
 
   const stats = dashboard?.stats;
   const activityFeed = dashboard?.activityFeed ?? [];
   const riskAlerts = dashboard?.riskAlerts ?? [];
 
-  const chartData = (donationReport?.trends ?? []).map((d) => ({
+  const trends = donationReport?.trends ?? (donationReport as any)?.data?.trends ?? [];
+  const chartData = (Array.isArray(trends) ? trends : []).map((d: any) => ({
     month: format(new Date(d.month + "-01"), "MMM"),
     total: d.total,
   }));
 
-  const occupancyData = (safehouses ?? []).map((s) => ({
+  const safehouseList = Array.isArray(safehouses) ? safehouses : (safehouses as any)?.data ?? [];
+  const occupancyData = (Array.isArray(safehouseList) ? safehouseList : []).map((s: any) => ({
     name: s.safehouse_code,
     occupancy: s.current_occupancy,
     capacity: s.capacity_girls,
