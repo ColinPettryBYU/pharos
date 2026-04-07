@@ -13,7 +13,7 @@ import {
   useResidentEducation, useResidentHealth, useResidentInterventions,
   useResidentIncidents,
 } from "@/hooks/useResidents";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -71,11 +71,11 @@ export default function ResidentDetailPage() {
   ].filter(Boolean);
 
   const healthChartData = healthRecords.map((h) => ({
-    date: format(new Date(h.record_date), "MMM"),
-    health: +h.general_health_score.toFixed(1),
-    nutrition: +h.nutrition_score.toFixed(1),
-    sleep: +h.sleep_quality_score.toFixed(1),
-    energy: +h.energy_level_score.toFixed(1),
+    date: fmtDate(h.record_date, "MMM"),
+    health: +(h.general_health_score ?? 0).toFixed(1),
+    nutrition: +(h.nutrition_score ?? 0).toFixed(1),
+    sleep: +(h.sleep_quality_score ?? 0).toFixed(1),
+    energy: +(h.energy_level_score ?? 0).toFixed(1),
   }));
 
   return (
@@ -141,7 +141,7 @@ export default function ResidentDetailPage() {
             <Card>
               <CardHeader><CardTitle className="text-base">Demographics</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Date of Birth</span><span>{format(new Date(resident.date_of_birth), "MMM d, yyyy")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Date of Birth</span><span>{fmtDate(resident.date_of_birth)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Place of Birth</span><span>{resident.place_of_birth}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Religion</span><span>{resident.religion}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Birth Status</span><span>{resident.birth_status}</span></div>
@@ -153,7 +153,7 @@ export default function ResidentDetailPage() {
                 <div className="flex justify-between"><span className="text-muted-foreground">Category</span><span>{resident.case_category}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Sub-categories</span><div className="flex gap-1 flex-wrap justify-end">{subCategories.map((s) => <Badge key={s as string} variant="outline" className="text-xs">{s as string}</Badge>)}</div></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Referral Source</span><span>{resident.referral_source}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Admission</span><span>{format(new Date(resident.date_of_admission), "MMM d, yyyy")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Admission</span><span>{fmtDate(resident.date_of_admission)}</span></div>
               </CardContent>
             </Card>
             <Card>
@@ -192,7 +192,7 @@ export default function ResidentDetailPage() {
                 <Card className="hover:shadow-sm transition-shadow">
                   <CardContent className="p-5">
                     <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <span className="text-sm font-medium tabular-nums">{format(new Date(rec.session_date), "MMM d, yyyy")}</span>
+                      <span className="text-sm font-medium tabular-nums">{fmtDate(rec.session_date)}</span>
                       <Badge variant="outline">{rec.session_type}</Badge>
                       <span className="text-xs text-muted-foreground">{rec.session_duration_minutes} min</span>
                       <span className="text-xs text-muted-foreground">| {rec.social_worker}</span>
@@ -220,7 +220,7 @@ export default function ResidentDetailPage() {
                 <Card>
                   <CardContent className="p-5">
                     <div className="flex flex-wrap items-center gap-3 mb-2">
-                      <span className="text-sm font-medium tabular-nums">{format(new Date(visit.visit_date), "MMM d, yyyy")}</span>
+                      <span className="text-sm font-medium tabular-nums">{fmtDate(visit.visit_date)}</span>
                       <Badge variant="outline">{visit.visit_type}</Badge>
                       <Badge variant={visit.visit_outcome === "Favorable" ? "default" : "secondary"}>{visit.visit_outcome}</Badge>
                       {visit.safety_concerns_noted && <Badge variant="destructive" className="text-xs">Safety Concern</Badge>}
@@ -244,7 +244,7 @@ export default function ResidentDetailPage() {
                 <CardHeader><CardTitle className="text-lg">Education Progress</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={eduRecords.map((e) => ({ date: format(new Date(e.record_date), "MMM"), progress: e.progress_percent, attendance: e.attendance_rate }))}>
+                    <LineChart data={eduRecords.map((e) => ({ date: fmtDate(e.record_date, "MMM"), progress: e.progress_percent, attendance: e.attendance_rate }))}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
                       <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
@@ -319,7 +319,7 @@ export default function ResidentDetailPage() {
                           <span className="font-medium text-sm">{p.plan_description}</span>
                           <Badge variant="outline" className="text-xs ml-auto">{p.status}</Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">Target: {format(new Date(p.target_date), "MMM d, yyyy")} | Services: {p.services_provided}</p>
+                        <p className="text-xs text-muted-foreground">Target: {fmtDate(p.target_date)} | Services: {p.services_provided}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -343,7 +343,7 @@ export default function ResidentDetailPage() {
                         <AlertTriangle className={cn("h-4 w-4", inc.severity === "High" ? "text-destructive" : "text-warning")} />
                         <Badge variant="outline">{inc.incident_type}</Badge>
                         <Badge variant={inc.severity === "High" ? "destructive" : "secondary"}>{inc.severity}</Badge>
-                        <span className="text-xs text-muted-foreground ml-auto">{format(new Date(inc.incident_date), "MMM d, yyyy")}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">{fmtDate(inc.incident_date)}</span>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{inc.description}</p>
                       <div className="flex items-center gap-2 mt-2">

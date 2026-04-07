@@ -16,22 +16,30 @@ public class MLService : IMLService
 
     public async Task<IEnumerable<DonorChurnRiskDto>> GetDonorChurnRisksAsync()
     {
-        var scores = await _db.DonorChurnScores
+        var raw = await _db.DonorChurnScores
             .Join(_db.Supporters,
                   s => s.SupporterId,
                   sup => sup.SupporterId,
-                  (s, sup) => new DonorChurnRiskDto(
+                  (s, sup) => new
+                  {
                       s.SupporterId,
                       sup.DisplayName,
                       sup.SupporterType,
                       s.ChurnRiskScore,
-                      s.RiskTier,
-                      0, 0m, 0,
-                      new List<string>()
-                  ))
+                      s.RiskTier
+                  })
             .OrderByDescending(d => d.ChurnRiskScore)
             .ToListAsync();
-        return scores;
+
+        return raw.Select(d => new DonorChurnRiskDto(
+            d.SupporterId,
+            d.DisplayName,
+            d.SupporterType,
+            d.ChurnRiskScore,
+            d.RiskTier,
+            0, 0m, 0,
+            new List<string>()
+        ));
     }
 
     public async Task<ReintegrationReadinessDto?> GetReintegrationReadinessAsync(int residentId)

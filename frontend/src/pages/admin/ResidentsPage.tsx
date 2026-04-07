@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useResidents, useCreateResident } from "@/hooks/useResidents";
 import type { Resident } from "@/types";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,7 +98,7 @@ const columns: ColumnDef<Resident>[] = [
     header: "Admitted",
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground tabular-nums">
-        {format(new Date(row.getValue("date_of_admission")), "MMM d, yyyy")}
+        {fmtDate(row.getValue("date_of_admission"))}
       </span>
     ),
   },

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { usePartners, useCreatePartner, useDeletePartner } from "@/hooks/usePartners";
 import type { Partner } from "@/types";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -50,7 +50,7 @@ const columns: ColumnDef<Partner>[] = [
   {
     accessorKey: "start_date",
     header: "Since",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground tabular-nums">{format(new Date(row.getValue("start_date")), "MMM yyyy")}</span>,
+    cell: ({ row }) => <span className="text-sm text-muted-foreground tabular-nums">{fmtDate(row.getValue("start_date"), "MMM yyyy")}</span>,
   },
 ];
 

@@ -53,17 +53,17 @@ public class DashboardService : IDashboardService
             .Distinct()
             .CountAsync();
 
-        var thisMonthEngagement = await _db.SocialMediaPosts
+        var thisMonthRates = await _db.SocialMediaPosts
             .Where(p => p.CreatedAt >= thisMonthStart && p.EngagementRate.HasValue)
             .Select(p => p.EngagementRate!.Value)
-            .DefaultIfEmpty(0)
-            .AverageAsync();
+            .ToListAsync();
+        var thisMonthEngagement = thisMonthRates.Count > 0 ? thisMonthRates.Average() : 0m;
 
-        var lastMonthEngagement = await _db.SocialMediaPosts
+        var lastMonthRates = await _db.SocialMediaPosts
             .Where(p => p.CreatedAt >= lastMonthStart && p.CreatedAt < thisMonthStart && p.EngagementRate.HasValue)
             .Select(p => p.EngagementRate!.Value)
-            .DefaultIfEmpty(0)
-            .AverageAsync();
+            .ToListAsync();
+        var lastMonthEngagement = lastMonthRates.Count > 0 ? lastMonthRates.Average() : 0m;
 
         var engagementChange = lastMonthEngagement > 0
             ? Math.Round((thisMonthEngagement - lastMonthEngagement) / lastMonthEngagement * 100, 1)

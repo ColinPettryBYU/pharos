@@ -18,8 +18,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useHomeVisitations, useCreateHomeVisitation } from "@/hooks/useHomeVisitations";
+import { fmtDate } from "@/lib/utils";
 import type { HomeVisitation } from "@/types";
-import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -45,7 +45,7 @@ const columns: ColumnDef<HomeVisitation>[] = [
   {
     accessorKey: "visit_date",
     header: "Date",
-    cell: ({ row }) => <span className="tabular-nums text-sm">{format(new Date(row.getValue("visit_date")), "MMM d, yyyy")}</span>,
+    cell: ({ row }) => <span className="tabular-nums text-sm">{fmtDate(row.getValue("visit_date"))}</span>,
   },
   {
     accessorKey: "resident_id",

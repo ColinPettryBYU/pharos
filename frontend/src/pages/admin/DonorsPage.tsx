@@ -22,7 +22,7 @@ import { useSupporters, useCreateSupporter, useDeleteSupporter } from "@/hooks/u
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Supporter, RiskLevel } from "@/types";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 
 const supporterSchema = z.object({
   FirstName: z.string().min(1, "First name is required"),
@@ -67,7 +67,7 @@ const columns: ColumnDef<Supporter>[] = [
     header: "First Donation",
     cell: ({ row }) => {
       const date = row.getValue("first_donation_date") as string;
-      return <span className="text-sm text-muted-foreground tabular-nums">{date ? format(new Date(date), "MMM d, yyyy") : "N/A"}</span>;
+      return <span className="text-sm text-muted-foreground tabular-nums">{fmtDate(date, "MMM d, yyyy", "N/A")}</span>;
     },
   },
   {

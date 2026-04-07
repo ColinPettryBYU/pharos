@@ -41,7 +41,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -121,14 +121,14 @@ function DonationTrendsTab() {
   const activeSupporters = data?.activeSupporters ?? 0;
 
   const chartData = trends.map((d) => ({
-    month: format(new Date(d.month + "-01"), "MMM yyyy"),
+    month: fmtDate(d.month ? d.month + "-01" : null, "MMM yyyy"),
     total: d.total,
     monetary: d.monetary,
     inKind: d.inKind,
   }));
 
   const recurringData = trends.map((d) => ({
-    month: format(new Date(d.month + "-01"), "MMM yyyy"),
+    month: fmtDate(d.month ? d.month + "-01" : null, "MMM yyyy"),
     recurring: d.recurring,
     oneTime: d.oneTime,
   }));
@@ -460,18 +460,18 @@ function ResidentOutcomesTab() {
                     <div key={item.plan_category} className="rounded-lg border p-4">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">{item.plan_category}</span>
-                        <Badge variant="outline">{(item.effectiveness_score * 100).toFixed(0)}% effective</Badge>
+                        <Badge variant="outline">{((item.effectiveness_score ?? 0) * 100).toFixed(0)}% effective</Badge>
                       </div>
                       <div className="h-2 rounded-full bg-muted overflow-hidden mb-2">
                         <motion.div
                           initial={{ width: 0 }}
-                          animate={{ width: `${item.effectiveness_score * 100}%` }}
+                          animate={{ width: `${(item.effectiveness_score ?? 0) * 100}%` }}
                           transition={{ duration: 1, delay: 0.3 }}
                           className="h-full rounded-full bg-primary"
                         />
                       </div>
-                      {item.recommendations.length > 0 && (
-                        <p className="text-xs text-muted-foreground">{item.recommendations[0]}</p>
+                      {(item.recommendations ?? []).length > 0 && (
+                        <p className="text-xs text-muted-foreground">{(item.recommendations ?? [])[0]}</p>
                       )}
                     </div>
                   ))}
@@ -504,8 +504,8 @@ function SafehouseComparisonsTab() {
     incident_count: number;
   }>) ?? [];
 
-  const safehouseList = safehouses ?? [];
-  const occupancyData = safehouseList.map((s) => ({
+  const safehouseList = Array.isArray(safehouses) ? safehouses : (safehouses as any)?.data ?? [];
+  const occupancyData = safehouseList.map((s: any) => ({
     name: s.safehouse_code,
     occupancy: s.current_occupancy,
     capacity: s.capacity_girls,
@@ -531,7 +531,7 @@ function SafehouseComparisonsTab() {
           <motion.div variants={fadeUp}>
             <StatCard
               title="Total Occupancy"
-              value={safehouseList.reduce((sum, s) => sum + s.current_occupancy, 0)}
+              value={safehouseList.reduce((sum: number, s: any) => sum + s.current_occupancy, 0)}
               icon={Users}
             />
           </motion.div>
@@ -540,7 +540,7 @@ function SafehouseComparisonsTab() {
               title="Avg Occupancy Rate"
               value={
                 safehouseList.length > 0
-                  ? safehouseList.reduce((sum, s) => sum + (s.capacity_girls > 0 ? (s.current_occupancy / s.capacity_girls) * 100 : 0), 0) / safehouseList.length
+                  ? safehouseList.reduce((sum: number, s: any) => sum + (s.capacity_girls > 0 ? (s.current_occupancy / s.capacity_girls) * 100 : 0), 0) / safehouseList.length
                   : 0
               }
               format="percent"
@@ -870,7 +870,7 @@ function SocialMediaTab() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">
-                      {recommendations.best_post_time.day} at {recommendations.best_post_time.hour}:00
+                      {recommendations.best_post_time?.day ?? "—"} at {recommendations.best_post_time?.hour ?? 0}:00
                     </span>
                   </div>
                 </div>
@@ -881,13 +881,13 @@ function SocialMediaTab() {
                 <div className="rounded-lg border p-4">
                   <p className="text-xs font-medium text-muted-foreground mb-1">Predicted Engagement</p>
                   <span className="text-sm font-semibold">
-                    {(recommendations.predicted_engagement_rate * 100).toFixed(2)}%
+                    {((recommendations.predicted_engagement_rate ?? 0) * 100).toFixed(2)}%
                   </span>
                 </div>
                 <div className="rounded-lg border p-4">
                   <p className="text-xs font-medium text-muted-foreground mb-1">Campaign Insights</p>
                   <ul className="space-y-1">
-                    {recommendations.campaign_insights.slice(0, 3).map((insight, i) => (
+                    {(recommendations.campaign_insights ?? []).slice(0, 3).map((insight, i) => (
                       <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                         <span className="text-primary mt-0.5">•</span>
                         {insight}

@@ -103,6 +103,32 @@ export const api = {
   },
 };
 
+// Safe date parser — returns a valid Date or null
+export const safeDate = (value: string | number | Date | null | undefined): Date | null => {
+  if (value == null) return null;
+  try {
+    const d = value instanceof Date ? value : new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  } catch {
+    return null;
+  }
+};
+
+// Safe toFixed — returns fallback for null/undefined/NaN values
+export const safeFixed = (value: number | null | undefined, digits = 1, fallback = "—"): string => {
+  if (value == null || isNaN(value)) return fallback;
+  return value.toFixed(digits);
+};
+
+// Ensure a value is an array (handles wrapped { data: [...] } responses)
+export const ensureArray = <T>(value: unknown): T[] => {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object" && "data" in value && Array.isArray((value as any).data)) {
+    return (value as any).data;
+  }
+  return [];
+};
+
 // Currency formatter for Philippine Pesos
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat("en-PH", {

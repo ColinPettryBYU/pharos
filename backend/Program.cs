@@ -195,26 +195,31 @@ using (var scope = app.Services.CreateScope())
         await identityDb.Database.MigrateAsync();
         logger.LogInformation("IdentityDb migrations applied.");
 
-        // Seed data from CSVs
-        var csvPath = Path.Combine(app.Environment.ContentRootPath, "..", "lighthouse_csv_v7");
+        // Seed data from CSVs — check both publish layout (wwwroot/lighthouse_csv_v7)
+        // and dev layout (../lighthouse_csv_v7 relative to backend/)
+        var csvPath = Path.Combine(app.Environment.ContentRootPath, "lighthouse_csv_v7");
+        if (!Directory.Exists(csvPath))
+            csvPath = Path.Combine(app.Environment.ContentRootPath, "..", "lighthouse_csv_v7");
         if (Directory.Exists(csvPath))
         {
             await DataSeeder.SeedAsync(pharosDb, csvPath, logger);
         }
         else
         {
-            logger.LogWarning("CSV directory not found at {Path}. Skipping data seeding.", csvPath);
+            logger.LogWarning("CSV directory not found. Tried both publish and dev paths. Skipping data seeding.");
         }
 
         // Seed ML prediction tables from notebook-exported CSVs
-        var mlDir = Path.Combine(app.Environment.ContentRootPath, "..", "ml-pipelines");
+        var mlDir = Path.Combine(app.Environment.ContentRootPath, "ml-pipelines");
+        if (!Directory.Exists(mlDir))
+            mlDir = Path.Combine(app.Environment.ContentRootPath, "..", "ml-pipelines");
         if (Directory.Exists(mlDir))
         {
             await DataSeeder.SeedMLPredictionsAsync(pharosDb, mlDir, logger);
         }
         else
         {
-            logger.LogWarning("ML pipelines directory not found at {Path}. Skipping ML seeding.", mlDir);
+            logger.LogWarning("ML pipelines directory not found. Tried both publish and dev paths. Skipping ML seeding.");
         }
 
         // Seed Identity users

@@ -12,7 +12,7 @@ import {
   AreaChart, Area,
 } from "recharts";
 import { Users, GraduationCap, HeartPulse, Building2, Calendar } from "lucide-react";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 
 const stagger = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
@@ -91,8 +91,8 @@ export default function ImpactDashboard() {
                 <Card className="hover:shadow-sm transition-shadow">
                   <CardContent className="p-5 flex items-center gap-4">
                     <div className="shrink-0 text-center">
-                      <p className="text-2xl font-bold text-primary tabular-nums">{format(new Date(snapshot.snapshot_date), "dd")}</p>
-                      <p className="text-xs text-muted-foreground">{format(new Date(snapshot.snapshot_date), "MMM yyyy")}</p>
+                      <p className="text-2xl font-bold text-primary tabular-nums">{fmtDate(snapshot.snapshot_date, "dd")}</p>
+                      <p className="text-xs text-muted-foreground">{fmtDate(snapshot.snapshot_date, "MMM yyyy")}</p>
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-semibold truncate">{snapshot.headline}</h3>

@@ -10,7 +10,7 @@ import { useDonorProfile, useDonorDonations, useDonorImpact } from "@/hooks/useD
 import { formatCurrency } from "@/lib/api";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Donation } from "@/types";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip,
 } from "recharts";
@@ -19,7 +19,7 @@ import { Heart, DollarSign, Calendar, Gift } from "lucide-react";
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"];
 
 const donationCols: ColumnDef<Donation>[] = [
-  { accessorKey: "donation_date", header: "Date", cell: ({ row }) => format(new Date(row.getValue("donation_date")), "MMM d, yyyy") },
+  { accessorKey: "donation_date", header: "Date", cell: ({ row }) => fmtDate(row.getValue("donation_date")) },
   { accessorKey: "donation_type", header: "Type", cell: ({ row }) => <Badge variant="outline">{row.getValue("donation_type")}</Badge> },
   { accessorKey: "amount", header: "Amount", cell: ({ row }) => <span className="font-medium tabular-nums">{formatCurrency(row.getValue("amount"))}</span> },
   { accessorKey: "campaign_name", header: "Campaign", cell: ({ row }) => row.getValue("campaign_name") || <span className="text-muted-foreground">-</span> },

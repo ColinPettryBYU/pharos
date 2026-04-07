@@ -14,7 +14,7 @@ import { useDonations, useDonationAllocations } from "@/hooks/useDonations";
 import { formatCurrency } from "@/lib/api";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Donation, RiskLevel } from "@/types";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -24,7 +24,7 @@ import { Mail, Phone, Globe, Calendar, DollarSign, TrendingUp, Heart, AlertTrian
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"];
 
 const donationCols: ColumnDef<Donation>[] = [
-  { accessorKey: "donation_date", header: "Date", cell: ({ row }) => format(new Date(row.getValue("donation_date")), "MMM d, yyyy") },
+  { accessorKey: "donation_date", header: "Date", cell: ({ row }) => fmtDate(row.getValue("donation_date")) },
   { accessorKey: "donation_type", header: "Type", cell: ({ row }) => <Badge variant="outline">{row.getValue("donation_type")}</Badge> },
   { accessorKey: "amount", header: "Amount", cell: ({ row }) => <span className="font-medium tabular-nums">{formatCurrency(row.getValue("amount"))}</span> },
   { accessorKey: "campaign_name", header: "Campaign", cell: ({ row }) => row.getValue("campaign_name") || <span className="text-muted-foreground">-</span> },
@@ -62,7 +62,7 @@ export default function DonorDetailPage() {
   const pieData = Object.entries(allocationByProgram).map(([name, value]) => ({ name, value: Math.round(value) }));
 
   const donationTimeline = donations.map((d) => ({
-    date: format(new Date(d.donation_date), "MMM yy"),
+    date: fmtDate(d.donation_date, "MMM yy"),
     amount: d.amount,
   })).sort((a, b) => a.date.localeCompare(b.date));
 
@@ -96,7 +96,7 @@ export default function DonorDetailPage() {
                   <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{supporter.email}</span>
                   {supporter.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{supporter.phone}</span>}
                   <span className="flex items-center gap-1"><Globe className="h-3.5 w-3.5" />{supporter.country}</span>
-                  <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Since {supporter.first_donation_date ? format(new Date(supporter.first_donation_date), "MMM yyyy") : "N/A"}</span>
+                  <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Since {fmtDate(supporter.first_donation_date, "MMM yyyy", "N/A")}</span>
                 </div>
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function DonorDetailPage() {
                 <h4 className="text-sm font-semibold">Key Factors</h4>
                 <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
                   <li>Donation frequency: {donations.length > 5 ? "Regular" : "Infrequent"}</li>
-                  <li>Last donation: {donations.length > 0 ? format(new Date(donations[donations.length - 1].donation_date), "MMM d, yyyy") : "N/A"}</li>
+                  <li>Last donation: {donations.length > 0 ? fmtDate(donations[donations.length - 1].donation_date, "MMM d, yyyy", "N/A") : "N/A"}</li>
                   <li>Campaign engagement: {donations.filter((d) => d.campaign_name).length} campaign donations</li>
                   <li>Recurring status: {donations.some((d) => d.is_recurring) ? "Has recurring" : "No recurring"}</li>
                 </ul>

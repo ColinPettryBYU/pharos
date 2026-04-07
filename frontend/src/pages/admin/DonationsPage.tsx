@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/select";
 import { useDonations, useCreateDonation } from "@/hooks/useDonations";
 import { formatCurrency } from "@/lib/api";
+import { fmtDate } from "@/lib/utils";
 import type { Donation } from "@/types";
-import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +41,7 @@ const columns: ColumnDef<Donation>[] = [
   {
     accessorKey: "donation_date",
     header: "Date",
-    cell: ({ row }) => <span className="tabular-nums">{format(new Date(row.getValue("donation_date")), "MMM d, yyyy")}</span>,
+    cell: ({ row }) => <span className="tabular-nums">{fmtDate(row.getValue("donation_date"))}</span>,
   },
   {
     accessorKey: "supporter",

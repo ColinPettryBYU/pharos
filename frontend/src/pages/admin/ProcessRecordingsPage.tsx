@@ -19,8 +19,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useProcessRecordings, useCreateProcessRecording } from "@/hooks/useProcessRecordings";
+import { fmtDate } from "@/lib/utils";
 import type { ProcessRecording } from "@/types";
-import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -47,7 +47,7 @@ const columns: ColumnDef<ProcessRecording>[] = [
   {
     accessorKey: "session_date",
     header: "Date",
-    cell: ({ row }) => <span className="tabular-nums text-sm">{format(new Date(row.getValue("session_date")), "MMM d, yyyy")}</span>,
+    cell: ({ row }) => <span className="tabular-nums text-sm">{fmtDate(row.getValue("session_date"))}</span>,
   },
   {
     accessorKey: "resident_id",

@@ -37,7 +37,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
+import { fmtDate } from "@/lib/utils";
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
 
   const trends = donationReport?.trends ?? (donationReport as any)?.data?.trends ?? [];
   const chartData = (Array.isArray(trends) ? trends : []).map((d: any) => ({
-    month: format(new Date(d.month + "-01"), "MMM"),
+    month: fmtDate(d.month ? d.month + "-01" : null, "MMM"),
     total: d.total,
   }));
 
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
                           <p className="text-sm font-medium">{activity.title}</p>
                           <p className="text-xs text-muted-foreground truncate">{activity.description}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {format(new Date(activity.timestamp), "MMM d, h:mm a")}
+                            {fmtDate(activity.timestamp, "MMM d, h:mm a")}
                           </p>
                         </div>
                       </motion.div>
