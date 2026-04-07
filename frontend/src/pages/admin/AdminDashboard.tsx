@@ -166,8 +166,8 @@ export default function AdminDashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="month" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                    <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                    <XAxis dataKey="month" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} label={{ value: "Month", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                    <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} label={{ value: "Amount (₱)", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                     <Tooltip
                       formatter={(value) => [formatCurrency(Number(value)), "Total"]}
                       contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px", fontSize: "12px" }}
@@ -192,8 +192,8 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={occupancyData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                    <YAxis type="category" dataKey="name" width={60} tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
+                    <XAxis type="number" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} label={{ value: "Count", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                    <YAxis type="category" dataKey="name" width={60} tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} label={{ value: "Safehouse", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                     <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px", fontSize: "12px" }} />
                     <Bar dataKey="capacity" fill="var(--color-muted)" radius={[0, 4, 4, 0]} animationBegin={200} animationDuration={800} />
                     <Bar dataKey="occupancy" fill="var(--color-primary)" radius={[0, 4, 4, 0]} animationBegin={400} animationDuration={800} />

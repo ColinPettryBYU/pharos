@@ -162,12 +162,12 @@ export default function ProcessRecordingsPage() {
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-2">
-              <Label>Resident ID</Label>
+              <Label>Resident ID <span className="text-destructive">*</span></Label>
               <Input type="number" {...form.register("ResidentId")} placeholder="Resident ID" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Session Type</Label>
+                <Label>Session Type <span className="text-destructive">*</span></Label>
                 <Select value={form.watch("SessionType")} onValueChange={(v) => form.setValue("SessionType", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -177,13 +177,13 @@ export default function ProcessRecordingsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Duration (min)</Label>
+                <Label>Duration (min) <span className="text-destructive">*</span></Label>
                 <Input type="number" {...form.register("SessionDurationMinutes")} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Starting State</Label>
+                <Label>Starting State <span className="text-destructive">*</span></Label>
                 <Select value={form.watch("EmotionalStateObserved")} onValueChange={(v) => form.setValue("EmotionalStateObserved", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -192,7 +192,7 @@ export default function ProcessRecordingsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Ending State</Label>
+                <Label>Ending State <span className="text-destructive">*</span></Label>
                 <Select value={form.watch("EmotionalStateEnd")} onValueChange={(v) => form.setValue("EmotionalStateEnd", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -202,7 +202,7 @@ export default function ProcessRecordingsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Session Narrative</Label>
+              <Label>Session Narrative <span className="text-destructive">*</span></Label>
               <Textarea {...form.register("SessionNarrative")} rows={4} placeholder="Describe the session..." />
             </div>
             <div className="space-y-2">
@@ -218,6 +218,7 @@ export default function ProcessRecordingsPage() {
               <div className="flex items-center gap-2"><Switch checked={form.watch("ConcernsFlagged")} onCheckedChange={(v) => form.setValue("ConcernsFlagged", v)} /><Label>Concerns</Label></div>
               <div className="flex items-center gap-2"><Switch checked={form.watch("ReferralMade")} onCheckedChange={(v) => form.setValue("ReferralMade", v)} /><Label>Referral</Label></div>
             </div>
+            <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <Button type="submit" className="w-full" disabled={createRecording.isPending}>
               {createRecording.isPending ? "Saving..." : "Save Recording"}
             </Button>

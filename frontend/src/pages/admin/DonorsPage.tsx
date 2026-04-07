@@ -175,28 +175,28 @@ export default function DonorsPage() {
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>First Name</Label>
+                <Label>First Name <span className="text-destructive">*</span></Label>
                 <Input {...form.register("FirstName")} placeholder="First name" />
                 {form.formState.errors.FirstName && <p className="text-xs text-destructive">{form.formState.errors.FirstName.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Last Name</Label>
+                <Label>Last Name <span className="text-destructive">*</span></Label>
                 <Input {...form.register("LastName")} placeholder="Last name" />
                 {form.formState.errors.LastName && <p className="text-xs text-destructive">{form.formState.errors.LastName.message}</p>}
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Display Name</Label>
+              <Label>Display Name <span className="text-destructive">*</span></Label>
               <Input {...form.register("DisplayName")} placeholder="Display name" />
               {form.formState.errors.DisplayName && <p className="text-xs text-destructive">{form.formState.errors.DisplayName.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>Email <span className="text-destructive">*</span></Label>
               <Input type="email" {...form.register("Email")} placeholder="email@example.com" />
               {form.formState.errors.Email && <p className="text-xs text-destructive">{form.formState.errors.Email.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Supporter Type</Label>
+              <Label>Supporter Type <span className="text-destructive">*</span></Label>
               <Select value={form.watch("SupporterType")} onValueChange={(v) => form.setValue("SupporterType", v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
@@ -224,9 +224,10 @@ export default function DonorsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Country</Label>
+              <Label>Country <span className="text-destructive">*</span></Label>
               <Input {...form.register("Country")} placeholder="Country" />
             </div>
+            <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <div className="pt-4">
               <Button type="submit" className="w-full" disabled={createSupporter.isPending}>
                 {createSupporter.isPending ? "Adding..." : "Add Supporter"}

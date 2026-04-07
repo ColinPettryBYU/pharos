@@ -60,7 +60,7 @@ const columns: ColumnDef<HomeVisitation>[] = [
   },
   {
     accessorKey: "family_cooperation_level",
-    header: "Cooperation",
+    header: "Family Cooperation",
     cell: ({ row }) => {
       const level = row.getValue("family_cooperation_level") as string;
       const color = level === "Highly Cooperative" ? "text-success" : level === "Uncooperative" ? "text-destructive" : "text-muted-foreground";
@@ -164,11 +164,11 @@ export default function HomeVisitationsPage() {
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>Resident ID</Label><Input type="number" {...form.register("ResidentId")} /></div>
-              <div className="space-y-2"><Label>Visit Date</Label><Input type="date" {...form.register("VisitDate")} /></div>
+              <div className="space-y-2"><Label>Resident ID <span className="text-destructive">*</span></Label><Input type="number" {...form.register("ResidentId")} /></div>
+              <div className="space-y-2"><Label>Visit Date <span className="text-destructive">*</span></Label><Input type="date" {...form.register("VisitDate")} /></div>
             </div>
             <div className="space-y-2">
-              <Label>Visit Type</Label>
+              <Label>Visit Type <span className="text-destructive">*</span></Label>
               <Select value={form.watch("VisitType")} onValueChange={(v) => form.setValue("VisitType", v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
@@ -180,13 +180,13 @@ export default function HomeVisitationsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2"><Label>Location Visited</Label><Input {...form.register("LocationVisited")} placeholder="Family residence..." /></div>
+            <div className="space-y-2"><Label>Location Visited <span className="text-destructive">*</span></Label><Input {...form.register("LocationVisited")} placeholder="Family residence..." /></div>
             <div className="space-y-2"><Label>Family Members Present</Label><Input {...form.register("FamilyMembersPresent")} placeholder="Mother, grandmother..." /></div>
-            <div className="space-y-2"><Label>Purpose</Label><Textarea {...form.register("Purpose")} rows={2} /></div>
+            <div className="space-y-2"><Label>Purpose <span className="text-destructive">*</span></Label><Textarea {...form.register("Purpose")} rows={2} /></div>
             <div className="space-y-2"><Label>Observations</Label><Textarea {...form.register("Observations")} rows={3} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Cooperation Level</Label>
+                <Label>Family Cooperation Level <span className="text-destructive">*</span></Label>
                 <Select value={form.watch("FamilyCooperationLevel")} onValueChange={(v) => form.setValue("FamilyCooperationLevel", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -198,7 +198,7 @@ export default function HomeVisitationsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Outcome</Label>
+                <Label>Outcome <span className="text-destructive">*</span></Label>
                 <Select value={form.watch("VisitOutcome")} onValueChange={(v) => form.setValue("VisitOutcome", v)}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
@@ -217,6 +217,7 @@ export default function HomeVisitationsPage() {
             {form.watch("FollowUpNeeded") && (
               <div className="space-y-2"><Label>Follow-up Notes</Label><Textarea {...form.register("FollowUpNotes")} rows={2} /></div>
             )}
+            <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <Button type="submit" className="w-full" disabled={createVisit.isPending}>
               {createVisit.isPending ? "Saving..." : "Log Visit"}
             </Button>

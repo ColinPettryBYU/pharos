@@ -165,12 +165,12 @@ export default function DonationsPage() {
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-2">
-              <Label>Supporter ID</Label>
+              <Label>Supporter ID <span className="text-destructive">*</span></Label>
               <Input type="number" {...form.register("SupporterId")} placeholder="Supporter ID" />
               {form.formState.errors.SupporterId && <p className="text-xs text-destructive">{form.formState.errors.SupporterId.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Donation Type</Label>
+              <Label>Donation Type <span className="text-destructive">*</span></Label>
               <Select value={form.watch("DonationType")} onValueChange={(v) => form.setValue("DonationType", v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
@@ -183,11 +183,11 @@ export default function DonationsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Amount (PHP)</Label>
+              <Label>Amount (PHP) <span className="text-destructive">*</span></Label>
               <Input type="number" step="0.01" {...form.register("Amount")} placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <Label>Date</Label>
+              <Label>Date <span className="text-destructive">*</span></Label>
               <Input type="date" {...form.register("DonationDate")} />
             </div>
             <div className="flex items-center gap-3">
@@ -219,6 +219,7 @@ export default function DonationsPage() {
                 </SelectContent>
               </Select>
             </div>
+            <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <div className="pt-4">
               <Button type="submit" className="w-full" disabled={createDonation.isPending}>
                 {createDonation.isPending ? "Saving..." : "Log Donation"}

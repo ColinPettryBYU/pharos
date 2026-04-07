@@ -189,8 +189,8 @@ function DonationTrendsTab() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} />
-                        <YAxis tick={axisTick} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
+                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} label={{ value: "Month", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} label={{ value: "Amount (₱)", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip formatter={(value) => [formatCurrency(Number(value)), "Total"]} contentStyle={tooltipStyle} />
                         <Area type="monotone" dataKey="total" stroke="var(--color-primary)" fill="url(#gradTotal)" strokeWidth={2} animationBegin={200} animationDuration={1000} animationEasing="ease-out" />
                       </AreaChart>
@@ -212,8 +212,8 @@ function DonationTrendsTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={recurringData}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} />
-                        <YAxis tick={axisTick} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
+                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} label={{ value: "Month", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} label={{ value: "Amount (₱)", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip formatter={(value) => [formatCurrency(Number(value))]} contentStyle={tooltipStyle} />
                         <Legend />
                         <Bar dataKey="recurring" name="Recurring" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />
@@ -237,8 +237,8 @@ function DonationTrendsTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} />
-                        <YAxis tick={axisTick} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} />
+                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} label={{ value: "Month", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`} label={{ value: "Amount (₱)", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip formatter={(value) => [formatCurrency(Number(value))]} contentStyle={tooltipStyle} />
                         <Legend />
                         <Line type="monotone" dataKey="monetary" name="Monetary" stroke="var(--color-chart-1)" strokeWidth={2} dot={false} animationBegin={200} animationDuration={1000} />
@@ -338,8 +338,8 @@ function ResidentOutcomesTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={educationProgress}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} />
-                        <YAxis tick={axisTick} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} label={{ value: "Month", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} domain={[0, 100]} tickFormatter={(v) => `${v}%`} label={{ value: "Progress (%)", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, "Avg Progress"]} contentStyle={tooltipStyle} />
                         <Line type="monotone" dataKey="avgProgress" name="Avg Progress" stroke="var(--color-chart-1)" strokeWidth={2} dot={{ r: 3, fill: "var(--color-chart-1)" }} animationBegin={200} animationDuration={1000} />
                       </LineChart>
@@ -367,8 +367,8 @@ function ResidentOutcomesTab() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} />
-                        <YAxis tick={axisTick} domain={[0, 5]} />
+                        <XAxis dataKey="month" tick={axisTick} angle={-30} textAnchor="end" height={50} label={{ value: "Month", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} domain={[0, 5]} label={{ value: "Health Score", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}`, "Avg Score"]} contentStyle={tooltipStyle} />
                         <Area type="monotone" dataKey="avgScore" name="Avg Health Score" stroke="var(--color-chart-2)" fill="url(#gradHealth)" strokeWidth={2} animationBegin={200} animationDuration={1000} />
                       </AreaChart>
@@ -415,7 +415,7 @@ function ResidentOutcomesTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={reintegrationBreakdown} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                        <XAxis type="number" tick={axisTick} />
+                        <XAxis type="number" tick={axisTick} label={{ value: "Residents", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <YAxis type="category" dataKey="status" width={100} tick={axisTick} />
                         <Tooltip contentStyle={tooltipStyle} />
                         <Bar dataKey="count" name="Residents" fill="var(--color-primary)" radius={[0, 4, 4, 0]} animationBegin={200} animationDuration={800} />
@@ -446,8 +446,8 @@ function ResidentOutcomesTab() {
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={interventionPlans}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="category" tick={axisTick} angle={-20} textAnchor="end" height={50} />
-                      <YAxis tick={axisTick} />
+                      <XAxis dataKey="category" tick={axisTick} angle={-20} textAnchor="end" height={50} label={{ value: "Category", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                      <YAxis tick={axisTick} label={{ value: "Plans", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                       <Tooltip contentStyle={tooltipStyle} />
                       <Legend />
                       <Bar dataKey="completed" name="Completed" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
@@ -568,8 +568,8 @@ function SafehouseComparisonsTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={occupancyData}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="name" tick={axisTick} />
-                        <YAxis tick={axisTick} />
+                        <XAxis dataKey="name" tick={axisTick} label={{ value: "Safehouse", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} label={{ value: "Count", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={tooltipStyle} />
                         <Legend />
                         <Bar dataKey="capacity" name="Capacity" fill="var(--color-muted)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />
@@ -593,8 +593,8 @@ function SafehouseComparisonsTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={safehouseSummary}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="safehouse_code" tick={axisTick} />
-                        <YAxis tick={axisTick} />
+                        <XAxis dataKey="safehouse_code" tick={axisTick} label={{ value: "Safehouse", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} label={{ value: "Score", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={tooltipStyle} />
                         <Legend />
                         <Bar dataKey="avgEducation" name="Avg Education %" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />
@@ -618,8 +618,8 @@ function SafehouseComparisonsTab() {
                     <ResponsiveContainer width="100%" height={280}>
                       <BarChart data={safehouseSummary}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="safehouse_code" tick={axisTick} />
-                        <YAxis tick={axisTick} />
+                        <XAxis dataKey="safehouse_code" tick={axisTick} label={{ value: "Safehouse", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} label={{ value: "Incidents", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={tooltipStyle} />
                         <Bar dataKey="totalIncidents" name="Total Incidents" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />
                       </BarChart>
@@ -750,8 +750,8 @@ function SocialMediaTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={platformEngagement}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="platform" tick={axisTick} />
-                        <YAxis tick={axisTick} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                        <XAxis dataKey="platform" tick={axisTick} label={{ value: "Platform", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} label={{ value: "Engagement Rate", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip formatter={(value) => [`${(Number(value) * 100).toFixed(2)}%`, "Avg Engagement"]} contentStyle={tooltipStyle} />
                         <Bar dataKey="avgEngagement" name="Avg Engagement Rate" fill="var(--color-primary)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800}>
                           {platformEngagement.map((_, i) => (
@@ -777,7 +777,7 @@ function SocialMediaTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={postTypePerformance} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                        <XAxis type="number" tick={axisTick} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                        <XAxis type="number" tick={axisTick} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} label={{ value: "Engagement Rate", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <YAxis type="category" dataKey="postType" width={120} tick={{ ...axisTick, fontSize: 11 }} />
                         <Tooltip formatter={(value) => [`${(Number(value) * 100).toFixed(2)}%`]} contentStyle={tooltipStyle} />
                         <Bar dataKey="avgEngagement" name="Avg Engagement" fill="var(--color-chart-1)" radius={[0, 4, 4, 0]} animationBegin={200} animationDuration={800} />
@@ -800,8 +800,8 @@ function SocialMediaTab() {
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={contentTopicPerformance}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="topic" tick={axisTick} angle={-30} textAnchor="end" height={60} />
-                        <YAxis tick={axisTick} />
+                        <XAxis dataKey="topic" tick={axisTick} angle={-30} textAnchor="end" height={60} label={{ value: "Topic", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} label={{ value: "Value", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={tooltipStyle} />
                         <Legend />
                         <Bar dataKey="avgEngagement" name="Engagement" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />

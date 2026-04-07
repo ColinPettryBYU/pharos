@@ -141,9 +141,9 @@ export default function SocialMediaPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="compose">Compose</TabsTrigger>
+          <TabsTrigger value="compose">Create Post</TabsTrigger>
           <TabsTrigger value="comments">Comments Inbox</TabsTrigger>
-          <TabsTrigger value="recommendations">ML Insights</TabsTrigger>
+          <TabsTrigger value="recommendations">Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="analytics" className="space-y-6">
@@ -167,8 +167,8 @@ export default function SocialMediaPage() {
                     <ResponsiveContainer width="100%" height={280}>
                       <LineChart data={engagementOverTime}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                        <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
+                        <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} label={{ value: "Date", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} label={{ value: "Engagement Rate", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
                         <Line type="monotone" dataKey="engagement" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} animationDuration={1000} />
                       </LineChart>
@@ -182,8 +182,8 @@ export default function SocialMediaPage() {
                     <ResponsiveContainer width="100%" height={280}>
                       <BarChart data={contentPerformance}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="type" tick={{ fill: "var(--color-muted-foreground)", fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
-                        <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
+                        <XAxis dataKey="type" tick={{ fill: "var(--color-muted-foreground)", fontSize: 10 }} angle={-20} textAnchor="end" height={60} label={{ value: "Content Type", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} label={{ value: "Avg Engagement", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
                         <Bar dataKey="avgEngagement" fill="var(--color-primary)" radius={[4, 4, 0, 0]} animationDuration={800} />
                       </BarChart>
@@ -199,7 +199,7 @@ export default function SocialMediaPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <Card>
-                <CardHeader><CardTitle className="text-lg">Compose Post</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">Create Post</CardTitle></CardHeader>
                 <CardContent>
                   <form onSubmit={onCompose} className="space-y-4">
                     <div className="space-y-2">
