@@ -1,36 +1,36 @@
 import { useState } from "react";
 import { motion } from "motion/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { StatCard } from "@/components/shared/StatCard";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { mockSocialMediaPosts, mockSocialComments } from "@/lib/mock-data";
+import { useSocialPosts, useSocialComments, useComposePost, useReplyToComment } from "@/hooks/useSocialMedia";
+import { useSocialMediaRecommendations } from "@/hooks/useML";
 import { cn } from "@/lib/utils";
 import {
-  BarChart, Bar, LineChart, Line, ScatterChart, Scatter,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
   Globe, Camera, MessageSquare, Play, Briefcase,
-  Send, Upload, Hash, Calendar, Sparkles, MessageCircle,
+  Send, Hash, Calendar, Sparkles, MessageCircle,
   Eye, MousePointerClick, Heart, TrendingUp, DollarSign,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 import { toast } from "sonner";
 import type { Platform } from "@/types";
-import type { ReactElement } from "react";
 
 const platforms: { value: Platform | "All"; label: string; icon: React.ElementType }[] = [
   { value: "All", label: "All", icon: TrendingUp },
@@ -42,46 +42,55 @@ const platforms: { value: Platform | "All"; label: string; icon: React.ElementTy
   { value: "YouTube", label: "YouTube", icon: Play },
 ];
 
-const stagger = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-};
-const item = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0 },
-};
+const stagger = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
+const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-/** Avoid RangeError from date-fns when strings parse as Invalid Date (Safari / bad API data). */
-function formatSafe(
-  value: string | null | undefined,
-  dateFormat: string,
-  fallback = "—"
-): string {
+function formatSafe(value: string | null | undefined, dateFormat: string, fallback = "—"): string {
   if (value == null || value.trim() === "") return fallback;
-  const trimmed = value.trim();
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
-    ? parseISO(trimmed)
-    : new Date(trimmed);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(value.trim()) ? parseISO(value.trim()) : new Date(value.trim());
   return isValid(d) ? format(d, dateFormat) : fallback;
 }
+
+const composeSchema = z.object({
+  Platforms: z.array(z.string()).min(1, "Select at least one platform"),
+  Caption: z.string().min(1, "Caption is required"),
+  ContentTopic: z.string().optional(),
+  CallToActionType: z.string().optional(),
+  Hashtags: z.string().optional(),
+  ScheduledTime: z.string().optional(),
+});
+
+type ComposeForm = z.infer<typeof composeSchema>;
 
 export default function SocialMediaPage() {
   const [activePlatform, setActivePlatform] = useState<Platform | "All">("All");
   const [activeTab, setActiveTab] = useState("analytics");
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
 
-  const filteredPosts =
-    activePlatform === "All"
-      ? mockSocialMediaPosts
-      : mockSocialMediaPosts.filter((p) => p.platform === activePlatform);
+  const platformFilter = activePlatform !== "All" ? { platform: activePlatform } : {};
+  const { data: postsData, isLoading: postsLoading } = useSocialPosts(platformFilter);
+  const { data: commentsData } = useSocialComments(platformFilter);
+  const { data: mlRecs } = useSocialMediaRecommendations();
+  const composePost = useComposePost();
+  const replyToComment = useReplyToComment();
 
-  const totalReach = filteredPosts.reduce((s, p) => s + p.reach, 0);
-  const avgEngagement = filteredPosts.length > 0 ? filteredPosts.reduce((s, p) => s + p.engagement_rate, 0) / filteredPosts.length : 0;
-  const totalClicks = filteredPosts.reduce((s, p) => s + p.click_throughs, 0);
-  const totalReferrals = filteredPosts.reduce((s, p) => s + p.donation_referrals, 0);
+  const posts = Array.isArray(postsData) ? postsData : (postsData?.data ?? []);
+  // Backend returns { comments, totalCount, page, pageSize } or may still return a flat array
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const commentsRaw = commentsData as any;
+  const comments = Array.isArray(commentsRaw)
+    ? commentsRaw
+    : Array.isArray(commentsRaw?.comments)
+      ? commentsRaw.comments
+      : [];
 
-  // Content type performance
+  const totalReach = posts.reduce((s, p) => s + p.reach, 0);
+  const avgEngagement = posts.length > 0 ? posts.reduce((s, p) => s + p.engagement_rate, 0) / posts.length : 0;
+  const totalClicks = posts.reduce((s, p) => s + p.click_throughs, 0);
+  const totalReferrals = posts.reduce((s, p) => s + p.donation_referrals, 0);
+
   const contentPerformance = Object.entries(
-    filteredPosts.reduce<Record<string, { count: number; engagement: number }>>((acc, p) => {
+    posts.reduce<Record<string, { count: number; engagement: number }>>((acc, p) => {
       if (!acc[p.post_type]) acc[p.post_type] = { count: 0, engagement: 0 };
       acc[p.post_type].count++;
       acc[p.post_type].engagement += p.engagement_rate;
@@ -89,60 +98,42 @@ export default function SocialMediaPage() {
     }, {})
   ).map(([type, data]) => ({ type, avgEngagement: +(data.engagement / data.count).toFixed(2) }));
 
-  // Engagement over time
-  const engagementOverTime = filteredPosts
+  const engagementOverTime = posts
     .filter((p) => p.created_at)
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map((p) => ({
-      date: formatSafe(p.created_at, "MMM d"),
-      engagement: p.engagement_rate,
-      reach: p.reach,
-    }));
+    .map((p) => ({ date: formatSafe(p.created_at, "MMM d"), engagement: p.engagement_rate, reach: p.reach }));
 
-  // Scatter: engagement vs donation referrals
-  const scatterData = filteredPosts.map((p) => ({ engagement: p.engagement_rate, referrals: p.donation_referrals, name: p.post_type }));
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const togglePlatform = (p: string) => {
+    setSelectedPlatforms((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
+  };
 
-  // Heatmap data
-  const heatmapData: { day: string; hour: number; value: number }[] = [];
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  days.forEach((day) => {
-    for (let hour = 6; hour <= 22; hour++) {
-      const matching = filteredPosts.filter(
-        (p) => (p.day_of_week ?? "").startsWith(day) && p.post_hour === hour
-      );
-      const avgEng = matching.length > 0 ? matching.reduce((s, p) => s + p.engagement_rate, 0) / matching.length : 0;
-      heatmapData.push({ day, hour, value: +avgEng.toFixed(2) });
-    }
+  const form = useForm<ComposeForm>({
+    resolver: zodResolver(composeSchema),
+    defaultValues: { Platforms: [], Caption: "", ContentTopic: "", CallToActionType: "", Hashtags: "", ScheduledTime: "" },
   });
 
-  const filteredComments =
-    activePlatform === "All"
-      ? mockSocialComments
-      : mockSocialComments.filter((c) => c.platform === activePlatform);
+  const onCompose = form.handleSubmit(async (values) => {
+    try {
+      await composePost.mutateAsync({ ...values, Platforms: selectedPlatforms } as unknown as Record<string, unknown>);
+      toast.success("Post scheduled!");
+      form.reset();
+      setSelectedPlatforms([]);
+    } catch { /* handled by api client */ }
+  });
 
   return (
     <div>
       <PageHeader
         title="Social Media Command Center"
         description="Manage posts, track analytics, and engage with your audience."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/admin" },
-          { label: "Social Media" },
-        ]}
+        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Social Media" }]}
       />
 
-      {/* Platform Tabs */}
       <div className="mb-6 flex gap-1 overflow-x-auto pb-2">
         {platforms.map(({ value, label, icon: Icon }) => (
-          <Button
-            key={value}
-            variant={activePlatform === value ? "default" : "ghost"}
-            size="sm"
-            className="gap-1.5 shrink-0"
-            onClick={() => setActivePlatform(value)}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
+          <Button key={value} variant={activePlatform === value ? "default" : "ghost"} size="sm" className="gap-1.5 shrink-0" onClick={() => setActivePlatform(value)}>
+            <Icon className="h-4 w-4" />{label}
           </Button>
         ))}
       </div>
@@ -155,165 +146,120 @@ export default function SocialMediaPage() {
           <TabsTrigger value="recommendations">ML Insights</TabsTrigger>
         </TabsList>
 
-        {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <motion.div variants={item}><StatCard title="Total Reach" value={totalReach} icon={Eye} /></motion.div>
-            <motion.div variants={item}><StatCard title="Avg Engagement" value={avgEngagement} format="percent" icon={Heart} /></motion.div>
-            <motion.div variants={item}><StatCard title="Click-throughs" value={totalClicks} icon={MousePointerClick} /></motion.div>
-            <motion.div variants={item}><StatCard title="Donation Referrals" value={totalReferrals} icon={DollarSign} /></motion.div>
-          </motion.div>
+          {postsLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+            </div>
+          ) : (
+            <>
+              <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <motion.div variants={item}><StatCard title="Total Reach" value={totalReach} icon={Eye} /></motion.div>
+                <motion.div variants={item}><StatCard title="Avg Engagement" value={avgEngagement} format="percent" icon={Heart} /></motion.div>
+                <motion.div variants={item}><StatCard title="Click-throughs" value={totalClicks} icon={MousePointerClick} /></motion.div>
+                <motion.div variants={item}><StatCard title="Donation Referrals" value={totalReferrals} icon={DollarSign} /></motion.div>
+              </motion.div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Engagement Over Time</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={engagementOverTime}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                    <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
-                    <Line type="monotone" dataKey="engagement" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} animationDuration={1000} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader><CardTitle className="text-lg">Engagement Over Time</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <LineChart data={engagementOverTime}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
+                        <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
+                        <Line type="monotone" dataKey="engagement" stroke="var(--color-primary)" strokeWidth={2} dot={{ r: 3 }} animationDuration={1000} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Content Type Performance</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={contentPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="type" tick={{ fill: "var(--color-muted-foreground)", fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
-                    <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
-                    <Bar dataKey="avgEngagement" fill="var(--color-primary)" radius={[4, 4, 0, 0]} animationDuration={800} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Social → Donation Correlation</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <ScatterChart>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="engagement" name="Engagement %" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                    <YAxis dataKey="referrals" name="Referrals" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
-                    <Scatter data={scatterData} fill="var(--color-primary)" animationDuration={1000}>
-                      {scatterData.map((_, i) => <Cell key={i} fill={`var(--color-chart-${(i % 5) + 1})`} />)}
-                    </Scatter>
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Posting Heatmap</CardTitle></CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <div className="grid gap-0.5" style={{ gridTemplateColumns: `60px repeat(17, 1fr)` }}>
-                    <div />
-                    {Array.from({ length: 17 }, (_, i) => (
-                      <div key={i} className="text-center text-[10px] text-muted-foreground">{i + 6}</div>
-                    ))}
-                    {days.map((day) => (
-                      <>
-                        <div key={day} className="text-xs text-muted-foreground flex items-center">{day}</div>
-                        {Array.from({ length: 17 }, (_, i) => {
-                          const cell = heatmapData.find((h) => h.day === day && h.hour === i + 6);
-                          const intensity = Math.min((cell?.value ?? 0) / 10, 1);
-                          return (
-                            <div
-                              key={`${day}-${i}`}
-                              className="aspect-square rounded-sm"
-                              style={{ backgroundColor: `oklch(0.535 ${0.15 * intensity} 250 / ${0.1 + intensity * 0.8})` }}
-                              title={`${day} ${i + 6}:00 — ${cell?.value ?? 0}% engagement`}
-                            />
-                          );
-                        })}
-                      </>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Card>
+                  <CardHeader><CardTitle className="text-lg">Content Type Performance</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={contentPerformance}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <XAxis dataKey="type" tick={{ fill: "var(--color-muted-foreground)", fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                        <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
+                        <Bar dataKey="avgEngagement" fill="var(--color-primary)" radius={[4, 4, 0, 0]} animationDuration={800} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </TabsContent>
 
-        {/* Compose Tab */}
         <TabsContent value="compose">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader><CardTitle className="text-lg">Compose Post</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Platforms</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {["Facebook", "Instagram", "Twitter", "LinkedIn", "TikTok", "YouTube"].map((p) => (
-                        <Badge key={p} variant="outline" className="cursor-pointer hover:bg-primary/10 transition-colors">{p}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Caption</Label>
-                    <Textarea placeholder="Write your caption here..." rows={5} />
-                    <p className="text-xs text-muted-foreground text-right">0 / 2200 characters</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Media</Label>
-                    <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground hover:border-primary/50 transition-colors cursor-pointer">
-                      <Upload className="mx-auto h-8 w-8 mb-2" />
-                      <p className="text-sm">Drag & drop media here or click to upload</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                <CardContent>
+                  <form onSubmit={onCompose} className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Content Topic</Label>
-                      <Select>
-                        <SelectTrigger><SelectValue placeholder="Select topic" /></SelectTrigger>
-                        <SelectContent>
-                          {["Education", "Health", "Reintegration", "DonorImpact", "SafehouseLife", "Gratitude", "AwarenessRaising"].map((t) => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Platforms</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Facebook", "Instagram", "Twitter", "LinkedIn", "TikTok", "YouTube"].map((p) => (
+                          <Badge
+                            key={p}
+                            variant={selectedPlatforms.includes(p) ? "default" : "outline"}
+                            className="cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={() => togglePlatform(p)}
+                          >
+                            {p}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Call to Action</Label>
-                      <Select>
-                        <SelectTrigger><SelectValue placeholder="Select CTA" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="DonateNow">Donate Now</SelectItem>
-                          <SelectItem value="LearnMore">Learn More</SelectItem>
-                          <SelectItem value="ShareStory">Share Story</SelectItem>
-                          <SelectItem value="SignUp">Sign Up</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label>Caption</Label>
+                      <Textarea {...form.register("Caption")} placeholder="Write your caption here..." rows={5} />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-1"><Hash className="h-3.5 w-3.5" />Hashtags</Label>
-                    <Input placeholder="#PharosHope #ProtectChildren" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Schedule</Label>
-                    <Input type="datetime-local" />
-                  </div>
-                  <div className="flex gap-3">
-                    <Button className="flex-1 gap-2" onClick={() => toast.success("Post scheduled!")}>
-                      <Send className="h-4 w-4" />
-                      Schedule Post
-                    </Button>
-                    <Button variant="outline" className="gap-2" onClick={() => toast.success("Post published!")}>
-                      Post Now
-                    </Button>
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Content Topic</Label>
+                        <Select value={form.watch("ContentTopic") ?? ""} onValueChange={(v) => form.setValue("ContentTopic", v)}>
+                          <SelectTrigger><SelectValue placeholder="Select topic" /></SelectTrigger>
+                          <SelectContent>
+                            {["Education", "Health", "Reintegration", "DonorImpact", "SafehouseLife", "Gratitude", "AwarenessRaising"].map((t) => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Call to Action</Label>
+                        <Select value={form.watch("CallToActionType") ?? ""} onValueChange={(v) => form.setValue("CallToActionType", v)}>
+                          <SelectTrigger><SelectValue placeholder="Select CTA" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DonateNow">Donate Now</SelectItem>
+                            <SelectItem value="LearnMore">Learn More</SelectItem>
+                            <SelectItem value="ShareStory">Share Story</SelectItem>
+                            <SelectItem value="SignUp">Sign Up</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1"><Hash className="h-3.5 w-3.5" />Hashtags</Label>
+                      <Input {...form.register("Hashtags")} placeholder="#PharosHope #ProtectChildren" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Schedule</Label>
+                      <Input type="datetime-local" {...form.register("ScheduledTime")} />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button type="submit" className="flex-1 gap-2" disabled={composePost.isPending}>
+                        <Send className="h-4 w-4" />{composePost.isPending ? "Posting..." : "Schedule Post"}
+                      </Button>
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             </div>
@@ -321,73 +267,96 @@ export default function SocialMediaPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    AI Recommendations
+                    <Sparkles className="h-4 w-4 text-primary" />AI Recommendations
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                   <div className="rounded-lg bg-primary/5 p-3">
                     <p className="font-medium text-primary">Best Time to Post</p>
-                    <p className="text-muted-foreground">Wednesday 10:00 AM — 2.3x higher engagement</p>
+                    <p className="text-muted-foreground">
+                      {mlRecs?.best_post_time ? `${mlRecs.best_post_time.day} ${mlRecs.best_post_time.hour}:00` : "Wednesday 10:00 AM"} — higher engagement
+                    </p>
                   </div>
                   <div className="rounded-lg bg-success/5 p-3">
                     <p className="font-medium text-success">Recommended Content</p>
-                    <p className="text-muted-foreground">Impact Story posts drive 45% more donations</p>
+                    <p className="text-muted-foreground">
+                      {mlRecs?.recommended_content_type ?? "ImpactStory"} posts drive more donations
+                    </p>
                   </div>
-                  <div className="rounded-lg bg-accent/5 p-3">
-                    <p className="font-medium text-accent-foreground">Platform Tip</p>
-                    <p className="text-muted-foreground">Instagram Reels get 3x reach vs static photos</p>
-                  </div>
+                  {mlRecs?.campaign_insights?.map((insight, i) => (
+                    <div key={i} className="rounded-lg bg-accent/5 p-3">
+                      <p className="text-muted-foreground">{insight}</p>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             </div>
           </div>
         </TabsContent>
 
-        {/* Comments Inbox */}
         <TabsContent value="comments">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" />
-                Comments Inbox
-                <Badge variant="secondary" className="ml-2">{filteredComments.filter((c) => !c.is_read).length} unread</Badge>
+                <MessageCircle className="h-4 w-4" />Comments Inbox
+                <Badge variant="secondary" className="ml-2">{comments.filter((c) => !c.is_read).length} unread</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
-                {filteredComments.map((comment) => {
-                  const PlatformIcon = platforms.find((p) => p.value === comment.platform)?.icon || MessageCircle;
-                  return (
-                    <motion.div
-                      key={comment.comment_id}
-                      variants={item}
-                      className={cn("flex gap-3 rounded-lg border p-4 transition-colors", !comment.is_read && "bg-primary/5 border-primary/20")}
-                    >
-                      <PlatformIcon className="h-4 w-4 mt-1 shrink-0 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{comment.commenter_name}</span>
-                          <Badge variant="outline" className="text-xs">{comment.platform}</Badge>
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {formatSafe(comment.timestamp, "MMM d, h:mm a")}
-                          </span>
+              {comments.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No comments yet</p>
+              ) : (
+                <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
+                  {comments.map((comment) => {
+                    const PlatformIcon = platforms.find((p) => p.value === comment.platform)?.icon || MessageCircle;
+                    return (
+                      <motion.div
+                        key={comment.comment_id}
+                        variants={item}
+                        className={cn("flex gap-3 rounded-lg border p-4 transition-colors", !comment.is_read && "bg-primary/5 border-primary/20")}
+                      >
+                        <PlatformIcon className="h-4 w-4 mt-1 shrink-0 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{comment.commenter_name}</span>
+                            <Badge variant="outline" className="text-xs">{comment.platform}</Badge>
+                            <span className="text-xs text-muted-foreground ml-auto">{formatSafe(comment.timestamp, "MMM d, h:mm a")}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">{comment.comment_text}</p>
+                          <div className="mt-2 flex gap-2">
+                            <Input
+                              placeholder="Reply..."
+                              className="h-8 text-sm"
+                              value={replyTexts[comment.comment_id] || ""}
+                              onChange={(e) => setReplyTexts((prev) => ({ ...prev, [comment.comment_id]: e.target.value }))}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={replyToComment.isPending}
+                              onClick={async () => {
+                                const text = replyTexts[comment.comment_id];
+                                if (!text) return;
+                                try {
+                                  await replyToComment.mutateAsync({ commentId: comment.comment_id, reply: text, platform: comment.platform });
+                                  toast.success("Reply sent!");
+                                  setReplyTexts((prev) => ({ ...prev, [comment.comment_id]: "" }));
+                                } catch { /* handled */ }
+                              }}
+                            >
+                              Reply
+                            </Button>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">{comment.comment_text}</p>
-                        <div className="mt-2 flex gap-2">
-                          <Input placeholder="Reply..." className="h-8 text-sm" />
-                          <Button size="sm" variant="outline" onClick={() => toast.success("Reply sent!")}>Reply</Button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ML Recommendations */}
         <TabsContent value="recommendations">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
@@ -396,8 +365,12 @@ export default function SocialMediaPage() {
                 <h3 className="text-lg font-semibold">Best Time to Post</h3>
                 <p className="text-muted-foreground text-sm mt-1">Based on historical engagement patterns</p>
                 <div className="mt-4 rounded-lg bg-primary/5 p-4">
-                  <p className="text-2xl font-bold">Wednesday, 10:00 AM</p>
-                  <p className="text-sm text-muted-foreground">Predicted engagement rate: 6.8%</p>
+                  <p className="text-2xl font-bold">
+                    {mlRecs?.best_post_time ? `${mlRecs.best_post_time.day}, ${mlRecs.best_post_time.hour}:00` : "Loading..."}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Predicted engagement rate: {mlRecs?.predicted_engagement_rate ? `${mlRecs.predicted_engagement_rate}%` : "—"}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -407,35 +380,9 @@ export default function SocialMediaPage() {
                 <h3 className="text-lg font-semibold">Content That Drives Donations</h3>
                 <p className="text-muted-foreground text-sm mt-1">From social media optimizer model</p>
                 <ul className="mt-4 space-y-2 text-sm">
-                  <li className="flex justify-between"><span>Impact Stories</span><span className="font-medium text-success">+45% donations</span></li>
-                  <li className="flex justify-between"><span>Fundraising Appeals</span><span className="font-medium text-success">+32% donations</span></li>
-                  <li className="flex justify-between"><span>Video content</span><span className="font-medium text-success">+28% engagement</span></li>
-                  <li className="flex justify-between"><span>Posts with CTA</span><span className="font-medium text-success">+23% click-throughs</span></li>
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <DollarSign className="h-8 w-8 text-accent mb-3" />
-                <h3 className="text-lg font-semibold">Campaign Insights</h3>
-                <p className="text-muted-foreground text-sm mt-1">Which campaigns convert best</p>
-                <ul className="mt-4 space-y-2 text-sm">
-                  <li className="flex justify-between"><span>Year-End Hope</span><span className="font-medium">₱125,000 referred</span></li>
-                  <li className="flex justify-between"><span>GivingTuesday</span><span className="font-medium">₱98,000 referred</span></li>
-                  <li className="flex justify-between"><span>Back to School</span><span className="font-medium">₱67,000 referred</span></li>
-                </ul>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <Eye className="h-8 w-8 text-chart-5 mb-3" />
-                <h3 className="text-lg font-semibold">Platform Comparison</h3>
-                <p className="text-muted-foreground text-sm mt-1">Where your audience is most active</p>
-                <ul className="mt-4 space-y-2 text-sm">
-                  <li className="flex justify-between"><span>Facebook</span><span className="font-medium">Highest reach</span></li>
-                  <li className="flex justify-between"><span>Instagram</span><span className="font-medium">Best engagement</span></li>
-                  <li className="flex justify-between"><span>LinkedIn</span><span className="font-medium">Most donations</span></li>
-                  <li className="flex justify-between"><span>TikTok</span><span className="font-medium">Fastest growth</span></li>
+                  {(mlRecs?.campaign_insights ?? ["Impact Stories drive +45% donations", "Video content boosts +28% engagement", "Posts with CTA increase +23% click-throughs"]).map((insight, i) => (
+                    <li key={i} className="text-muted-foreground">{insight}</li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>

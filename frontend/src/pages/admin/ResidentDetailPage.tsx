@@ -3,30 +3,22 @@ import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RiskBadge } from "@/components/shared/RiskBadge";
 import { EmotionalStateIndicator } from "@/components/shared/EmotionalStateIndicator";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
-  mockResidents,
-  mockProcessRecordings,
-  mockHomeVisitations,
-  mockEducationRecords,
-  mockHealthRecords,
-  mockInterventionPlans,
-  mockIncidentReports,
-} from "@/lib/mock-data";
+  useResident, useResidentRecordings, useResidentVisitations,
+  useResidentEducation, useResidentHealth, useResidentInterventions,
+  useResidentIncidents,
+} from "@/hooks/useResidents";
 import { format } from "date-fns";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import {
-  ClipboardList, Calendar, User, MapPin, GraduationCap,
-  AlertTriangle, Target,
-} from "lucide-react";
+import { User, MapPin, Calendar, GraduationCap, AlertTriangle, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import type { ComponentPropsWithoutRef } from "react";
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -39,15 +31,34 @@ const item = {
 
 export default function ResidentDetailPage() {
   const { id } = useParams();
-  const resident = mockResidents.find((r) => r.resident_id === Number(id));
-  if (!resident) return <div className="p-8 text-center text-muted-foreground">Resident not found.</div>;
+  const numId = Number(id);
+  const { data: resident, isLoading, error, refetch } = useResident(numId);
+  const { data: recordings } = useResidentRecordings(numId);
+  const { data: visitations } = useResidentVisitations(numId);
+  const { data: eduRecordsRaw } = useResidentEducation(numId);
+  const { data: healthRecordsRaw } = useResidentHealth(numId);
+  const { data: plansRaw } = useResidentInterventions(numId);
+  const { data: incidentsRaw } = useResidentIncidents(numId);
 
-  const recordings = mockProcessRecordings.filter((r) => r.resident_id === resident.resident_id);
-  const visitations = mockHomeVisitations.filter((v) => v.resident_id === resident.resident_id);
-  const eduRecords = mockEducationRecords.filter((e) => e.resident_id === resident.resident_id);
-  const healthRecords = mockHealthRecords.filter((h) => h.resident_id === resident.resident_id);
-  const plans = mockInterventionPlans.filter((p) => p.resident_id === resident.resident_id);
-  const incidents = mockIncidentReports.filter((i) => i.resident_id === resident.resident_id);
+  const eduRecords = Array.isArray(eduRecordsRaw) ? eduRecordsRaw : [];
+  const healthRecords = Array.isArray(healthRecordsRaw) ? healthRecordsRaw : [];
+  const plans = Array.isArray(plansRaw) ? plansRaw : [];
+  const incidents = Array.isArray(incidentsRaw) ? incidentsRaw : [];
+  const recordingsList = Array.isArray(recordings) ? recordings : [];
+  const visitationsList = Array.isArray(visitations) ? visitations : [];
+
+  if (isLoading) {
+    return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
+  }
+
+  if (error || !resident) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground mb-4">Resident not found</p>
+        <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
 
   const subCategories = [
     resident.sub_cat_orphaned && "Orphaned",
@@ -76,66 +87,8 @@ export default function ResidentDetailPage() {
           { label: "Caseload", href: "/admin/residents" },
           { label: resident.case_control_no },
         ]}
-        actions={
-          <Dialog>
-            <DialogTrigger
-              render={<Button className="gap-2">
-                <ClipboardList className="h-4 w-4" />
-                Case Conference Prep
-              </Button>}
-            />
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Case Conference Summary — {resident.case_control_no}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6 text-sm">
-                <section>
-                  <h3 className="font-semibold mb-2">Resident Overview</h3>
-                  <p>Age: {resident.present_age} | Safehouse: {resident.safehouse?.name} | Risk: {resident.current_risk_level} | Stay: {resident.length_of_stay} months</p>
-                </section>
-                <section>
-                  <h3 className="font-semibold mb-2">Latest Sessions ({recordings.length} total)</h3>
-                  {recordings.slice(0, 3).map((r) => (
-                    <div key={r.recording_id} className="border-l-2 border-primary pl-3 mb-2">
-                      <p className="text-xs text-muted-foreground">{format(new Date(r.session_date), "MMM d, yyyy")} - {r.social_worker}</p>
-                      <p>{r.emotional_state_observed} → {r.emotional_state_end}</p>
-                      {r.concerns_flagged && <Badge variant="destructive" className="text-xs mt-1">Concern Flagged</Badge>}
-                    </div>
-                  ))}
-                </section>
-                <section>
-                  <h3 className="font-semibold mb-2">Active Intervention Plans</h3>
-                  {plans.filter((p) => p.status !== "Closed").map((p) => (
-                    <div key={p.plan_id} className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline">{p.plan_category}</Badge>
-                      <span>{p.plan_description}</span>
-                      <Badge variant="secondary">{p.status}</Badge>
-                    </div>
-                  ))}
-                </section>
-                <section>
-                  <h3 className="font-semibold mb-2">Recent Incidents</h3>
-                  {incidents.length === 0 ? <p className="text-muted-foreground">No recent incidents.</p> : incidents.slice(0, 3).map((i) => (
-                    <div key={i.incident_id} className="mb-1">
-                      <Badge variant={i.severity === "High" ? "destructive" : "outline"}>{i.severity}</Badge>
-                      <span className="ml-2">{i.incident_type} — {format(new Date(i.incident_date), "MMM d, yyyy")}</span>
-                    </div>
-                  ))}
-                </section>
-                <section>
-                  <h3 className="font-semibold mb-2">ML Readiness Score</h3>
-                  <div className="flex items-center gap-3">
-                    <div className="text-3xl font-bold text-primary">{resident.readiness_score ?? 0}%</div>
-                    <p className="text-muted-foreground">Reintegration readiness based on education, health, and counseling progress.</p>
-                  </div>
-                </section>
-              </div>
-            </DialogContent>
-          </Dialog>
-        }
       />
 
-      {/* Header Card */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="mb-6">
           <CardContent className="p-6">
@@ -183,7 +136,6 @@ export default function ResidentDetailPage() {
           <TabsTrigger value="incidents">Incidents</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
@@ -207,15 +159,13 @@ export default function ResidentDetailPage() {
             <Card>
               <CardHeader><CardTitle className="text-base">Family Profile</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {[
-                  ["4Ps Member", resident.family_is_4ps],
-                  ["Solo Parent", resident.family_solo_parent],
-                  ["Indigenous", resident.family_indigenous],
-                  ["Parent PWD", resident.family_parent_pwd],
+                {([
+                  ["4Ps Member", resident.family_is_4ps], ["Solo Parent", resident.family_solo_parent],
+                  ["Indigenous", resident.family_indigenous], ["Parent PWD", resident.family_parent_pwd],
                   ["Informal Settler", resident.family_informal_settler],
-                ].map(([label, val]) => (
-                  <div key={label as string} className="flex justify-between">
-                    <span className="text-muted-foreground">{label as string}</span>
+                ] as const).map(([label, val]) => (
+                  <div key={label} className="flex justify-between">
+                    <span className="text-muted-foreground">{label}</span>
                     <Badge variant={val ? "default" : "secondary"} className="text-xs">{val ? "Yes" : "No"}</Badge>
                   </div>
                 ))}
@@ -233,41 +183,39 @@ export default function ResidentDetailPage() {
           </div>
         </TabsContent>
 
-        {/* Process Recordings Tab */}
         <TabsContent value="recordings">
           <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
-            {recordings.length === 0 ? (
+            {recordingsList.length === 0 ? (
               <Card><CardContent className="p-8 text-center text-muted-foreground">No recordings found.</CardContent></Card>
-            ) : (
-              recordings.map((rec) => (
-                <motion.div key={rec.recording_id} variants={item}>
-                  <Card className="hover:shadow-sm transition-shadow">
-                    <CardContent className="p-5">
-                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <span className="text-sm font-medium tabular-nums">{format(new Date(rec.session_date), "MMM d, yyyy")}</span>
-                        <Badge variant="outline">{rec.session_type}</Badge>
-                        <span className="text-xs text-muted-foreground">{rec.session_duration_minutes} min</span>
-                        <span className="text-xs text-muted-foreground">| {rec.social_worker}</span>
-                        <EmotionalStateIndicator start={rec.emotional_state_observed} end={rec.emotional_state_end} />
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{rec.session_narrative}</p>
-                      <div className="flex gap-2 mt-3">
-                        {rec.progress_noted && <Badge className="bg-success/10 text-success border-0 text-xs">Progress</Badge>}
-                        {rec.concerns_flagged && <Badge variant="destructive" className="text-xs">Concern</Badge>}
-                        {rec.referral_made && <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0 text-xs">Referral</Badge>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))
-            )}
+            ) : recordingsList.map((rec) => (
+              <motion.div key={rec.recording_id} variants={item}>
+                <Card className="hover:shadow-sm transition-shadow">
+                  <CardContent className="p-5">
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      <span className="text-sm font-medium tabular-nums">{format(new Date(rec.session_date), "MMM d, yyyy")}</span>
+                      <Badge variant="outline">{rec.session_type}</Badge>
+                      <span className="text-xs text-muted-foreground">{rec.session_duration_minutes} min</span>
+                      <span className="text-xs text-muted-foreground">| {rec.social_worker}</span>
+                      <EmotionalStateIndicator start={rec.emotional_state_observed} end={rec.emotional_state_end} />
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{rec.session_narrative}</p>
+                    <div className="flex gap-2 mt-3">
+                      {rec.progress_noted && <Badge className="bg-success/10 text-success border-0 text-xs">Progress</Badge>}
+                      {rec.concerns_flagged && <Badge variant="destructive" className="text-xs">Concern</Badge>}
+                      {rec.referral_made && <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-0 text-xs">Referral</Badge>}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </motion.div>
         </TabsContent>
 
-        {/* Home Visitations Tab */}
         <TabsContent value="visitations">
           <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
-            {visitations.map((visit) => (
+            {visitationsList.length === 0 ? (
+              <Card><CardContent className="p-8 text-center text-muted-foreground">No home visits found.</CardContent></Card>
+            ) : visitationsList.map((visit) => (
               <motion.div key={visit.visitation_id} variants={item}>
                 <Card>
                   <CardContent className="p-5">
@@ -289,7 +237,6 @@ export default function ResidentDetailPage() {
           </motion.div>
         </TabsContent>
 
-        {/* Education Tab */}
         <TabsContent value="education">
           <div className="space-y-6">
             {eduRecords.length > 0 && (
@@ -310,22 +257,18 @@ export default function ResidentDetailPage() {
               </Card>
             )}
             <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
-              {eduRecords.map((e) => (
+              {eduRecords.length === 0 ? (
+                <Card><CardContent className="p-8 text-center text-muted-foreground">No education records found.</CardContent></Card>
+              ) : eduRecords.map((e) => (
                 <motion.div key={e.education_record_id} variants={item}>
                   <Card>
                     <CardContent className="p-4 flex items-center gap-4">
                       <GraduationCap className="h-5 w-5 text-primary shrink-0" />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{e.education_level}</span>
-                          <Badge variant="outline" className="text-xs">{e.completion_status}</Badge>
-                        </div>
+                        <div className="flex items-center gap-2"><span className="font-medium text-sm">{e.education_level}</span><Badge variant="outline" className="text-xs">{e.completion_status}</Badge></div>
                         <p className="text-xs text-muted-foreground">{e.school_name} | Attendance: {e.attendance_rate}%</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold tabular-nums">{e.progress_percent}%</p>
-                        <p className="text-xs text-muted-foreground">Progress</p>
-                      </div>
+                      <div className="text-right"><p className="text-lg font-bold tabular-nums">{e.progress_percent}%</p><p className="text-xs text-muted-foreground">Progress</p></div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -334,35 +277,35 @@ export default function ResidentDetailPage() {
           </div>
         </TabsContent>
 
-        {/* Health Tab */}
         <TabsContent value="health">
-          <div className="space-y-6">
-            {healthChartData.length > 0 && (
-              <Card>
-                <CardHeader><CardTitle className="text-lg">Health Score Trends</CardTitle></CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={healthChartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                      <YAxis domain={[1, 5]} tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                      <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
-                      <Line type="monotone" dataKey="health" stroke="var(--color-chart-1)" strokeWidth={2} name="General Health" animationDuration={1000} />
-                      <Line type="monotone" dataKey="nutrition" stroke="var(--color-chart-2)" strokeWidth={2} name="Nutrition" animationDuration={1000} />
-                      <Line type="monotone" dataKey="sleep" stroke="var(--color-chart-3)" strokeWidth={2} name="Sleep Quality" animationDuration={1000} />
-                      <Line type="monotone" dataKey="energy" stroke="var(--color-chart-5)" strokeWidth={2} name="Energy Level" animationDuration={1000} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {healthChartData.length > 0 ? (
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Health Score Trends</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={healthChartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
+                    <YAxis domain={[1, 5]} tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
+                    <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
+                    <Line type="monotone" dataKey="health" stroke="var(--color-chart-1)" strokeWidth={2} name="General Health" animationDuration={1000} />
+                    <Line type="monotone" dataKey="nutrition" stroke="var(--color-chart-2)" strokeWidth={2} name="Nutrition" animationDuration={1000} />
+                    <Line type="monotone" dataKey="sleep" stroke="var(--color-chart-3)" strokeWidth={2} name="Sleep Quality" animationDuration={1000} />
+                    <Line type="monotone" dataKey="energy" stroke="var(--color-chart-5)" strokeWidth={2} name="Energy Level" animationDuration={1000} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card><CardContent className="p-8 text-center text-muted-foreground">No health records found.</CardContent></Card>
+          )}
         </TabsContent>
 
-        {/* Interventions Tab */}
         <TabsContent value="interventions">
           <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
-            {(["Safety", "Psychosocial", "Education", "Physical Health", "Legal", "Reintegration"] as const).map((cat) => {
+            {plans.length === 0 ? (
+              <Card><CardContent className="p-8 text-center text-muted-foreground">No intervention plans found.</CardContent></Card>
+            ) : (["Safety", "Psychosocial", "Education", "Physical Health", "Legal", "Reintegration"] as const).map((cat) => {
               const catPlans = plans.filter((p) => p.plan_category === cat);
               if (catPlans.length === 0) return null;
               return (
@@ -386,35 +329,32 @@ export default function ResidentDetailPage() {
           </motion.div>
         </TabsContent>
 
-        {/* Incidents Tab */}
         <TabsContent value="incidents">
           <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-4">
             {incidents.length === 0 ? (
               <Card><CardContent className="p-8 text-center text-muted-foreground">No incidents reported.</CardContent></Card>
-            ) : (
-              incidents.map((inc) => {
-                const severityColors = { Low: "border-l-yellow-500", Medium: "border-l-orange-500", High: "border-l-red-500" };
-                return (
-                  <motion.div key={inc.incident_id} variants={item}>
-                    <Card className={cn("border-l-4", severityColors[inc.severity])}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <AlertTriangle className={cn("h-4 w-4", inc.severity === "High" ? "text-destructive" : "text-warning")} />
-                          <Badge variant="outline">{inc.incident_type}</Badge>
-                          <Badge variant={inc.severity === "High" ? "destructive" : "secondary"}>{inc.severity}</Badge>
-                          <span className="text-xs text-muted-foreground ml-auto">{format(new Date(inc.incident_date), "MMM d, yyyy")}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">{inc.description}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant={inc.resolved ? "default" : "destructive"} className="text-xs">{inc.resolved ? "Resolved" : "Unresolved"}</Badge>
-                          <span className="text-xs text-muted-foreground">Reported by: {inc.reported_by}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })
-            )}
+            ) : incidents.map((inc) => {
+              const severityColors = { Low: "border-l-yellow-500", Medium: "border-l-orange-500", High: "border-l-red-500" };
+              return (
+                <motion.div key={inc.incident_id} variants={item}>
+                  <Card className={cn("border-l-4", severityColors[inc.severity])}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle className={cn("h-4 w-4", inc.severity === "High" ? "text-destructive" : "text-warning")} />
+                        <Badge variant="outline">{inc.incident_type}</Badge>
+                        <Badge variant={inc.severity === "High" ? "destructive" : "secondary"}>{inc.severity}</Badge>
+                        <span className="text-xs text-muted-foreground ml-auto">{format(new Date(inc.incident_date), "MMM d, yyyy")}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{inc.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant={inc.resolved ? "default" : "destructive"} className="text-xs">{inc.resolved ? "Resolved" : "Unresolved"}</Badge>
+                        <span className="text-xs text-muted-foreground">Reported by: {inc.reported_by}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </TabsContent>
       </Tabs>

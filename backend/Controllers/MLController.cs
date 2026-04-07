@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Pharos.Api.Data;
 using Pharos.Api.DTOs;
 using Pharos.Api.Services;
 
@@ -11,8 +13,13 @@ namespace Pharos.Api.Controllers;
 public class MLController : ControllerBase
 {
     private readonly IMLService _mlService;
+    private readonly PharosDbContext _db;
 
-    public MLController(IMLService mlService) => _mlService = mlService;
+    public MLController(IMLService mlService, PharosDbContext db)
+    {
+        _mlService = mlService;
+        _db = db;
+    }
 
     /// <summary>
     /// Returns churn risk scores for all donors with donation history.
@@ -50,12 +57,31 @@ public class MLController : ControllerBase
 
     /// <summary>
     /// Returns analysis of which intervention types are most effective.
-    /// Currently based on completion rate analysis; will incorporate causal ML models.
     /// </summary>
     [HttpGet("intervention-effectiveness")]
     public async Task<ActionResult<InterventionEffectivenessDto>> GetInterventionEffectiveness()
     {
         var result = await _mlService.GetInterventionEffectivenessAsync();
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns reintegration readiness scores for all residents at once.
+    /// Used by the admin dashboard to show top at-risk residents.
+    /// </summary>
+    [HttpGet("reintegration-readiness/all")]
+    public async Task<ActionResult<IEnumerable<ReintegrationReadinessDto>>> GetAllReintegrationReadiness()
+    {
+        var scores = await _db.ResidentReadinessScores
+            .Join(_db.Residents,
+                  s => s.ResidentId,
+                  r => r.ResidentId,
+                  (s, r) => new ReintegrationReadinessDto(
+                      r.ResidentId, r.InternalCode,
+                      s.ReadinessScore / 100.0, s.ReadinessTier,
+                      new List<ReadinessFactorDto>(),
+                      new List<string>()))
+            .ToListAsync();
+        return Ok(scores);
     }
 }

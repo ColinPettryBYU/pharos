@@ -24,6 +24,13 @@ public class PharosDbContext : DbContext
     public DbSet<SocialMediaPost> SocialMediaPosts => Set<SocialMediaPost>();
     public DbSet<SafehouseMonthlyMetric> SafehouseMonthlyMetrics => Set<SafehouseMonthlyMetric>();
     public DbSet<PublicImpactSnapshot> PublicImpactSnapshots => Set<PublicImpactSnapshot>();
+    public DbSet<SocialMediaAccount> SocialMediaAccounts => Set<SocialMediaAccount>();
+
+    // ── ML Prediction Tables ──
+    public DbSet<DonorChurnScore> DonorChurnScores => Set<DonorChurnScore>();
+    public DbSet<ResidentReadinessScore> ResidentReadinessScores => Set<ResidentReadinessScore>();
+    public DbSet<InterventionEffectivenessRow> InterventionEffectiveness => Set<InterventionEffectivenessRow>();
+    public DbSet<MlSocialMediaRecommendation> MlSocialMediaRecommendations => Set<MlSocialMediaRecommendation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -486,6 +493,76 @@ public class PharosDbContext : DbContext
             entity.Property(e => e.MetricPayloadJson).HasColumnName("metric_payload_json").HasMaxLength(4000);
             entity.Property(e => e.IsPublished).HasColumnName("is_published");
             entity.Property(e => e.PublishedAt).HasColumnName("published_at");
+        });
+
+        // ── SocialMediaAccount ──
+        modelBuilder.Entity<SocialMediaAccount>(entity =>
+        {
+            entity.ToTable("social_media_accounts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Platform).HasColumnName("platform").HasMaxLength(50);
+            entity.Property(e => e.AccountName).HasColumnName("account_name").HasMaxLength(200);
+            entity.Property(e => e.AccountId).HasColumnName("account_id").HasMaxLength(200);
+            entity.Property(e => e.EncryptedAccessToken).HasColumnName("encrypted_access_token").HasMaxLength(2000);
+            entity.Property(e => e.EncryptedRefreshToken).HasColumnName("encrypted_refresh_token").HasMaxLength(2000);
+            entity.Property(e => e.ConnectedAt).HasColumnName("connected_at");
+            entity.Property(e => e.TokenExpiresAt).HasColumnName("token_expires_at");
+            entity.Property(e => e.PageId).HasColumnName("page_id").HasMaxLength(200);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50);
+        });
+
+        // ── DonorChurnScore (ML) ──
+        modelBuilder.Entity<DonorChurnScore>(entity =>
+        {
+            entity.ToTable("donor_churn_scores");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SupporterId).HasColumnName("supporter_id");
+            entity.Property(e => e.ChurnRiskScore).HasColumnName("churn_risk_score");
+            entity.Property(e => e.RiskTier).HasColumnName("risk_tier").HasMaxLength(50);
+            entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
+        });
+
+        // ── ResidentReadinessScore (ML) ──
+        modelBuilder.Entity<ResidentReadinessScore>(entity =>
+        {
+            entity.ToTable("resident_readiness_scores");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ResidentId).HasColumnName("resident_id");
+            entity.Property(e => e.ReadinessScore).HasColumnName("readiness_score");
+            entity.Property(e => e.ReadinessTier).HasColumnName("readiness_tier").HasMaxLength(50);
+            entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
+        });
+
+        // ── InterventionEffectivenessRow (ML) ──
+        modelBuilder.Entity<InterventionEffectivenessRow>(entity =>
+        {
+            entity.ToTable("intervention_effectiveness");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Outcome).HasColumnName("outcome").HasMaxLength(200);
+            entity.Property(e => e.Intervention).HasColumnName("intervention").HasMaxLength(200);
+            entity.Property(e => e.Coefficient).HasColumnName("coefficient");
+            entity.Property(e => e.PValue).HasColumnName("p_value");
+            entity.Property(e => e.Significant).HasColumnName("significant");
+        });
+
+        // ── MlSocialMediaRecommendation (ML) ──
+        modelBuilder.Entity<MlSocialMediaRecommendation>(entity =>
+        {
+            entity.ToTable("ml_social_media_recommendations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Platform).HasColumnName("platform").HasMaxLength(50);
+            entity.Property(e => e.PostType).HasColumnName("post_type").HasMaxLength(100);
+            entity.Property(e => e.RecommendedHour).HasColumnName("recommended_hour");
+            entity.Property(e => e.RecommendedDay).HasColumnName("recommended_day").HasMaxLength(20);
+            entity.Property(e => e.IncludeResidentStory).HasColumnName("include_resident_story");
+            entity.Property(e => e.IncludeCallToAction).HasColumnName("include_call_to_action");
+            entity.Property(e => e.PredictedDonations).HasColumnName("predicted_donations");
+            entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
         });
     }
 }

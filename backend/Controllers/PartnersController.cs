@@ -41,4 +41,12 @@ public class PartnersController : ControllerBase
         if (result == null) return NotFound(new { message = "Partner not found." });
         return Ok(result);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var deleted = await _service.DeleteAsync(id);
+        if (!deleted) return NotFound(new { message = "Partner not found." });
+        return Ok(new { message = "Partner deleted successfully." });
+    }
 }

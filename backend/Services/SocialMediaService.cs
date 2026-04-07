@@ -2,14 +2,28 @@ using Microsoft.EntityFrameworkCore;
 using Pharos.Api.Data;
 using Pharos.Api.DTOs;
 using Pharos.Api.Models;
+using Pharos.Api.Services.PlatformClients;
 
 namespace Pharos.Api.Services;
 
 public class SocialMediaService : ISocialMediaService
 {
     private readonly PharosDbContext _db;
+    private readonly IPlatformClientFactory _clientFactory;
+    private readonly ITokenEncryptionService _tokenService;
+    private readonly ILogger<SocialMediaService> _logger;
 
-    public SocialMediaService(PharosDbContext db) => _db = db;
+    public SocialMediaService(
+        PharosDbContext db,
+        IPlatformClientFactory clientFactory,
+        ITokenEncryptionService tokenService,
+        ILogger<SocialMediaService> logger)
+    {
+        _db = db;
+        _clientFactory = clientFactory;
+        _tokenService = tokenService;
+        _logger = logger;
+    }
 
     public async Task<PagedResult<SocialMediaPostDto>> GetPostsAsync(int page, int pageSize, string? platform, string? postType, string? contentTopic, string? search)
     {
@@ -73,43 +87,142 @@ public class SocialMediaService : ISocialMediaService
             byPlatform, byTopic, byPostType);
     }
 
-    public async Task<SocialMediaPostDto> ComposePostAsync(ComposePostRequest request)
+    public async Task<IEnumerable<SocialMediaPostDto>> ComposePostAsync(ComposePostRequest request)
     {
-        var entity = new SocialMediaPost
+        var connectedAccounts = await _db.SocialMediaAccounts
+            .Where(a => a.Status == "Active")
+            .ToListAsync();
+
+        var postTime = request.ScheduledTime ?? DateTime.UtcNow;
+        var results = new List<SocialMediaPostDto>();
+
+        foreach (var platform in request.Platforms)
         {
-            Platform = request.Platform,
-            PostType = request.PostType,
-            MediaType = request.MediaType,
-            Caption = request.Caption,
-            Hashtags = request.Hashtags,
-            NumHashtags = request.Hashtags?.Split(',').Length ?? 0,
-            HasCallToAction = !string.IsNullOrWhiteSpace(request.CallToActionType),
-            CallToActionType = request.CallToActionType,
-            ContentTopic = request.ContentTopic,
-            SentimentTone = request.SentimentTone,
-            CaptionLength = request.Caption?.Length ?? 0,
-            CampaignName = request.CampaignName,
-            IsBoosted = request.IsBoosted,
-            BoostBudgetPhp = request.BoostBudgetPhp,
-            CreatedAt = DateTime.UtcNow,
-            DayOfWeek = DateTime.UtcNow.DayOfWeek.ToString()
-        };
+            var account = connectedAccounts.FirstOrDefault(
+                a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase));
 
-        _db.SocialMediaPosts.Add(entity);
-        await _db.SaveChangesAsync();
+            string? platformPostId = null;
+            string? postUrl = null;
 
-        return new SocialMediaPostDto(
-            entity.PostId, entity.Platform, entity.PlatformPostId, entity.PostUrl,
-            entity.CreatedAt, entity.DayOfWeek, entity.PostHour, entity.PostType,
-            entity.MediaType, entity.Caption, entity.Hashtags, entity.NumHashtags,
-            entity.MentionsCount, entity.HasCallToAction, entity.CallToActionType,
-            entity.ContentTopic, entity.SentimentTone, entity.CaptionLength,
-            entity.FeaturesResidentStory, entity.CampaignName, entity.IsBoosted,
-            entity.BoostBudgetPhp, entity.Impressions, entity.Reach, entity.Likes,
-            entity.Comments, entity.Shares, entity.Saves, entity.ClickThroughs,
-            entity.VideoViews, entity.EngagementRate, entity.ProfileVisits,
-            entity.DonationReferrals, entity.EstimatedDonationValuePhp,
-            entity.FollowerCountAtPost, entity.WatchTimeSeconds,
-            entity.AvgViewDurationSeconds, entity.SubscriberCountAtPost, entity.Forwards);
+            if (account != null)
+            {
+                var client = _clientFactory.GetClient(platform);
+                if (client != null)
+                {
+                    var postResult = request.ScheduledTime.HasValue
+                        ? await client.SchedulePostAsync(account, request)
+                        : await client.PublishPostAsync(account, request);
+
+                    if (postResult.Success)
+                    {
+                        platformPostId = postResult.PlatformPostId;
+                        postUrl = postResult.PostUrl;
+                        _logger.LogInformation("Published to {Platform}: {PostId}", platform, platformPostId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to publish to {Platform}: {Error}", platform, postResult.Error);
+                    }
+                }
+            }
+
+            var entity = new SocialMediaPost
+            {
+                Platform = platform,
+                PlatformPostId = platformPostId,
+                PostUrl = postUrl,
+                PostType = request.PostType,
+                MediaType = request.MediaType,
+                Caption = request.Caption,
+                Hashtags = request.Hashtags,
+                NumHashtags = request.Hashtags?.Split(',').Length ?? 0,
+                HasCallToAction = !string.IsNullOrWhiteSpace(request.CallToActionType),
+                CallToActionType = request.CallToActionType,
+                ContentTopic = request.ContentTopic,
+                SentimentTone = request.SentimentTone,
+                CaptionLength = request.Caption?.Length ?? 0,
+                CampaignName = request.CampaignName,
+                IsBoosted = request.IsBoosted,
+                BoostBudgetPhp = request.BoostBudgetPhp,
+                CreatedAt = postTime,
+                DayOfWeek = postTime.DayOfWeek.ToString(),
+                PostHour = postTime.Hour
+            };
+
+            _db.SocialMediaPosts.Add(entity);
+            await _db.SaveChangesAsync();
+
+            results.Add(new SocialMediaPostDto(
+                entity.PostId, entity.Platform, entity.PlatformPostId, entity.PostUrl,
+                entity.CreatedAt, entity.DayOfWeek, entity.PostHour, entity.PostType,
+                entity.MediaType, entity.Caption, entity.Hashtags, entity.NumHashtags,
+                entity.MentionsCount, entity.HasCallToAction, entity.CallToActionType,
+                entity.ContentTopic, entity.SentimentTone, entity.CaptionLength,
+                entity.FeaturesResidentStory, entity.CampaignName, entity.IsBoosted,
+                entity.BoostBudgetPhp, entity.Impressions, entity.Reach, entity.Likes,
+                entity.Comments, entity.Shares, entity.Saves, entity.ClickThroughs,
+                entity.VideoViews, entity.EngagementRate, entity.ProfileVisits,
+                entity.DonationReferrals, entity.EstimatedDonationValuePhp,
+                entity.FollowerCountAtPost, entity.WatchTimeSeconds,
+                entity.AvgViewDurationSeconds, entity.SubscriberCountAtPost, entity.Forwards));
+        }
+
+        return results;
+    }
+
+    public async Task<CommentInboxResponse> GetCommentInboxAsync(string? platform, int page, int pageSize)
+    {
+        var accounts = await _db.SocialMediaAccounts
+            .Where(a => a.Status == "Active")
+            .ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(platform))
+            accounts = accounts.Where(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        var allComments = new List<CommentInboxDto>();
+        var fetchTasks = new List<Task<List<CommentDto>>>();
+
+        foreach (var account in accounts)
+        {
+            var client = _clientFactory.GetClient(account.Platform);
+            if (client != null)
+            {
+                fetchTasks.Add(client.GetCommentsAsync(account));
+            }
+        }
+
+        var results = await Task.WhenAll(fetchTasks);
+        foreach (var commentList in results)
+        {
+            allComments.AddRange(commentList.Select(c => new CommentInboxDto(
+                c.CommentId, c.Platform, c.PostId, c.CommenterName,
+                c.CommentText, c.CreatedAt, c.IsRead, c.PostThumbnail)));
+        }
+
+        var sorted = allComments.OrderByDescending(c => c.CreatedAt).ToList();
+        var paged = sorted.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new CommentInboxResponse(paged, sorted.Count, page, pageSize);
+    }
+
+    public async Task<bool> ReplyToCommentAsync(string platform, string commentId, string message)
+    {
+        var account = await _db.SocialMediaAccounts
+            .FirstOrDefaultAsync(a => a.Platform.ToLower() == platform.ToLower() && a.Status == "Active");
+
+        if (account == null)
+        {
+            _logger.LogWarning("No active {Platform} account for reply", platform);
+            return false;
+        }
+
+        var client = _clientFactory.GetClient(platform);
+        if (client == null)
+        {
+            _logger.LogWarning("No platform client for {Platform}", platform);
+            return false;
+        }
+
+        return await client.ReplyToCommentAsync(account, commentId, message);
     }
 }

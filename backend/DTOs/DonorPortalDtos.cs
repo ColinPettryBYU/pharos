@@ -48,3 +48,11 @@ public record UserManagementDto(
 public record UpdateUserRolesRequest(
     IEnumerable<string> Roles
 );
+
+public record InviteUserRequest(
+    string Email,
+    string DisplayName,
+    string Password,
+    string Role,
+    int? LinkedSupporterId
+);

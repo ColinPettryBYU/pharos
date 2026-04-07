@@ -60,4 +60,43 @@ public class UsersController : ControllerBase
 
         return Ok(new { message = "User account unlocked." });
     }
+
+    [HttpPost("invite")]
+    public async Task<IActionResult> InviteUser([FromBody] InviteUserRequest request)
+    {
+        var existingUser = await _userManager.FindByEmailAsync(request.Email);
+        if (existingUser != null)
+            return BadRequest(new { message = "A user with this email already exists." });
+
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            DisplayName = request.DisplayName,
+            LinkedSupporterId = request.LinkedSupporterId
+        };
+
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+            return BadRequest(new { message = "Failed to create user.", errors = result.Errors.Select(e => e.Description) });
+
+        await _userManager.AddToRoleAsync(user, request.Role);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        return Ok(new UserManagementDto(
+            user.Id, user.Email, user.DisplayName, roles,
+            user.LinkedSupporterId, false, false));
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeactivateUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound(new { message = "User not found." });
+
+        await _userManager.SetLockoutEnabledAsync(user, true);
+        await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+
+        return Ok(new { message = "User account deactivated." });
+    }
 }

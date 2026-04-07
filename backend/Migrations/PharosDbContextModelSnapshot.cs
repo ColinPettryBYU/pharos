@@ -144,6 +144,38 @@ namespace Pharos.Api.Migrations
                     b.ToTable("donation_allocations", (string)null);
                 });
 
+            modelBuilder.Entity("Pharos.Api.Models.DonorChurnScore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("ChurnRiskScore")
+                        .HasColumnType("double precision")
+                        .HasColumnName("churn_risk_score");
+
+                    b.Property<DateTime>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<string>("RiskTier")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("risk_tier");
+
+                    b.Property<int>("SupporterId")
+                        .HasColumnType("integer")
+                        .HasColumnName("supporter_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("donor_churn_scores", (string)null);
+                });
+
             modelBuilder.Entity("Pharos.Api.Models.EducationRecord", b =>
                 {
                     b.Property<int>("EducationRecordId")
@@ -485,6 +517,44 @@ namespace Pharos.Api.Migrations
                     b.ToTable("incident_reports", (string)null);
                 });
 
+            modelBuilder.Entity("Pharos.Api.Models.InterventionEffectivenessRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("Coefficient")
+                        .HasColumnType("double precision")
+                        .HasColumnName("coefficient");
+
+                    b.Property<string>("Intervention")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("intervention");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("outcome");
+
+                    b.Property<double>("PValue")
+                        .HasColumnType("double precision")
+                        .HasColumnName("p_value");
+
+                    b.Property<bool>("Significant")
+                        .HasColumnType("boolean")
+                        .HasColumnName("significant");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("intervention_effectiveness", (string)null);
+                });
+
             modelBuilder.Entity("Pharos.Api.Models.InterventionPlan", b =>
                 {
                     b.Property<int>("PlanId")
@@ -546,6 +616,58 @@ namespace Pharos.Api.Migrations
                     b.HasIndex("ResidentId");
 
                     b.ToTable("intervention_plans", (string)null);
+                });
+
+            modelBuilder.Entity("Pharos.Api.Models.MlSocialMediaRecommendation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<bool>("IncludeCallToAction")
+                        .HasColumnType("boolean")
+                        .HasColumnName("include_call_to_action");
+
+                    b.Property<bool>("IncludeResidentStory")
+                        .HasColumnType("boolean")
+                        .HasColumnName("include_resident_story");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("platform");
+
+                    b.Property<string>("PostType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("post_type");
+
+                    b.Property<double>("PredictedDonations")
+                        .HasColumnType("double precision")
+                        .HasColumnName("predicted_donations");
+
+                    b.Property<string>("RecommendedDay")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("recommended_day");
+
+                    b.Property<int>("RecommendedHour")
+                        .HasColumnType("integer")
+                        .HasColumnName("recommended_hour");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ml_social_media_recommendations", (string)null);
                 });
 
             modelBuilder.Entity("Pharos.Api.Models.Partner", b =>
@@ -1035,6 +1157,38 @@ namespace Pharos.Api.Migrations
                     b.ToTable("residents", (string)null);
                 });
 
+            modelBuilder.Entity("Pharos.Api.Models.ResidentReadinessScore", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<double>("ReadinessScore")
+                        .HasColumnType("double precision")
+                        .HasColumnName("readiness_score");
+
+                    b.Property<string>("ReadinessTier")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("readiness_tier");
+
+                    b.Property<int>("ResidentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("resident_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("resident_readiness_scores", (string)null);
+                });
+
             modelBuilder.Entity("Pharos.Api.Models.Safehouse", b =>
                 {
                     b.Property<int>("SafehouseId")
@@ -1169,6 +1323,67 @@ namespace Pharos.Api.Migrations
                     b.HasIndex("SafehouseId");
 
                     b.ToTable("safehouse_monthly_metrics", (string)null);
+                });
+
+            modelBuilder.Entity("Pharos.Api.Models.SocialMediaAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccountId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("AccountName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("account_name");
+
+                    b.Property<DateTime>("ConnectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("connected_at");
+
+                    b.Property<string>("EncryptedAccessToken")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("encrypted_access_token");
+
+                    b.Property<string>("EncryptedRefreshToken")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("encrypted_refresh_token");
+
+                    b.Property<string>("PageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("page_id");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("platform");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("token_expires_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("social_media_accounts", (string)null);
                 });
 
             modelBuilder.Entity("Pharos.Api.Models.SocialMediaPost", b =>

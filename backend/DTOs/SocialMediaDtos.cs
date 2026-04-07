@@ -73,7 +73,7 @@ public record PostTypeBreakdownDto(
 );
 
 public record ComposePostRequest(
-    string Platform,
+    List<string> Platforms,
     string PostType,
     string? MediaType,
     string Caption,
@@ -83,9 +83,55 @@ public record ComposePostRequest(
     string? SentimentTone,
     string? CampaignName,
     bool IsBoosted,
-    decimal? BoostBudgetPhp
+    decimal? BoostBudgetPhp,
+    DateTime? ScheduledTime
 );
 
 public record CommentReplyRequest(
     string ReplyText
+);
+
+public record ConnectedAccountDto(
+    int Id,
+    string Platform,
+    string AccountName,
+    string? AccountId,
+    DateTime ConnectedAt,
+    DateTime? TokenExpiresAt,
+    string Status
+);
+
+public record OAuthInitiateResponse(
+    string RedirectUrl
+);
+
+public record CommentInboxDto(
+    string CommentId,
+    string Platform,
+    string? PostId,
+    string CommenterName,
+    string CommentText,
+    DateTime CreatedAt,
+    bool IsRead,
+    string? PostThumbnail = null
+);
+
+public record CommentInboxResponse(
+    List<CommentInboxDto> Comments,
+    int TotalCount,
+    int Page,
+    int PageSize
+);
+
+public record ComposePostResponse(
+    List<PlatformPostResult> Results,
+    bool AllSucceeded
+);
+
+public record PlatformPostResult(
+    string Platform,
+    bool Success,
+    string? PlatformPostId,
+    string? PostUrl,
+    string? Error
 );

@@ -153,11 +153,11 @@ export function DataTableWrapper<TData, TValue>({
                   <motion.tr
                     key={row.id}
                     variants={rowVariants}
-                    className={`border-b transition-colors hover:bg-muted/50 ${
+                    className={`transition-colors hover:bg-muted/20 ${
                       onRowClick ? "cursor-pointer" : ""
                     }`}
                     onClick={() => onRowClick?.(row.original)}
-                    whileHover={onRowClick ? { backgroundColor: "var(--muted)" } : undefined}
+                    whileHover={onRowClick ? { backgroundColor: "oklch(0 0 0 / 0.02)" } : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-3">

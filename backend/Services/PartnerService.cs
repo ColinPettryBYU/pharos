@@ -63,4 +63,13 @@ public class PartnerService : IPartnerService
         await _db.SaveChangesAsync();
         return new PartnerDto(entity.PartnerId, entity.PartnerName, entity.PartnerType, entity.RoleType, entity.ContactName, entity.Email, entity.Phone, entity.Region, entity.Status, entity.StartDate, entity.EndDate, entity.Notes, entity.PartnerAssignments.Count);
     }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var entity = await _db.Partners.FindAsync(id);
+        if (entity == null) return false;
+        _db.Partners.Remove(entity);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }

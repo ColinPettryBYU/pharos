@@ -5,6 +5,7 @@ using Pharos.Api.Data;
 using Pharos.Api.Middleware;
 using Pharos.Api.Models;
 using Pharos.Api.Services;
+using Pharos.Api.Services.PlatformClients;
 
 DotNetEnv.Env.Load();
 
@@ -110,6 +111,25 @@ builder.Services.AddScoped<ISocialMediaService, SocialMediaService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPartnerService, PartnerService>();
 builder.Services.AddScoped<IMLService, MLService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// ── Social Media Platform Clients ──
+builder.Services.AddMemoryCache();
+builder.Services.AddDataProtection();
+builder.Services.AddSingleton<ITokenEncryptionService, TokenEncryptionService>();
+builder.Services.AddHttpClient<FacebookClient>();
+builder.Services.AddHttpClient<InstagramClient>();
+builder.Services.AddHttpClient<LinkedInClient>();
+builder.Services.AddHttpClient<YouTubeClient>();
+builder.Services.AddHttpClient<TikTokClient>();
+builder.Services.AddHttpClient<TwitterClient>();
+builder.Services.AddScoped<ISocialPlatformClient, FacebookClient>();
+builder.Services.AddScoped<ISocialPlatformClient, InstagramClient>();
+builder.Services.AddScoped<ISocialPlatformClient, LinkedInClient>();
+builder.Services.AddScoped<ISocialPlatformClient, YouTubeClient>();
+builder.Services.AddScoped<ISocialPlatformClient, TikTokClient>();
+builder.Services.AddScoped<ISocialPlatformClient, TwitterClient>();
+builder.Services.AddScoped<IPlatformClientFactory, PlatformClientFactory>();
 
 // ── Controllers & Swagger ──
 builder.Services.AddControllers();
@@ -184,6 +204,17 @@ using (var scope = app.Services.CreateScope())
         else
         {
             logger.LogWarning("CSV directory not found at {Path}. Skipping data seeding.", csvPath);
+        }
+
+        // Seed ML prediction tables from notebook-exported CSVs
+        var mlDir = Path.Combine(app.Environment.ContentRootPath, "..", "ml-pipelines");
+        if (Directory.Exists(mlDir))
+        {
+            await DataSeeder.SeedMLPredictionsAsync(pharosDb, mlDir, logger);
+        }
+        else
+        {
+            logger.LogWarning("ML pipelines directory not found at {Path}. Skipping ML seeding.", mlDir);
         }
 
         // Seed Identity users

@@ -27,10 +27,11 @@ const ResidentDetailPage = lazy(() => import("@/pages/admin/ResidentDetailPage")
 const ProcessRecordingsPage = lazy(() => import("@/pages/admin/ProcessRecordingsPage"));
 const HomeVisitationsPage = lazy(() => import("@/pages/admin/HomeVisitationsPage"));
 const SocialMediaPage = lazy(() => import("@/pages/admin/SocialMediaPage"));
-const ReportsPage = lazy(() => import("@/pages/admin/ReportsPage"));
 const SafehousesPage = lazy(() => import("@/pages/admin/SafehousesPage"));
 const PartnersPage = lazy(() => import("@/pages/admin/PartnersPage"));
 const UserManagementPage = lazy(() => import("@/pages/admin/UserManagementPage"));
+const SocialAccountsPage = lazy(() => import("@/pages/admin/SocialAccountsPage"));
+const ReportsPage = lazy(() => import("@/pages/admin/ReportsPage"));
 
 const DonorDashboard = lazy(() => import("@/pages/donor/DonorDashboard"));
 
@@ -78,10 +79,11 @@ export default function App() {
                     <Route path="/admin/process-recordings" element={<ProcessRecordingsPage />} />
                     <Route path="/admin/home-visitations" element={<HomeVisitationsPage />} />
                     <Route path="/admin/social" element={<SocialMediaPage />} />
-                    <Route path="/admin/reports" element={<ReportsPage />} />
                     <Route path="/admin/safehouses" element={<SafehousesPage />} />
                     <Route path="/admin/partners" element={<PartnersPage />} />
                     <Route path="/admin/users" element={<UserManagementPage />} />
+                    <Route path="/admin/reports" element={<ReportsPage />} />
+                    <Route path="/admin/settings/social-accounts" element={<SocialAccountsPage />} />
                   </Route>
 
                   {/* Donor Routes */}

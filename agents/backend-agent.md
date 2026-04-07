@@ -2,589 +2,426 @@
 
 > Reference `CLAUDE.md` for project context, database schema, API structure, auth model, and coding standards.
 
-You are responsible for building the entire .NET 10 / C# backend API for Pharos. This includes Entity Framework models for all 17 tables, REST API controllers, ASP.NET Identity auth, RBAC authorization, and ML model serving endpoints.
+You are responsible for maintaining and extending the .NET 10 / C# backend API for Pharos. The backend is **largely built** — this document inventories what exists and specifies what still needs to be added.
 
 ---
 
-## Project Setup
+## What Already Exists (DO NOT REBUILD)
 
-```bash
-dotnet new webapi -n Pharos.Api --framework net10.0
-cd Pharos.Api
+The backend is functional with 18 controllers, 15 services, 18 entity models, 12 DTO files, 2 DbContexts, 2 seeders, and 2 middleware classes. Database is **PostgreSQL via Supabase** (Npgsql, NOT SQL Server).
 
-# Required packages
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-dotnet add package Microsoft.EntityFrameworkCore.Design
-dotnet add package Microsoft.EntityFrameworkCore.Tools
-dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore
-dotnet add package Microsoft.AspNetCore.Authentication.Google
-dotnet add package Microsoft.AspNetCore.Authentication.Cookies
-dotnet add package Microsoft.ML                         # For loading ML models
-dotnet add package Microsoft.ML.OnnxRuntime              # If using ONNX models
-dotnet add package CsvHelper                             # For initial data seeding
+### Existing Controllers — Complete Inventory
+
+| Controller | Route | Methods | Auth |
+|---|---|---|---|
+| `AuthController` | `api/auth` | POST login, POST register, POST logout, GET me, POST google-login, GET google-callback, POST mfa/enable, POST mfa/verify, POST mfa/confirm-enable, POST mfa/disable, POST change-password | Mixed (some [Authorize], some anonymous) |
+| `UsersController` | `api/admin/users` | GET (list), PUT {id}/roles, POST {id}/unlock | Admin |
+| `PublicController` | `api/public` | GET impact-snapshots, GET impact-snapshots/{id}, GET safehouses/summary | Anonymous |
+| `DonorPortalController` | `api/donor` | GET my-profile, GET my-donations, GET my-impact | Donor |
+| `SafehousesController` | `api/admin/safehouses` | GET, GET {id}, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `SupportersController` | `api/admin/supporters` | GET, GET {id}, POST, PUT {id}, DELETE {id} | Admin (GET: Admin,Staff) |
+| `DonationsController` | `api/admin/donations` | GET, GET {id}, POST, PUT {id}, DELETE {id} | Admin (GET: Admin,Staff) |
+| `DonationAllocationsController` | `api/admin/donation-allocations` | GET, POST | Admin (GET: Admin,Staff) |
+| `ResidentsController` | `api/admin/residents` | GET, GET {id}, GET {id}/summary, POST, PUT {id}, DELETE {id}, GET {id}/process-recordings, GET {id}/home-visitations | Admin (GET: Admin,Staff) |
+| `ProcessRecordingsController` | `api/admin/process-recordings` | GET, GET {id}, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `HomeVisitationsController` | `api/admin/home-visitations` | GET, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `EducationController` | `api/admin/education-records` | GET, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `HealthController` | `api/admin/health-records` | GET, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `InterventionPlansController` | `api/admin/intervention-plans` | GET, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `IncidentReportsController` | `api/admin/incident-reports` | GET, POST, PUT {id}, DELETE {id} | Admin (GET: Admin,Staff) |
+| `PartnersController` | `api/admin/partners` | GET, POST, PUT {id} | Admin (GET: Admin,Staff) |
+| `SocialMediaController` | `api/admin/social-media` | GET posts, GET analytics, POST compose, POST comments/{id}/reply, GET comments/inbox | Admin (GET: Admin,Staff) |
+| `ReportsController` | `api/admin/reports` | GET donations, GET outcomes, GET safehouses, GET social-media | Admin (GET: Admin,Staff) |
+| `MLController` | `api/ml` | GET donor-churn-risk, GET reintegration-readiness/{residentId}, GET social-media-recommendations, GET intervention-effectiveness | Admin |
+
+### Existing Services
+
+| Service | Interface | Purpose |
+|---|---|---|
+| `SafehouseService` | `ISafehouseService` | Safehouse CRUD + public summaries. Has `DeleteAsync` method (unused by controller). |
+| `DonorService` | `IDonorService` | Supporters CRUD, donations CRUD, allocations, donor portal profile/donations/impact |
+| `ResidentService` | `IResidentService` | Residents CRUD, case conference summary, process recordings, home visitations, education, health, interventions, incidents |
+| `SocialMediaService` | `ISocialMediaService` | Posts listing, analytics aggregates, `ComposePostAsync` (stores to DB only — no external API) |
+| `ReportService` | `IReportService` | Donation/outcomes/safehouse/social reports, public impact snapshots |
+| `PartnerService` | `IPartnerService` | Partners: list paged, create, update |
+| `MLService` | `IMLService` | Heuristic/stub ML: churn scores, reintegration readiness, social recommendations, intervention effectiveness |
+| `CommonPasswordValidator` | `IPasswordValidator<TUser>` | Blocklist + no email/username substring in password |
+
+### Existing DTOs (in `DTOs/`)
+
+| File | Contents |
+|---|---|
+| `Common.cs` | `PagedResult<T>`, `ApiResponse<T>`, `ApiMessage` |
+| `AuthDtos.cs` | Login/register requests/responses, `UserInfoDto`, MFA setup/verify, Google, change password |
+| `SafehouseDtos.cs` | Safehouse list/detail/summary, create/update, monthly metric DTO |
+| `SupporterDtos.cs` | Supporter list/detail, create/update |
+| `DonationDtos.cs` | Donation list/detail, in-kind item, allocation, create/update requests |
+| `ResidentDtos.cs` | Resident list/detail/summary, create/update |
+| `CaseManagementDtos.cs` | Process recording, home visit, education, health, intervention, incident DTOs + create/update requests |
+| `SocialMediaDtos.cs` | Post DTO, analytics breakdowns, compose/comment requests |
+| `PartnerDtos.cs` | Partner DTO, create/update, assignment DTO |
+| `ReportDtos.cs` | Donation/outcomes/safehouse/social report DTOs, `PublicImpactSnapshotDto` |
+| `MLDtos.cs` | Churn, readiness, social ML, intervention effectiveness DTOs |
+| `DonorPortalDtos.cs` | Donor profile, impact journey, timeline, allocations, user management DTOs |
+
+### Existing Models (in `Models/`)
+
+All 18 entity types for the 17 CSV tables plus `ApplicationUser`. Configured in `PharosDbContext.OnModelCreating` with snake_case column names.
+
+### Data Layer (in `Data/`)
+
+- `PharosDbContext.cs` — Main EF context, all domain tables
+- `PharosIdentityDbContext.cs` — Identity context for `ApplicationUser`
+- `DataSeeder.cs` — Loads 17 CSVs from `lighthouse_csv_v7/` in FK order
+- `IdentitySeeder.cs` — Roles + seed users (admin, donor, admin-mfa)
+- Migrations exist for both contexts
+
+### Middleware (in `Middleware/`)
+
+- `ErrorHandlingMiddleware.cs` — Try/catch pipeline, maps exceptions to JSON responses
+- `SecurityHeadersMiddleware.cs` — CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+
+### Program.cs Pipeline
+
+`ErrorHandlingMiddleware` → (prod) HSTS → `UseHttpsRedirection` → `SecurityHeadersMiddleware` → Swagger (dev) → CORS → Authentication → Authorization → Controllers.
+
+---
+
+## What Needs to Be Added
+
+### 1. Dashboard Aggregate Endpoint (NEW)
+
+The frontend admin dashboard currently makes zero API calls (uses mock data). Create a single endpoint that returns everything the dashboard needs in one call.
+
+**Controller:** Add to a new `DashboardController.cs` or add to `ReportsController`
+
+```
+GET /api/admin/dashboard
+[Authorize(Roles = "Admin,Staff")]
 ```
 
----
-
-## Program.cs Configuration Outline
+**Response DTO (`DashboardDtos.cs`):**
 
 ```csharp
-var builder = WebApplication.CreateBuilder(args);
+public record DashboardDto(
+    DashboardStatsDto Stats,
+    IEnumerable<MonthlyDonationTrendDto> DonationTrends,
+    IEnumerable<SafehouseOccupancyDto> SafehouseOccupancy,
+    IEnumerable<ActivityFeedItemDto> RecentActivity,
+    IEnumerable<RiskAlertDto> RiskAlerts
+);
 
-// DbContexts
-builder.Services.AddDbContext<PharosDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("PharosDb")));
-builder.Services.AddDbContext<PharosIdentityDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("IdentityDb")));
+public record DashboardStatsDto(
+    int ActiveResidents,
+    decimal MonthlyDonationTotal,
+    decimal MonthlyDonationChange,
+    int CasesNeedingReview,
+    decimal AvgSocialEngagement,
+    decimal SocialEngagementChange
+);
 
-// Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
-    // Password policy — see security-agent.md for exact values
-    options.Password.RequiredLength = 12;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireDigit = true;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequiredUniqueChars = 4;
-    
-    options.Lockout.MaxFailedAccessAttempts = 5;
-    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-    
-    options.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<PharosIdentityDbContext>()
-.AddDefaultTokenProviders();
+public record SafehouseOccupancyDto(
+    int SafehouseId,
+    string Name,
+    int CurrentOccupancy,
+    int CapacityGirls,
+    decimal OccupancyRate
+);
 
-// Cookie auth
-builder.Services.ConfigureApplicationCookie(options => {
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Lax; // Lax for OAuth redirect support
-    options.ExpireTimeSpan = TimeSpan.FromHours(24);
-    options.LoginPath = "/api/auth/login";
-    options.Events.OnRedirectToLogin = context => {
-        context.Response.StatusCode = 401;
-        return Task.CompletedTask;
-    };
-    options.Events.OnRedirectToAccessDenied = context => {
-        context.Response.StatusCode = 403;
-        return Task.CompletedTask;
-    };
+public record ActivityFeedItemDto(
+    string Type,
+    string Description,
+    DateTime Timestamp,
+    int? RelatedId
+);
+
+public record RiskAlertDto(
+    string AlertType,
+    int RelatedId,
+    string Name,
+    double RiskScore,
+    string RecommendedAction
+);
+```
+
+**Service (`IDashboardService`):**
+
+Create a `DashboardService` that:
+1. Queries `Residents` for active count
+2. Queries `Donations` for this month's total + compares to last month
+3. Queries `ProcessRecordings` for sessions with `ConcernsFlagged = true` in last 30 days
+4. Queries `SocialMediaPosts` for avg engagement this month + last month's comparison
+5. Queries `Safehouses` for occupancy data
+6. Builds a recent activity feed from the last 20 events across `Donations`, `ProcessRecordings`, `IncidentReports`, `HomeVisitations` (union, sorted by date desc)
+7. Calls `IMLService.GetDonorChurnRisksAsync()` for top high-risk donors + `GetReintegrationReadinessAsync()` for at-risk residents
+
+Register in `Program.cs`:
+```csharp
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+```
+
+### 2. Missing Delete Endpoints
+
+**Safehouse DELETE** — The service method `DeleteAsync` exists but isn't exposed:
+
+```csharp
+// In SafehousesController.cs, add:
+[HttpDelete("{id}")]
+public async Task<IActionResult> Delete(int id)
+{
+    var deleted = await _service.DeleteAsync(id);
+    if (!deleted) return NotFound(new { message = "Safehouse not found." });
+    return Ok(new { message = "Safehouse deleted successfully." });
+}
+```
+
+**Partner DELETE** — Needs both service method and controller endpoint:
+
+```csharp
+// In IPartnerService / PartnerService, add:
+Task<bool> DeleteAsync(int id);
+
+// In PartnersController.cs, add:
+[HttpDelete("{id}")]
+public async Task<IActionResult> Delete(int id)
+{
+    var deleted = await _service.DeleteAsync(id);
+    if (!deleted) return NotFound(new { message = "Partner not found." });
+    return Ok(new { message = "Partner deleted successfully." });
+}
+```
+
+### 3. User Management Enhancements
+
+The current `UsersController` has list + role update + unlock. Add:
+
+**Invite/Create User:**
+
+```
+POST /api/admin/users/invite
+[Authorize(Roles = "Admin")]
+```
+
+```csharp
+public record InviteUserRequest(
+    string Email,
+    string DisplayName,
+    string Password,
+    string Role,
+    int? LinkedSupporterId
+);
+```
+
+This should:
+1. Create user via `UserManager.CreateAsync`
+2. Assign the specified role
+3. If role is "Donor" and `LinkedSupporterId` is provided, set `user.LinkedSupporterId`
+4. Return the created user info
+
+**Deactivate User:**
+
+```
+DELETE /api/admin/users/{id}
+[Authorize(Roles = "Admin")]
+```
+
+Soft-delete by locking the account:
+```csharp
+await _userManager.SetLockoutEnabledAsync(user, true);
+await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+```
+
+### 4. Social Media Account Management (NEW)
+
+For the social media command center to support real platform integration, create infrastructure for storing OAuth tokens.
+
+**New Model (`Models/SocialMediaAccount.cs`):**
+
+```csharp
+public class SocialMediaAccount
+{
+    public int Id { get; set; }
+    public string Platform { get; set; } = string.Empty;
+    public string AccountName { get; set; } = string.Empty;
+    public string? AccountId { get; set; }
+    public string EncryptedAccessToken { get; set; } = string.Empty;
+    public string? EncryptedRefreshToken { get; set; }
+    public DateTime ConnectedAt { get; set; }
+    public DateTime? TokenExpiresAt { get; set; }
+    public string? PageId { get; set; }
+    public string Status { get; set; } = "Active";
+}
+```
+
+**Add to `PharosDbContext`:**
+```csharp
+public DbSet<SocialMediaAccount> SocialMediaAccounts => Set<SocialMediaAccount>();
+```
+
+Configure in `OnModelCreating`:
+```csharp
+modelBuilder.Entity<SocialMediaAccount>(entity =>
+{
+    entity.ToTable("social_media_accounts");
+    entity.HasKey(e => e.Id);
+    entity.Property(e => e.Id).HasColumnName("id");
+    entity.Property(e => e.Platform).HasColumnName("platform");
+    entity.Property(e => e.AccountName).HasColumnName("account_name");
+    entity.Property(e => e.AccountId).HasColumnName("account_id");
+    entity.Property(e => e.EncryptedAccessToken).HasColumnName("encrypted_access_token");
+    entity.Property(e => e.EncryptedRefreshToken).HasColumnName("encrypted_refresh_token");
+    entity.Property(e => e.ConnectedAt).HasColumnName("connected_at");
+    entity.Property(e => e.TokenExpiresAt).HasColumnName("token_expires_at");
+    entity.Property(e => e.PageId).HasColumnName("page_id");
+    entity.Property(e => e.Status).HasColumnName("status");
 });
+```
 
-// Google Auth
-builder.Services.AddAuthentication()
-    .AddGoogle(options => {
-        options.ClientId = builder.Configuration["Google:ClientId"]!;
-        options.ClientSecret = builder.Configuration["Google:ClientSecret"]!;
-    });
+**Create migration:**
+```bash
+dotnet ef migrations add AddSocialMediaAccounts --context PharosDbContext
+dotnet ef database update --context PharosDbContext
+```
 
-// CORS for React dev server
-builder.Services.AddCors(options => {
-    options.AddPolicy("Frontend", policy => {
-        policy.WithOrigins("http://localhost:5173", "https://pharos.azurewebsites.net")
+**New Endpoints on `SocialMediaController`:**
+
+```
+GET  /api/admin/social-media/accounts          — List connected accounts
+POST /api/admin/social-media/accounts/{platform}/connect   — Initiate OAuth (returns redirect URL)
+GET  /api/admin/social-media/accounts/{platform}/callback  — OAuth callback (exchanges code for token)
+DELETE /api/admin/social-media/accounts/{platform}         — Disconnect account
+```
+
+**DTOs:**
+
+```csharp
+public record ConnectedAccountDto(
+    int Id,
+    string Platform,
+    string AccountName,
+    string? AccountId,
+    DateTime ConnectedAt,
+    DateTime? TokenExpiresAt,
+    string Status
+);
+
+public record OAuthInitiateResponse(
+    string RedirectUrl
+);
+```
+
+See `agents/social-media-agent.md` for the full OAuth flow details per platform.
+
+### 5. Enhance ComposePostRequest
+
+The current `ComposePostRequest` only accepts a single `Platform` string. For multi-platform posting, update to accept a list:
+
+```csharp
+// In SocialMediaDtos.cs, update:
+public record ComposePostRequest(
+    List<string> Platforms,       // Changed from single string
+    string PostType,
+    string? MediaType,
+    string Caption,
+    string? Hashtags,
+    string? CallToActionType,
+    string? ContentTopic,
+    string? SentimentTone,
+    string? CampaignName,
+    bool IsBoosted,
+    decimal? BoostBudgetPhp,
+    DateTime? ScheduledTime       // NEW: null = post now
+);
+```
+
+Update `SocialMediaService.ComposePostAsync` to:
+1. Check which platforms have connected accounts
+2. For each platform with a connected account, call the respective platform API
+3. For platforms without accounts, store as a draft
+4. Save a record in `social_media_posts` for tracking
+
+### 6. CORS Update
+
+Ensure `Program.cs` CORS policy includes the actual Vercel frontend URL. The current config may only have placeholder URLs:
+
+```csharp
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        var origins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? new[] { "http://localhost:5173" };
+        policy.WithOrigins(origins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
 });
-
-// Services
-builder.Services.AddScoped<IDonorService, DonorService>();
-builder.Services.AddScoped<IResidentService, ResidentService>();
-builder.Services.AddScoped<ISocialMediaService, SocialMediaService>();
-builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IMLService, MLService>();
-// ... more services
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-
-var app = builder.Build();
-
-// Security middleware — see security-agent.md
-app.UseHttpsRedirection();
-// CSP header middleware
-app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseCors("Frontend");
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
 ```
+
+This reads from `AllowedOrigins__0`, `AllowedOrigins__1`, etc. in Azure App Settings.
 
 ---
 
-## Entity Framework Models
+## Existing Report DTOs (reference for frontend wiring)
 
-> Map all 17 tables. Use PascalCase C# properties that EF maps to snake_case DB columns via `modelBuilder.Entity<T>().ToTable("table_name")` and `.HasColumnName("column_name")`.
+These DTOs define the shape of data the frontend will consume. The frontend agent needs these exact shapes:
 
-### Configuration Strategy
-- Use Fluent API in `OnModelCreating` for all table/column mappings
-- Configure snake_case column names explicitly
-- Set up all foreign key relationships
-- Use `decimal(18,2)` for all monetary values
-- Use `DateTime` for dates, `DateTimeOffset` for timestamps with timezone
+**`GET /api/admin/reports/donations`** returns `DonationReportDto`:
+- `TotalDonations` (decimal), `TotalDonationCount` (int), `AvgDonationAmount` (decimal), `RecurringDonorCount` (int)
+- `MonthlyTrends[]` — `{ Month, Total, Count }`
+- `CampaignSummaries[]` — `{ CampaignName, Total, Count }`
+- `ChannelSummaries[]` — `{ Channel, Total, Count }`
 
-### Entity Examples (build all 17)
+**`GET /api/admin/reports/outcomes`** returns `OutcomesReportDto`:
+- `TotalResidents`, `ActiveResidents`, `ReintegratedResidents`
+- `RiskLevelBreakdown[]` — `{ RiskLevel, Count }`
+- `ReintegrationBreakdown[]` — `{ Status, Count }`
+- `AvgHealthScore`, `AvgEducationProgress`
 
-```csharp
-public class Safehouse
-{
-    public int SafehouseId { get; set; }
-    public string SafehouseCode { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Region { get; set; } = string.Empty;
-    public string City { get; set; } = string.Empty;
-    public string Province { get; set; } = string.Empty;
-    public string Country { get; set; } = string.Empty;
-    public DateTime OpenDate { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public int CapacityGirls { get; set; }
-    public int CapacityStaff { get; set; }
-    public int CurrentOccupancy { get; set; }
-    public string? Notes { get; set; }
-    
-    // Navigation properties
-    public ICollection<Resident> Residents { get; set; } = new List<Resident>();
-    public ICollection<PartnerAssignment> PartnerAssignments { get; set; } = new List<PartnerAssignment>();
-    public ICollection<DonationAllocation> DonationAllocations { get; set; } = new List<DonationAllocation>();
-    public ICollection<IncidentReport> IncidentReports { get; set; } = new List<IncidentReport>();
-    public ICollection<SafehouseMonthlyMetric> MonthlyMetrics { get; set; } = new List<SafehouseMonthlyMetric>();
-}
+**`GET /api/admin/reports/safehouses`** returns `SafehouseReportDto[]`:
+- Per safehouse: `SafehouseId`, `SafehouseName`, `ActiveResidents`, `Capacity`, `OccupancyRate`, `AvgHealthScore`, `AvgEducationProgress`, `RecentIncidents`, `RecentProcessRecordings`, `RecentHomeVisitations`
 
-public class Supporter
-{
-    public int SupporterId { get; set; }
-    public string SupporterType { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-    public string? OrganizationName { get; set; }
-    public string? FirstName { get; set; }
-    public string? LastName { get; set; }
-    public string RelationshipType { get; set; } = string.Empty;
-    public string? Region { get; set; }
-    public string Country { get; set; } = string.Empty;
-    public string? Email { get; set; }
-    public string? Phone { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-    public DateTime? FirstDonationDate { get; set; }
-    public string? AcquisitionChannel { get; set; }
-    
-    public ICollection<Donation> Donations { get; set; } = new List<Donation>();
-}
+**`GET /api/admin/reports/social-media`** returns `SocialMediaReportDto`:
+- `TotalPosts`, `AvgEngagementRate`, `TotalDonationReferrals`, `TotalEstimatedDonationValue`
+- `BestPlatform`, `BestPostType`, `BestContentTopic`, `BestPostHour`, `BestDayOfWeek`
 
-public class Donation
-{
-    public int DonationId { get; set; }
-    public int SupporterId { get; set; }
-    public string DonationType { get; set; } = string.Empty;
-    public DateTime DonationDate { get; set; }
-    public bool IsRecurring { get; set; }
-    public string? CampaignName { get; set; }
-    public string ChannelSource { get; set; } = string.Empty;
-    public string? CurrencyCode { get; set; }
-    public decimal? Amount { get; set; }
-    public decimal? EstimatedValue { get; set; }
-    public string? ImpactUnit { get; set; }
-    public string? Notes { get; set; }
-    public int? ReferralPostId { get; set; }
-    
-    public Supporter Supporter { get; set; } = null!;
-    public SocialMediaPost? ReferralPost { get; set; }
-    public ICollection<InKindDonationItem> InKindItems { get; set; } = new List<InKindDonationItem>();
-    public ICollection<DonationAllocation> Allocations { get; set; } = new List<DonationAllocation>();
-}
+**`GET /api/admin/social-media/analytics`** returns `SocialMediaAnalyticsDto`:
+- `TotalPosts`, `AvgEngagementRate`, `TotalDonationReferrals`, `TotalEstimatedDonationValue`
+- `ByPlatform[]`, `ByContentTopic[]`, `ByPostType[]`
 
-public class Resident
-{
-    public int ResidentId { get; set; }
-    public string CaseControlNo { get; set; } = string.Empty;
-    public string InternalCode { get; set; } = string.Empty;
-    public int SafehouseId { get; set; }
-    public string CaseStatus { get; set; } = string.Empty;
-    public string Sex { get; set; } = string.Empty;
-    public DateTime DateOfBirth { get; set; }
-    public string? BirthStatus { get; set; }
-    public string? PlaceOfBirth { get; set; }
-    public string? Religion { get; set; }
-    public string CaseCategory { get; set; } = string.Empty;
-    public bool SubCatOrphaned { get; set; }
-    public bool SubCatTrafficked { get; set; }
-    public bool SubCatChildLabor { get; set; }
-    public bool SubCatPhysicalAbuse { get; set; }
-    public bool SubCatSexualAbuse { get; set; }
-    public bool SubCatOsaec { get; set; }
-    public bool SubCatCicl { get; set; }
-    public bool SubCatAtRisk { get; set; }
-    public bool SubCatStreetChild { get; set; }
-    public bool SubCatChildWithHiv { get; set; }
-    public bool IsPwd { get; set; }
-    public string? PwdType { get; set; }
-    public bool HasSpecialNeeds { get; set; }
-    public string? SpecialNeedsDiagnosis { get; set; }
-    public bool FamilyIs4ps { get; set; }
-    public bool FamilySoloParent { get; set; }
-    public bool FamilyIndigenous { get; set; }
-    public bool FamilyParentPwd { get; set; }
-    public bool FamilyInformalSettler { get; set; }
-    public DateTime DateOfAdmission { get; set; }
-    public string? AgeUponAdmission { get; set; }
-    public string? PresentAge { get; set; }
-    public string? LengthOfStay { get; set; }
-    public string? ReferralSource { get; set; }
-    public string? ReferringAgencyPerson { get; set; }
-    public DateTime? DateColbRegistered { get; set; }
-    public DateTime? DateColbObtained { get; set; }
-    public string? AssignedSocialWorker { get; set; }
-    public string? InitialCaseAssessment { get; set; }
-    public DateTime? DateCaseStudyPrepared { get; set; }
-    public string? ReintegrationType { get; set; }
-    public string? ReintegrationStatus { get; set; }
-    public string? InitialRiskLevel { get; set; }
-    public string? CurrentRiskLevel { get; set; }
-    public DateTime DateEnrolled { get; set; }
-    public DateTime? DateClosed { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string? NotesRestricted { get; set; }
-    
-    public Safehouse Safehouse { get; set; } = null!;
-    public ICollection<ProcessRecording> ProcessRecordings { get; set; } = new List<ProcessRecording>();
-    public ICollection<HomeVisitation> HomeVisitations { get; set; } = new List<HomeVisitation>();
-    public ICollection<EducationRecord> EducationRecords { get; set; } = new List<EducationRecord>();
-    public ICollection<HealthWellbeingRecord> HealthRecords { get; set; } = new List<HealthWellbeingRecord>();
-    public ICollection<InterventionPlan> InterventionPlans { get; set; } = new List<InterventionPlan>();
-    public ICollection<IncidentReport> IncidentReports { get; set; } = new List<IncidentReport>();
-}
+**`GET /api/ml/donor-churn-risk`** returns churn risk scores per supporter.
 
-// Build the remaining entities following the same pattern:
-// - InKindDonationItem
-// - DonationAllocation
-// - Partner
-// - PartnerAssignment
-// - ProcessRecording
-// - HomeVisitation
-// - EducationRecord
-// - HealthWellbeingRecord
-// - InterventionPlan
-// - IncidentReport
-// - SocialMediaPost
-// - SafehouseMonthlyMetric
-// - PublicImpactSnapshot
-```
+**`GET /api/ml/reintegration-readiness/{id}`** returns readiness score + factors per resident.
 
-### DbContext
+**`GET /api/ml/social-media-recommendations`** returns recommended posting time/type/platform.
 
-```csharp
-public class PharosDbContext : DbContext
-{
-    public DbSet<Safehouse> Safehouses => Set<Safehouse>();
-    public DbSet<Partner> Partners => Set<Partner>();
-    public DbSet<PartnerAssignment> PartnerAssignments => Set<PartnerAssignment>();
-    public DbSet<Supporter> Supporters => Set<Supporter>();
-    public DbSet<Donation> Donations => Set<Donation>();
-    public DbSet<InKindDonationItem> InKindDonationItems => Set<InKindDonationItem>();
-    public DbSet<DonationAllocation> DonationAllocations => Set<DonationAllocation>();
-    public DbSet<Resident> Residents => Set<Resident>();
-    public DbSet<ProcessRecording> ProcessRecordings => Set<ProcessRecording>();
-    public DbSet<HomeVisitation> HomeVisitations => Set<HomeVisitation>();
-    public DbSet<EducationRecord> EducationRecords => Set<EducationRecord>();
-    public DbSet<HealthWellbeingRecord> HealthWellbeingRecords => Set<HealthWellbeingRecord>();
-    public DbSet<InterventionPlan> InterventionPlans => Set<InterventionPlan>();
-    public DbSet<IncidentReport> IncidentReports => Set<IncidentReport>();
-    public DbSet<SocialMediaPost> SocialMediaPosts => Set<SocialMediaPost>();
-    public DbSet<SafehouseMonthlyMetric> SafehouseMonthlyMetrics => Set<SafehouseMonthlyMetric>();
-    public DbSet<PublicImpactSnapshot> PublicImpactSnapshots => Set<PublicImpactSnapshot>();
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        // Configure all table names and column names to snake_case
-        // Configure all foreign key relationships
-        // Configure decimal precision for monetary values
-        // See individual entity configurations below
-    }
-}
-```
+**`GET /api/ml/intervention-effectiveness`** returns intervention effectiveness insights.
 
 ---
 
-## Controller Structure
+## Coding Standards Reminder
 
-### Base Pattern
-```csharp
-[ApiController]
-[Route("api/admin/[controller]")]
-[Authorize(Roles = "Admin")]
-public class SupportersController : ControllerBase
-{
-    private readonly IDonorService _donorService;
-    
-    [HttpGet]
-    public async Task<ActionResult<PagedResult<SupporterDto>>> GetAll(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string? supporterType = null,
-        [FromQuery] string? status = null,
-        [FromQuery] string? search = null)
-    {
-        var result = await _donorService.GetSupportersAsync(page, pageSize, supporterType, status, search);
-        return Ok(result);
-    }
-    
-    [HttpGet("{id}")]
-    public async Task<ActionResult<SupporterDetailDto>> GetById(int id) { ... }
-    
-    [HttpPost]
-    public async Task<ActionResult<SupporterDto>> Create([FromBody] CreateSupporterRequest request) { ... }
-    
-    [HttpPut("{id}")]
-    public async Task<ActionResult<SupporterDto>> Update(int id, [FromBody] UpdateSupporterRequest request) { ... }
-    
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id) { ... }
-}
-```
-
-### Controllers to Build
-
-| Controller | Route Base | Auth | Purpose |
-|---|---|---|---|
-| `AuthController` | `/api/auth` | Mixed | Login, register, logout, me, Google login, MFA setup |
-| `PublicController` | `/api/public` | None | Impact snapshots, anonymized safehouse summary |
-| `DonorPortalController` | `/api/donor` | Donor | Personalized donor dashboard, their donations, impact |
-| `SafehousesController` | `/api/admin/safehouses` | Admin | CRUD safehouses |
-| `SupportersController` | `/api/admin/supporters` | Admin | CRUD supporters |
-| `DonationsController` | `/api/admin/donations` | Admin | CRUD donations + allocations |
-| `ResidentsController` | `/api/admin/residents` | Admin | CRUD residents + case conference summary |
-| `ProcessRecordingsController` | `/api/admin/process-recordings` | Admin | CRUD process recordings |
-| `HomeVisitationsController` | `/api/admin/home-visitations` | Admin | CRUD home visitations |
-| `EducationController` | `/api/admin/education-records` | Admin | CRUD education records |
-| `HealthController` | `/api/admin/health-records` | Admin | CRUD health/wellbeing records |
-| `InterventionPlansController` | `/api/admin/intervention-plans` | Admin | CRUD intervention plans |
-| `IncidentReportsController` | `/api/admin/incident-reports` | Admin | CRUD incident reports |
-| `SocialMediaController` | `/api/admin/social-media` | Admin | Posts analytics, compose, comments |
-| `ReportsController` | `/api/admin/reports` | Admin | Aggregated analytics endpoints |
-| `PartnersController` | `/api/admin/partners` | Admin | CRUD partners + assignments |
-| `MLController` | `/api/ml` | Admin | ML prediction endpoints |
-| `UsersController` | `/api/admin/users` | Admin | User management (Identity) |
+- Controller-Service pattern: controllers handle HTTP, services handle business logic
+- DTOs for all API responses — never expose EF entities directly
+- Async/await everywhere
+- Return consistent shapes: `{ data, message, errors }` or the DTO directly
+- All currency values as `decimal` in PHP
+- `[Authorize]` on all CUD endpoints, `[Authorize(Roles = "Admin,Staff")]` on reads
+- Delete endpoints require `[Authorize(Roles = "Admin")]` only (staff cannot delete)
 
 ---
 
-## DTO Pattern
+## Summary Checklist
 
-Never expose EF entities directly to the API. Create DTOs for:
-
-```csharp
-// Response DTOs
-public record SupporterDto(
-    int SupporterId,
-    string SupporterType,
-    string DisplayName,
-    string? OrganizationName,
-    string? Email,
-    string Status,
-    string? AcquisitionChannel,
-    decimal TotalDonated,      // Computed from donations
-    DateTime? LastDonationDate, // Computed
-    double? ChurnRiskScore     // From ML model
-);
-
-public record SupporterDetailDto(
-    // All supporter fields
-    // Plus: List<DonationDto> RecentDonations
-    // Plus: DonationSummaryDto Summary
-    // Plus: ChurnRiskDto ChurnRisk
-);
-
-// Request DTOs
-public record CreateSupporterRequest(
-    string SupporterType,
-    string DisplayName,
-    string? OrganizationName,
-    string? FirstName,
-    string? LastName,
-    string RelationshipType,
-    string? Region,
-    string Country,
-    string? Email,
-    string? Phone,
-    string? AcquisitionChannel
-);
-
-// Paginated response wrapper
-public record PagedResult<T>(
-    IEnumerable<T> Data,
-    int TotalCount,
-    int Page,
-    int PageSize,
-    int TotalPages
-);
-```
-
----
-
-## Data Seeding
-
-On first run, seed the database from the 17 CSV files in `lighthouse_csv_v7/`:
-
-```csharp
-public static class DataSeeder
-{
-    public static async Task SeedAsync(PharosDbContext context, string csvBasePath)
-    {
-        if (await context.Safehouses.AnyAsync()) return; // Already seeded
-        
-        // Seed in dependency order:
-        // 1. safehouses (no FK dependencies)
-        // 2. partners (no FK dependencies)
-        // 3. partner_assignments (FK: partners, safehouses)
-        // 4. supporters (no FK dependencies)
-        // 5. social_media_posts (no FK dependencies)
-        // 6. donations (FK: supporters, social_media_posts)
-        // 7. in_kind_donation_items (FK: donations)
-        // 8. donation_allocations (FK: donations, safehouses)
-        // 9. residents (FK: safehouses)
-        // 10. process_recordings (FK: residents)
-        // 11. home_visitations (FK: residents)
-        // 12. education_records (FK: residents)
-        // 13. health_wellbeing_records (FK: residents)
-        // 14. intervention_plans (FK: residents)
-        // 15. incident_reports (FK: residents, safehouses)
-        // 16. safehouse_monthly_metrics (FK: safehouses)
-        // 17. public_impact_snapshots (no FK dependencies)
-        
-        // Use CsvHelper for reading
-        // Handle nullable fields, date parsing, boolean parsing
-        // Use transactions for atomicity
-    }
-}
-```
-
-Also seed Identity users:
-```csharp
-public static class IdentitySeeder
-{
-    public static async Task SeedAsync(
-        UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager)
-    {
-        // Create roles
-        string[] roles = { "Admin", "Staff", "Donor" };
-        foreach (var role in roles)
-            if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new IdentityRole(role));
-        
-        // Create admin user (no MFA) — credentials from env/config
-        // Create donor user (no MFA) — linked to a supporter_id
-        // Create admin with MFA
-    }
-}
-```
-
----
-
-## ML Model Serving
-
-### Strategy
-- Train models in Python (Jupyter notebooks in `ml-pipelines/`)
-- Export models as ONNX or pickle files
-- In .NET, load models via ML.NET or ONNX Runtime
-- Alternatively: host Python models as a separate Flask/FastAPI microservice and call from .NET
-
-### ML Controller
-```csharp
-[ApiController]
-[Route("api/ml")]
-[Authorize(Roles = "Admin")]
-public class MLController : ControllerBase
-{
-    private readonly IMLService _mlService;
-    
-    [HttpGet("donor-churn-risk")]
-    public async Task<ActionResult<IEnumerable<DonorChurnRiskDto>>> GetDonorChurnRisks()
-    {
-        // Returns all supporters with their churn risk scores
-    }
-    
-    [HttpGet("reintegration-readiness/{residentId}")]
-    public async Task<ActionResult<ReintegrationReadinessDto>> GetReintegrationReadiness(int residentId)
-    {
-        // Returns readiness score + contributing factors for one resident
-    }
-    
-    [HttpGet("social-media-recommendations")]
-    public async Task<ActionResult<SocialMediaRecommendationDto>> GetPostRecommendations()
-    {
-        // Returns optimal posting time, content type, platform recommendations
-    }
-    
-    [HttpGet("intervention-effectiveness")]
-    public async Task<ActionResult<InterventionEffectivenessDto>> GetInterventionInsights()
-    {
-        // Returns which interventions have strongest effect on outcomes
-    }
-}
-```
-
----
-
-## Error Handling
-
-### Global Exception Handler Middleware
-```csharp
-public class ErrorHandlingMiddleware
-{
-    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
-    {
-        try { await next(context); }
-        catch (NotFoundException ex)
-        {
-            context.Response.StatusCode = 404;
-            await context.Response.WriteAsJsonAsync(new { message = ex.Message });
-        }
-        catch (ValidationException ex)
-        {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsJsonAsync(new { message = ex.Message, errors = ex.Errors });
-        }
-        catch (Exception ex)
-        {
-            // Log the full exception
-            context.Response.StatusCode = 500;
-            await context.Response.WriteAsJsonAsync(new { message = "An error occurred" });
-        }
-    }
-}
-```
-
----
-
-## Connection Strings
-
-Store in `appsettings.json` for development (excluded from git), Azure App Settings for production:
-
-```json
-{
-  "ConnectionStrings": {
-    "PharosDb": "Server=tcp:pharos.database.windows.net,1433;Database=pharos;...",
-    "IdentityDb": "Server=tcp:pharos.database.windows.net,1433;Database=pharos_identity;..."
-  },
-  "Google": {
-    "ClientId": "from-env",
-    "ClientSecret": "from-env"
-  }
-}
-```
-
-Use `builder.Configuration` which automatically reads from environment variables, user secrets, and appsettings. In Azure, set these as Application Settings.
-
----
-
-## Deployment
-
-- Azure App Service (Linux) or Docker container on Azure Container Apps
-- Azure SQL Database for both PharosDb and IdentityDb
-- Environment variables set in Azure Portal → App Settings
-- HTTPS provided by Azure with managed certificate
-- Configure HSTS in production
+- [ ] Create `DashboardController` + `DashboardService` with aggregate endpoint
+- [ ] Add `DashboardDtos.cs` with stats, activity feed, risk alerts
+- [ ] Expose `DELETE /api/admin/safehouses/{id}` in controller
+- [ ] Add `DELETE` for partners (service + controller)
+- [ ] Add `POST /api/admin/users/invite` endpoint
+- [ ] Add `DELETE /api/admin/users/{id}` (soft-delete/lockout)
+- [ ] Create `SocialMediaAccount` model + migration
+- [ ] Add social media account management endpoints (list, connect, callback, disconnect)
+- [ ] Update `ComposePostRequest` for multi-platform + scheduling
+- [ ] Verify CORS reads from configuration (not hardcoded)
+- [ ] Register new services in `Program.cs`

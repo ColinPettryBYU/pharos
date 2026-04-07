@@ -1,14 +1,47 @@
+import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTableWrapper } from "@/components/shared/DataTableWrapper";
 import { EmotionalStateIndicator } from "@/components/shared/EmotionalStateIndicator";
-import { Button } from "@/components/ui/button";
-import { mockProcessRecordings } from "@/lib/mock-data";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useProcessRecordings, useCreateProcessRecording } from "@/hooks/useProcessRecordings";
 import type { ProcessRecording } from "@/types";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+const recordingSchema = z.object({
+  ResidentId: z.coerce.number().min(1, "Resident is required"),
+  SessionType: z.string().min(1, "Session type is required"),
+  SessionDurationMinutes: z.coerce.number().min(1, "Duration is required"),
+  EmotionalStateObserved: z.string().min(1, "Starting emotional state is required"),
+  EmotionalStateEnd: z.string().min(1, "Ending emotional state is required"),
+  SessionNarrative: z.string().min(1, "Narrative is required"),
+  InterventionsApplied: z.string().optional(),
+  FollowUpActions: z.string().optional(),
+  ProgressNoted: z.boolean().default(false),
+  ConcernsFlagged: z.boolean().default(false),
+  ReferralMade: z.boolean().default(false),
+});
+
+type RecordingForm = z.infer<typeof recordingSchema>;
+
+const emotionalStates = ["Calm", "Anxious", "Sad", "Angry", "Hopeful", "Withdrawn", "Happy", "Distressed"];
 
 const columns: ColumnDef<ProcessRecording>[] = [
   {
@@ -39,61 +72,158 @@ const columns: ColumnDef<ProcessRecording>[] = [
   {
     id: "emotional",
     header: "Emotional State",
-    cell: ({ row }) => (
-      <EmotionalStateIndicator
-        start={row.original.emotional_state_observed}
-        end={row.original.emotional_state_end}
-      />
-    ),
+    cell: ({ row }) => <EmotionalStateIndicator start={row.original.emotional_state_observed} end={row.original.emotional_state_end} />,
   },
   {
     accessorKey: "progress_noted",
     header: "Progress",
     cell: ({ row }) =>
-      row.getValue("progress_noted") ? (
-        <Badge className="bg-success/10 text-success border-0 text-xs">Yes</Badge>
-      ) : (
-        <span className="text-xs text-muted-foreground">-</span>
-      ),
+      row.getValue("progress_noted") ? <Badge className="bg-success/10 text-success border-0 text-xs">Yes</Badge> : <span className="text-xs text-muted-foreground">-</span>,
   },
   {
     accessorKey: "concerns_flagged",
     header: "Concerns",
     cell: ({ row }) =>
-      row.getValue("concerns_flagged") ? (
-        <Badge variant="destructive" className="text-xs">Flagged</Badge>
-      ) : (
-        <span className="text-xs text-muted-foreground">-</span>
-      ),
+      row.getValue("concerns_flagged") ? <Badge variant="destructive" className="text-xs">Flagged</Badge> : <span className="text-xs text-muted-foreground">-</span>,
   },
 ];
 
 export default function ProcessRecordingsPage() {
   const navigate = useNavigate();
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { data, isLoading, error, refetch } = useProcessRecordings();
+  const createRecording = useCreateProcessRecording();
+
+  const recordings = Array.isArray(data) ? data : (data?.data ?? []);
+
+  const form = useForm<RecordingForm>({
+    resolver: zodResolver(recordingSchema),
+    defaultValues: {
+      ResidentId: 0, SessionType: "", SessionDurationMinutes: 45,
+      EmotionalStateObserved: "", EmotionalStateEnd: "",
+      SessionNarrative: "", InterventionsApplied: "", FollowUpActions: "",
+      ProgressNoted: false, ConcernsFlagged: false, ReferralMade: false,
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await createRecording.mutateAsync(values as unknown as Record<string, unknown>);
+      toast.success("Session recorded successfully");
+      form.reset();
+      setSheetOpen(false);
+    } catch { /* handled by api client */ }
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground mb-4">Failed to load recordings</p>
+        <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Process Recordings"
         description="All counseling sessions across residents."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/admin" },
-          { label: "Process Recordings" },
-        ]}
+        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Process Recordings" }]}
         actions={
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Record Session
+          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />Record Session
           </Button>
         }
       />
-      <DataTableWrapper
-        columns={columns}
-        data={mockProcessRecordings}
-        searchKey="social_worker"
-        searchPlaceholder="Search by social worker..."
-        onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}`)}
-      />
+
+      {!isLoading && recordings.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-lg font-medium mb-2">No recordings yet</p>
+          <p className="text-muted-foreground mb-4">Record the first session to get started</p>
+          <Button onClick={() => setSheetOpen(true)}>Record Session</Button>
+        </div>
+      ) : (
+        <DataTableWrapper
+          columns={columns}
+          data={recordings}
+          searchKey="social_worker"
+          searchPlaceholder="Search by social worker..."
+          isLoading={isLoading}
+          onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}`)}
+        />
+      )}
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Record Session</SheetTitle>
+            <SheetDescription>Document a counseling session.</SheetDescription>
+          </SheetHeader>
+          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Resident ID</Label>
+              <Input type="number" {...form.register("ResidentId")} placeholder="Resident ID" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Session Type</Label>
+                <Select value={form.watch("SessionType")} onValueChange={(v) => form.setValue("SessionType", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Individual">Individual</SelectItem>
+                    <SelectItem value="Group">Group</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Duration (min)</Label>
+                <Input type="number" {...form.register("SessionDurationMinutes")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Starting State</Label>
+                <Select value={form.watch("EmotionalStateObserved")} onValueChange={(v) => form.setValue("EmotionalStateObserved", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    {emotionalStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Ending State</Label>
+                <Select value={form.watch("EmotionalStateEnd")} onValueChange={(v) => form.setValue("EmotionalStateEnd", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    {emotionalStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Session Narrative</Label>
+              <Textarea {...form.register("SessionNarrative")} rows={4} placeholder="Describe the session..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Interventions Applied</Label>
+              <Textarea {...form.register("InterventionsApplied")} rows={2} placeholder="List interventions..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Follow-up Actions</Label>
+              <Textarea {...form.register("FollowUpActions")} rows={2} placeholder="Required follow-ups..." />
+            </div>
+            <div className="flex gap-6">
+              <div className="flex items-center gap-2"><Switch checked={form.watch("ProgressNoted")} onCheckedChange={(v) => form.setValue("ProgressNoted", v)} /><Label>Progress noted</Label></div>
+              <div className="flex items-center gap-2"><Switch checked={form.watch("ConcernsFlagged")} onCheckedChange={(v) => form.setValue("ConcernsFlagged", v)} /><Label>Concerns</Label></div>
+              <div className="flex items-center gap-2"><Switch checked={form.watch("ReferralMade")} onCheckedChange={(v) => form.setValue("ReferralMade", v)} /><Label>Referral</Label></div>
+            </div>
+            <Button type="submit" className="w-full" disabled={createRecording.isPending}>
+              {createRecording.isPending ? "Saving..." : "Save Recording"}
+            </Button>
+          </form>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

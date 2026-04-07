@@ -1,634 +1,560 @@
 # Frontend Agent — Pharos
 
 > Reference `CLAUDE.md` for project context, database schema, API structure, and design system.
+> Reference `agents/design-system-agent.md` for the visual overhaul (colors, typography, components). Apply the design system FIRST.
+> Reference `agents/backend-agent.md` for the complete list of existing API endpoints and their response shapes.
 
-You are responsible for building the entire React + TypeScript frontend for Pharos. The UI must feel premium — Apple-level polish with smooth animations, generous whitespace, and thoughtful micro-interactions. This is not a generic admin template. Every interaction should feel intentional and fluid.
+You are responsible for restructuring the React + TypeScript frontend. The core work: **replace all mock data with real API calls**, **merge Dashboard and Reports into one page**, **build real CRUD forms for every dead-end button**, and **redesign page layouts for storytelling rather than data overload**.
 
 ---
 
-## Tech Setup
+## Current State — What Exists
 
-```bash
-# Initialize
-npm create vite@latest frontend -- --template react-ts
-cd frontend
-npm install
+### Infrastructure (keep as-is)
+- **Router**: `react-router-dom` in `App.tsx` with lazy-loaded pages
+- **Auth**: `lib/auth.tsx` — cookie-based auth context with `login`, `logout`, `registerUser`, `loginWithGoogle`
+- **API client**: `lib/api.ts` — `api.get/post/put/delete` with cookie credentials, error handling, toast on 403/500
+- **Theme**: `lib/theme.tsx` — dark/light toggle with `pharos_theme` cookie
+- **Types**: `types/index.ts` — all TypeScript interfaces for entities, DTOs, enums
+- **Query client**: `@tanstack/react-query` configured in `App.tsx` with 5-minute stale time
+- **UI components**: 25 shadcn components in `components/ui/`
+- **Shared components**: `StatCard`, `DataTableWrapper`, `PageHeader`, `RiskBadge`, `EmotionalStateIndicator`, `DeleteConfirmDialog`, `SkeletonPage`, `CookieConsentBanner`
+- **Layouts**: `AdminLayout`, `PublicLayout`, `PageTransition`, `RouteGuards`
 
-# Core UI
-npx shadcn@latest init        # Choose: New York style, Slate, CSS variables: yes
-npx shadcn@latest add button card input label select textarea dialog alert-dialog sheet tabs badge avatar separator skeleton switch dropdown-menu command popover calendar form toast sonner table tooltip sidebar breadcrumb
+### Pages (19 total — all use mock data)
+| Page | File | Mock imports | Dead buttons |
+|---|---|---|---|
+| AdminDashboard | `pages/admin/AdminDashboard.tsx` | `mockDashboardStats`, `mockActivityFeed`, `mockRiskAlerts`, `mockDonationTrends`, `mockSafehouses` | None (quick actions are Links) |
+| DonorsPage | `pages/admin/DonorsPage.tsx` | `mockSupporters` | "Add Supporter" sheet (toast-only) |
+| DonorDetailPage | `pages/admin/DonorDetailPage.tsx` | `mockSupporters`, `mockDonations`, `mockAllocations` | None |
+| DonationsPage | `pages/admin/DonationsPage.tsx` | `mockDonations` | "Log Donation" (no handler) |
+| ResidentsPage | `pages/admin/ResidentsPage.tsx` | `mockResidents` | "Add Resident" (no handler) |
+| ResidentDetailPage | `pages/admin/ResidentDetailPage.tsx` | All resident sub-mocks | None (but tabs are read-only) |
+| ProcessRecordingsPage | `pages/admin/ProcessRecordingsPage.tsx` | `mockProcessRecordings` | "Record Session" (no handler) |
+| HomeVisitationsPage | `pages/admin/HomeVisitationsPage.tsx` | `mockHomeVisitations`, `mockInterventionPlans` | "Log Visit" (no handler) |
+| SocialMediaPage | `pages/admin/SocialMediaPage.tsx` | `mockSocialMediaPosts`, `mockSocialComments` | Compose/Schedule/Reply (toast-only) |
+| ReportsPage | `pages/admin/ReportsPage.tsx` | `mockDonationTrends` + inline hardcoded data | None |
+| SafehousesPage | `pages/admin/SafehousesPage.tsx` | `mockSafehouses` | None |
+| PartnersPage | `pages/admin/PartnersPage.tsx` | `mockPartners` | "Add Partner" (no handler) |
+| UserManagementPage | `pages/admin/UserManagementPage.tsx` | Inline `mockUsers` | "Invite User" (no handler), role Select (toast-only) |
+| DonorDashboard | `pages/donor/DonorDashboard.tsx` | `mockDonations`, `mockAllocations`, `mockSafehouses` | "Give Again" (no handler) |
+| LandingPage | `pages/public/LandingPage.tsx` | Inline `impactStats`, `pillars`, `steps` | None |
+| ImpactDashboard | `pages/public/ImpactDashboard.tsx` | `mockImpactSnapshots` + inline `trendData` | None |
+| LoginPage | `pages/public/LoginPage.tsx` | None (uses real auth) | None |
+| RegisterPage | `pages/public/RegisterPage.tsx` | None (uses real auth) | None |
+| PrivacyPolicy | `pages/public/PrivacyPolicy.tsx` | None (static) | None |
 
-# Animation
-npm install motion             # Formerly framer-motion — THE animation library
-# Also install Motion Primitives components as needed (copy-paste from motionprimitives.com)
-# Also install Animate UI components as needed (copy-paste from animate-ui.com)
+---
 
-# Data & Forms
-npm install @tanstack/react-table @tanstack/react-query
-npm install react-hook-form @hookform/resolvers zod
-npm install recharts            # Charts
+## Step 1: Create React Query Hooks
 
-# Routing
-npm install react-router-dom
+Create a `hooks/` directory with one file per domain. Each hook uses `@tanstack/react-query` with the existing `api` client from `lib/api.ts`.
 
-# Utilities
-npm install clsx tailwind-merge lucide-react
-npm install date-fns            # Date formatting
+### `hooks/useSupporters.ts`
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import type { PaginatedResponse, Supporter } from "@/types";
+
+interface SupporterFilters {
+  page?: number;
+  pageSize?: number;
+  supporterType?: string;
+  status?: string;
+  search?: string;
+}
+
+export function useSupporters(filters: SupporterFilters = {}) {
+  return useQuery({
+    queryKey: ["supporters", filters],
+    queryFn: () =>
+      api.get<PaginatedResponse<Supporter>>("/admin/supporters", filters),
+  });
+}
+
+export function useSupporter(id: number) {
+  return useQuery({
+    queryKey: ["supporters", id],
+    queryFn: () => api.get<Supporter>(`/admin/supporters/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateSupporter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      api.post("/admin/supporters", data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["supporters"] }),
+  });
+}
+
+export function useUpdateSupporter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
+      api.put(`/admin/supporters/${id}`, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["supporters"] }),
+  });
+}
+
+export function useDeleteSupporter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/supporters/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["supporters"] }),
+  });
+}
 ```
 
+### Create the same pattern for every domain:
+
+| Hook file | Query keys | API endpoints |
+|---|---|---|
+| `hooks/useSupporters.ts` | `["supporters"]` | `/admin/supporters` |
+| `hooks/useDonations.ts` | `["donations"]` | `/admin/donations` |
+| `hooks/useResidents.ts` | `["residents"]` | `/admin/residents` |
+| `hooks/useProcessRecordings.ts` | `["processRecordings"]` | `/admin/process-recordings` |
+| `hooks/useHomeVisitations.ts` | `["homeVisitations"]` | `/admin/home-visitations` |
+| `hooks/useEducationRecords.ts` | `["educationRecords"]` | `/admin/education-records` |
+| `hooks/useHealthRecords.ts` | `["healthRecords"]` | `/admin/health-records` |
+| `hooks/useInterventionPlans.ts` | `["interventionPlans"]` | `/admin/intervention-plans` |
+| `hooks/useIncidentReports.ts` | `["incidentReports"]` | `/admin/incident-reports` |
+| `hooks/useSafehouses.ts` | `["safehouses"]` | `/admin/safehouses` |
+| `hooks/usePartners.ts` | `["partners"]` | `/admin/partners` |
+| `hooks/useSocialMedia.ts` | `["socialPosts"]`, `["socialAnalytics"]` | `/admin/social-media/posts`, `/admin/social-media/analytics` |
+| `hooks/useReports.ts` | `["reports", "donations"]`, etc. | `/admin/reports/donations`, `/admin/reports/outcomes`, `/admin/reports/safehouses`, `/admin/reports/social-media` |
+| `hooks/useDashboard.ts` | `["dashboard"]` | `/admin/dashboard` (new endpoint) |
+| `hooks/useML.ts` | `["ml", "churn"]`, etc. | `/ml/donor-churn-risk`, `/ml/reintegration-readiness/{id}`, `/ml/social-media-recommendations`, `/ml/intervention-effectiveness` |
+| `hooks/useUsers.ts` | `["users"]` | `/admin/users` |
+| `hooks/usePublicData.ts` | `["public", "impact"]`, `["public", "safehouses"]` | `/public/impact-snapshots`, `/public/safehouses/summary` |
+| `hooks/useDonorPortal.ts` | `["donor", "profile"]`, etc. | `/donor/my-profile`, `/donor/my-donations`, `/donor/my-impact` |
+
+Each hook follows the same pattern: `useQuery` for reads, `useMutation` for writes with `queryClient.invalidateQueries` on success.
+
 ---
 
-## Routing Structure
+## Step 2: Delete Mock Data
 
-```tsx
-// Public routes (no auth required)
-/                          → LandingPage
-/impact                    → PublicImpactDashboard
-/login                     → LoginPage
-/register                  → RegisterPage
-/privacy                   → PrivacyPolicyPage
+Delete `frontend/src/lib/mock-data.ts` entirely. This will cause build errors in every page that imports from it — that's intentional. Each page gets rewritten to use the hooks above.
 
-// Donor routes (Donor role required)
-/donor/dashboard           → DonorDashboard (personalized impact journey)
-/donor/donations           → DonorDonationHistory
+---
 
-// Admin/Staff routes (Admin or Staff role required)
-/admin                     → AdminDashboard
-/admin/donors              → DonorsPage (list + CRUD)
-/admin/donors/:id          → DonorDetailPage
-/admin/donations           → DonationsPage (list + CRUD)
-/admin/residents           → CaseloadInventoryPage
-/admin/residents/:id       → ResidentDetailPage (tabbed: overview, recordings, visits, education, health, interventions, incidents)
-/admin/process-recordings  → ProcessRecordingsPage (list + create)
-/admin/home-visitations    → HomeVisitationsPage (list + create)
-/admin/social              → SocialMediaCommandCenter
-/admin/reports             → ReportsAnalyticsPage
-/admin/safehouses          → SafehousesPage
-/admin/partners            → PartnersPage
-/admin/users               → UserManagementPage (Admin only)
+## Step 3: Merge Dashboard + Reports
+
+### Route Changes
+
+In `App.tsx`:
+- **Remove** the `ReportsPage` lazy import and its route (`/admin/reports`)
+- The `/admin` route stays as `AdminDashboard`
+
+In `AdminLayout.tsx` sidebar nav:
+- Remove the "Analytics" nav item under the "Reports" group
+- Rename "Overview > Dashboard" to "Overview > Home" (or keep as "Dashboard")
+
+### Delete `pages/admin/ReportsPage.tsx`
+
+### Rewrite `pages/admin/AdminDashboard.tsx`
+
+The new unified dashboard pulls from real APIs and has tabbed analytics sections.
+
+**Structure:**
+
+```
+1. PageHeader — "Dashboard" with date range selector
+2. KPI Row — 4 StatCards (real data from /api/admin/dashboard or /api/admin/reports/*)
+3. Tabbed Analytics Section:
+   - "Donations" tab — monthly trends chart, campaign comparison, channel breakdown
+   - "Outcomes" tab — risk distribution, reintegration funnel, health/education progress
+   - "Social" tab — engagement over time, platform comparison, donation correlation
+   - "Safehouses" tab — occupancy comparison, outcome metrics by safehouse
+4. OKR Metric — Prominently displayed resident progress composite score
+5. Two-column bottom:
+   - Left: Activity feed (recent events)
+   - Right: Risk alerts (ML-powered)
 ```
 
+**Data sources:**
+- KPI stats: `useDashboard()` hook → `GET /api/admin/dashboard`
+- Donation analytics: `useReports("donations")` → `GET /api/admin/reports/donations`
+- Outcomes: `useReports("outcomes")` → `GET /api/admin/reports/outcomes`
+- Social: `useReports("social-media")` → `GET /api/admin/reports/social-media`
+- Safehouses: `useReports("safehouses")` → `GET /api/admin/reports/safehouses`
+- Activity + alerts: included in dashboard response
+
+**Layout philosophy:** Each tab tells a story. The Donations tab doesn't just dump 5 charts — it leads with the headline number ("₱234,500 raised this month"), shows the trend, then breaks it down by campaign and channel. Use progressive disclosure: summary visible, details expand on demand.
+
 ---
 
-## Layout Architecture
+## Step 4: Wire Every Admin Page to Real API
 
-### Public Layout
-- Clean, minimal navbar: Logo | Mission | Impact | Login/Register
-- Full-width hero sections
-- Footer with privacy policy link, social media links, copyright
+### DonorsPage (`/admin/donors`)
 
-### Admin Layout
-- **Collapsible sidebar** (left) — animated width transition with spring physics
-  - Logo + org name at top
-  - Navigation groups: Overview, Case Management, Donors, Social Media, Reports, Settings
-  - Each nav item: icon + label, active state with subtle background + left border accent
-  - Collapse to icon-only mode with smooth animation
-  - Mobile: slides in as a sheet overlay
-- **Top header bar** — breadcrumbs, search (Command palette), notification bell, user avatar dropdown
-- **Content area** — max-width container with generous padding, page transition animations
+**Replace:**
+```typescript
+// DELETE: import { mockSupporters } from "@/lib/mock-data";
+// ADD:
+import { useSupporters, useCreateSupporter } from "@/hooks/useSupporters";
 
-### Page Transition Wrapper
+// In component:
+const [filters, setFilters] = useState({ page: 1, pageSize: 20 });
+const { data, isLoading } = useSupporters(filters);
+const supporters = data?.data ?? [];
+```
+
+**Fix "Add Supporter" sheet:** The existing sheet has uncontrolled `<Input>` elements and a toast-only submit. Replace with React Hook Form + Zod:
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const supporterSchema = z.object({
+  displayName: z.string().min(1, "Name is required"),
+  supporterType: z.string().min(1),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  country: z.string().min(1),
+  acquisitionChannel: z.string().optional(),
+  // ... all fields from CreateSupporterRequest DTO
+});
+
+// In the sheet submit handler:
+const createSupporter = useCreateSupporter();
+const onSubmit = async (data: z.infer<typeof supporterSchema>) => {
+  await createSupporter.mutateAsync(data);
+  toast.success("Supporter added successfully");
+  setSheetOpen(false);
+};
+```
+
+### DonationsPage (`/admin/donations`)
+
+**Replace** `mockDonations` with `useDonations(filters)`.
+
+**Build "Log Donation" form** in a Sheet:
+- Fields: supporter (searchable select from `useSupporters`), donation_type (select), amount, campaign_name, channel_source, is_recurring (switch), donation_date (calendar)
+- Conditional: show `estimated_value` + `impact_unit` for non-Monetary types
+- Sub-form for allocations: safehouse select + program_area + amount_allocated (repeatable)
+- Submit: `POST /api/admin/donations`
+- Validation: Zod schema matching `CreateDonationRequest` DTO
+
+### ResidentsPage (`/admin/residents`)
+
+**Replace** `mockResidents` with `useResidents(filters)`.
+
+**Build "Add Resident" form** in a Sheet (this is the longest form):
+- Section 1: Case info — case_control_no, internal_code, safehouse_id (select), case_status, case_category
+- Section 2: Demographics — sex, date_of_birth, birth_status, place_of_birth, religion
+- Section 3: Sub-categories — checkboxes for all `sub_cat_*` boolean flags
+- Section 4: Special needs — is_pwd, pwd_type, has_special_needs, special_needs_diagnosis
+- Section 5: Family profile — family_is_4ps, family_solo_parent, etc. (checkboxes)
+- Section 6: Referral — referral_source, referring_agency_person, date_of_admission
+- Section 7: Reintegration — type, status, initial_risk_level
+- Submit: `POST /api/admin/residents`
+
+Use a scrollable sheet with section headers so it's not overwhelming.
+
+### ResidentDetailPage (`/admin/residents/:id`)
+
+**Replace** all mock imports with hooks:
+```typescript
+const { id } = useParams();
+const { data: resident } = useResident(Number(id));
+const { data: recordings } = useResidentRecordings(Number(id));
+const { data: visitations } = useResidentVisitations(Number(id));
+// Education, health, interventions, incidents loaded per tab (on tab switch)
+```
+
+Use the existing endpoint `GET /api/admin/residents/{id}` for the resident detail, and `GET /api/admin/residents/{id}/process-recordings` and `GET /api/admin/residents/{id}/home-visitations` for sub-resources. For education, health, interventions, and incidents, filter the general list endpoints by `residentId` query param.
+
+**Add edit forms** within tabs:
+- "Add Record" buttons in Education and Health tabs → Sheet with form → POST to respective endpoint
+- "Create Plan" in Interventions tab → Sheet → POST `/api/admin/intervention-plans`
+- "Report Incident" in Incidents tab → Sheet → POST `/api/admin/incident-reports`
+- "Record New Session" in Recordings tab → Sheet → POST `/api/admin/process-recordings`
+- "Log Visit" in Visitations tab → Sheet → POST `/api/admin/home-visitations`
+
+### ProcessRecordingsPage (`/admin/process-recordings`)
+
+**Replace** `mockProcessRecordings` with `useProcessRecordings(filters)`.
+
+**Build "Record Session" form** in a Sheet:
+- Fields: resident_id (searchable select), session_type (Individual/Group), session_duration_minutes, emotional_state_observed (select), emotional_state_end (select), session_narrative (textarea), interventions_applied (textarea), follow_up_actions (textarea), progress_noted (switch), concerns_flagged (switch), referral_made (switch)
+- Submit: `POST /api/admin/process-recordings`
+
+### HomeVisitationsPage (`/admin/home-visitations`)
+
+**Replace** `mockHomeVisitations` with `useHomeVisitations(filters)`.
+
+**Build "Log Visit" form** in a Sheet:
+- Fields: resident_id, visit_type (select), visit_date (calendar), location_visited, family_members_present, purpose (textarea), observations (textarea), family_cooperation_level (select), safety_concerns_noted (switch), follow_up_needed (switch), follow_up_notes (textarea), visit_outcome (select)
+- Submit: `POST /api/admin/home-visitations`
+
+### SafehousesPage (`/admin/safehouses`)
+
+**Replace** `mockSafehouses` with `useSafehouses()`.
+
+### PartnersPage (`/admin/partners`)
+
+**Replace** `mockPartners` with `usePartners(filters)`.
+
+**Build "Add Partner" form** in a Sheet:
+- Fields: partner_name, partner_type, role_type, contact_name, email, phone, region, status, start_date
+- Submit: `POST /api/admin/partners`
+
+### UserManagementPage (`/admin/users`)
+
+**Delete** the inline `mockUsers` array. Replace with `useUsers()`.
+
+**Build "Invite User" dialog:**
+- Fields: email, displayName, password, role (select: Admin/Staff/Donor), linkedSupporterId (optional, shown when role=Donor)
+- Submit: `POST /api/admin/users/invite`
+
+**Wire role Select:**
+```typescript
+// Replace toast-only onChange with:
+const updateRole = useMutation({
+  mutationFn: ({ userId, roles }: { userId: string; roles: string[] }) =>
+    api.put(`/admin/users/${userId}/roles`, { roles }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["users"] });
+    toast.success("Role updated");
+  },
+});
+```
+
+### SocialMediaPage (`/admin/social`)
+
+**Replace** `mockSocialMediaPosts` with `useSocialPosts(filters)` and `mockSocialComments` with the comments inbox endpoint.
+
+**Wire compose form** to `POST /api/admin/social-media/compose`:
+- The existing UI has platform badges, caption, topic, CTA, hashtags, schedule datetime
+- Connect each field to React Hook Form state
+- Submit calls the compose endpoint
+- See `agents/social-media-agent.md` for full integration details
+
+**Wire reply** to `POST /api/admin/social-media/comments/{id}/reply`
+
+**Fix hardcoded "AI Recommendations" and "ML Insights" cards:**
+- Replace with data from `GET /api/ml/social-media-recommendations`
+
+---
+
+## Step 5: Wire Public Pages
+
+### LandingPage (`/`)
+
+Replace inline `impactStats` with real data:
+```typescript
+const { data: summary } = useQuery({
+  queryKey: ["public", "safehouses"],
+  queryFn: () => api.get("/public/safehouses/summary"),
+});
+```
+
+The `pillars` and `steps` arrays are static content (not database data) — those can stay as inline constants.
+
+### ImpactDashboard (`/impact`)
+
+Replace `mockImpactSnapshots` and inline `trendData`:
+```typescript
+const { data: snapshots } = useQuery({
+  queryKey: ["public", "impact"],
+  queryFn: () => api.get("/public/impact-snapshots"),
+});
+```
+
+The stat cards showing "60", "78%", "4.2", "9" should be computed from the snapshots data or the safehouse summary endpoint.
+
+---
+
+## Step 6: Wire Donor Pages
+
+### DonorDashboard (`/donor/dashboard`)
+
+Replace all mock imports:
+```typescript
+const { data: profile } = useQuery({
+  queryKey: ["donor", "profile"],
+  queryFn: () => api.get("/donor/my-profile"),
+});
+const { data: donations } = useQuery({
+  queryKey: ["donor", "donations"],
+  queryFn: () => api.get("/donor/my-donations"),
+});
+const { data: impact } = useQuery({
+  queryKey: ["donor", "impact"],
+  queryFn: () => api.get("/donor/my-impact"),
+});
+```
+
+**"Give Again" button:** Link to the organization's external donation page, or navigate to a donation form if one exists. For now, a reasonable approach is `<Button asChild><a href="https://www.lighthousesanctuary.org/donate" target="_blank">Give Again</a></Button>`.
+
+---
+
+## Step 7: Page Layout Philosophy
+
+Every page redesign should follow these principles:
+
+### Lead With the Headline
+Each page should start with the single most important number or insight. Not 4 stat cards — 1 hero metric. Example: Donors page leads with "60 Active Supporters" as a large Manrope number, with "₱1.2M total contributed" as the subtext.
+
+### Progressive Disclosure
+Show summary first, details on demand. Tables are secondary to the narrative. Consider: a summary sentence at the top of each table section explaining what the data shows.
+
+### Breathing Room
+- Minimum 2rem (32px) gap between major sections
+- Cards have generous internal padding (p-6)
+- No more than 3-4 stat cards in a row (on desktop)
+- Tables don't need to fill 100% width — max-width containers are fine
+
+### Storytelling Structure
+
+For each admin page:
+
+```
+1. Hero metric / headline stat
+2. Brief context sentence (e.g., "3 donors at risk of lapsing this month")
+3. Primary action button (e.g., "Add Supporter")
+4. Data table or card grid (the main content)
+5. Secondary insights or related data below
+```
+
+### Typography Integration
+- Page titles: `font-heading text-3xl font-bold tracking-tight`
+- Section headings: `font-heading text-xl font-semibold`
+- Stat numbers: `font-sans text-4xl font-bold tabular-nums tracking-tight`
+- Body/labels: `text-sm text-muted-foreground`
+
+---
+
+## Step 8: Loading & Error States
+
+Every page that fetches data must handle:
+
+**Loading:** Use the `isLoading` prop on `DataTableWrapper` (already supports skeleton). For non-table pages, use `SkeletonPage` or inline `Skeleton` components.
+
+**Error:** If the query fails, show a centered error message with a retry button:
 ```tsx
-import { motion, AnimatePresence } from "motion/react"
-
-function PageTransition({ children }: { children: React.ReactNode }) {
+if (error) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
-      {children}
-    </motion.div>
-  )
+    <div className="flex flex-col items-center justify-center py-20">
+      <p className="text-muted-foreground mb-4">Failed to load data</p>
+      <Button variant="outline" onClick={() => refetch()}>
+        Try Again
+      </Button>
+    </div>
+  );
+}
+```
+
+**Empty state:** When the data array is empty (not loading, no error), show a friendly empty state with an action:
+```tsx
+if (data?.length === 0) {
+  return (
+    <div className="text-center py-20">
+      <p className="text-lg font-medium mb-2">No supporters yet</p>
+      <p className="text-muted-foreground mb-4">Add your first supporter to get started</p>
+      <Button onClick={() => setSheetOpen(true)}>Add Supporter</Button>
+    </div>
+  );
 }
 ```
 
 ---
 
-## Page Specifications
+## Step 9: Form Patterns
 
-### 1. Landing Page (`/`)
+All CRUD forms use the same stack:
 
-**Purpose**: Introduce Pharos, its mission, and drive visitors to donate or learn more.
-
-**Sections** (scroll-triggered animations):
-1. **Hero** — Full-viewport height. Large heading "A Beacon of Hope for Every Girl". Subtext about the mission. Two CTAs: "Learn More" (scroll) + "Donate Now" (link). Subtle background gradient or soft hero image. Text fades in with stagger.
-2. **Impact Stats Strip** — Four animated counting numbers: "60+ Girls Served", "9 Safehouses", "420+ Donations Received", "3 Regions Covered". Numbers count up on scroll-into-view.
-3. **Four Pillars** — Cards for Safety, Healing, Justice, Empowerment. Each card has an icon, title, short description. Cards stagger in on scroll.
-4. **How It Works** — Three steps: "We Rescue → We Rehabilitate → We Reintegrate". Horizontal timeline on desktop, vertical on mobile. Animated connectors.
-5. **Impact Stories** — Pull from `public_impact_snapshots`. Carousel or grid of anonymized stories. Soft card design with quotes.
-6. **Call to Action** — "Join Our Mission" section. Buttons: Donate, Volunteer, Follow Us.
-7. **Footer** — Privacy Policy link (required), social media icons, copyright, contact.
-
-**Design Notes**: Warm, hopeful, trustworthy. Photography-driven if assets available, otherwise use warm gradient backgrounds. No stock photos of specific children (privacy). Use abstract/silhouette imagery.
-
----
-
-### 2. Public Impact Dashboard (`/impact`)
-
-**Purpose**: Show aggregated, anonymized organizational impact to potential donors.
-
-**Data Source**: `/api/public/impact-snapshots`, `/api/public/safehouses/summary`
-
-**Sections**:
-1. **Monthly Headline** — Latest `public_impact_snapshots` headline + summary
-2. **Key Metrics** — Animated counters: Total residents served, Average education progress, Average health improvement, Safehouses active
-3. **Trend Charts** — Line charts showing progress over time (from `safehouse_monthly_metrics` aggregated). Education progress, health scores, sessions conducted.
-4. **Regional Map** — Visual representation of safehouses across Luzon, Visayas, Mindanao (can be a stylized illustration, not necessarily a real map)
-5. **Published Snapshots** — Paginated list of monthly impact reports
-
-**Design Notes**: Data-viz focused. Clean charts with draw-in animations. Make donors feel their money is working.
-
----
-
-### 3. Login Page (`/login`)
-
-- Clean centered card with Pharos logo
-- Email + password fields with validation
-- "Sign in with Google" button (third-party auth)
-- Link to register
-- Error handling: shake animation on invalid credentials
-- After login, redirect based on role: Admin → `/admin`, Donor → `/donor/dashboard`
-
----
-
-### 4. Privacy Policy (`/privacy`)
-
-- Full GDPR-compliant privacy policy
-- Clean typographic layout
-- Sections: What data we collect, How we use it, Third-party services, Cookies, Your rights, Contact
-- Linked from every page footer
-
----
-
-### 5. Cookie Consent Banner
-
-- Fixed bottom banner that slides up on first visit
-- "We use cookies to improve your experience. [Accept All] [Manage Preferences] [Reject]"
-- Manage Preferences opens a sheet with toggles: Essential (always on), Analytics, Preferences
-- Save preference to a browser-accessible cookie (NOT httpOnly — security requirement for the theme/mode cookie)
-- Fully functional: actually controls whether analytics cookies are set
-- Animated entrance (slide up with spring)
-
----
-
-### 6. Admin Dashboard (`/admin`)
-
-**Purpose**: Command center for staff. High-level overview of everything.
-
-**Layout**: Grid of cards/widgets
-
-**Row 1 — Stat Cards** (4 columns):
-- Active Residents (count, with animated counter)
-- Monthly Donations (₱ total this month, % change from last month)
-- Cases Needing Review (count of residents with concerns_flagged in recent process recordings)
-- Social Engagement (average engagement_rate this month, trend arrow)
-
-Each card: subtle shadow, hover scale(1.02), icon + number + label + trend indicator. Numbers animate on page load with spring-counting.
-
-**Row 2 — Charts** (2 columns):
-- Left: **Donation Trends** — Line/area chart showing monthly donation totals over past 12 months. Filter by donation type. Animated draw-in.
-- Right: **Safehouse Occupancy** — Bar chart showing current_occupancy vs capacity_girls for each safehouse. Color-coded by utilization %.
-
-**Row 3 — Activity & Alerts** (2 columns):
-- Left: **Recent Activity Feed** — Timeline of recent events: new donations, process recordings, incidents, social media posts. Each item has icon, description, timestamp. Stagger animation.
-- Right: **Risk Alerts** (ML-powered) — Cards for:
-  - At-risk residents (from ML reintegration model showing regression risk)
-  - Lapsing donors (from ML churn model)
-  - Each alert: resident/donor name, risk score badge (color-coded), recommended action
-  - Click to navigate to detail page
-
-**Row 4 — Quick Actions**:
-- Buttons: "New Resident", "Record Session", "Log Donation", "Compose Post"
-- Each opens respective form or navigates to create page
-
----
-
-### 7. Donors & Contributions (`/admin/donors`)
-
-**List View**:
-- DataTable with columns: Name, Type (badge), Status (badge), Total Donated (₱), Last Donation Date, Acquisition Channel, Churn Risk (ML badge)
-- Filters: supporter_type, status, acquisition_channel, date range
-- Search by name/email
-- Pagination (server-side, 20 per page)
-- Row click → DonorDetailPage
-- "Add Supporter" button → opens Sheet/Dialog with form
-
-**Donor Detail Page** (`/admin/donors/:id`):
-- Header: Name, type badge, status badge, contact info, acquisition channel
-- Tabs:
-  - **Donations**: Table of all donations by this supporter. Columns: date, type, amount, campaign, channel. Includes a mini line chart of donation history.
-  - **Allocations**: Where their donations went (safehouses + program areas). Pie/donut chart.
-  - **Impact**: Personalized impact summary — connect their donation allocations to safehouse outcomes from `safehouse_monthly_metrics`.
-  - **ML Insights**: Churn risk score with explanation, recommended retention actions
-
-**Create/Edit Supporter Form**:
-- Fields matching `supporters` table
-- React Hook Form + Zod validation
-- Dropdown for supporter_type, relationship_type, acquisition_channel
-- Save → POST/PUT to API
-
-**Create Donation Form**:
-- supporter_id (searchable dropdown)
-- donation_type, donation_date, is_recurring, campaign_name, channel_source
-- Conditional fields: amount + currency_code for Monetary, estimated_value + impact_unit for others
-- Allocation sub-form: safehouse + program_area + amount_allocated (can add multiple)
-
----
-
-### 8. Caseload Inventory (`/admin/residents`)
-
-**Purpose**: Core case management page. This is the most important operational page.
-
-**List View**:
-- DataTable with columns: Case Control No, Internal Code, Safehouse (badge), Status (badge), Category, Risk Level (color-coded badge — green/yellow/orange/red), Age, Admission Date, Assigned SW, Reintegration Status
-- Filters: case_status, safehouse_id, case_category, risk_level, reintegration_status
-- Search by case_control_no, internal_code
-- Sortable columns
-- Row click → ResidentDetailPage
-- "Add Resident" button
-
-**Resident Detail Page** (`/admin/residents/:id`) — Tabbed Layout:
-
-**Header Section** (always visible):
-- Case control no, internal code, risk level badge (large, prominent), case status
-- Safehouse name, assigned social worker
-- Quick stats: Age, length of stay, admission date
-- Edit button → opens edit form in Sheet
-
-**Tab: Overview**
-- Demographics card: DOB, birth status, place of birth, religion
-- Case info card: Category, all sub-categories as badges (trafficking, abuse, etc.)
-- Family profile card: 4Ps, solo parent, indigenous, PWD parent, informal settler
-- Disability/special needs card (if applicable)
-- Referral info: source, agency/person, dates
-- Reintegration card: type, status, progress indicator
-- ML Readiness Score: visual gauge/ring showing reintegration readiness percentage
-
-**Tab: Process Recordings**
-- Chronological list of all sessions (newest first)
-- Each entry as a card: date, social worker, session type badge, duration
-- Emotional state: visual indicator showing start → end state (e.g., "Anxious → Calm" with arrow)
-- Expandable narrative, interventions, follow-up
-- Badges for: progress_noted (green), concerns_flagged (red), referral_made (blue)
-- "Record New Session" button at top
-- Filter by session_type, emotional_state, concerns_flagged
-
-**Tab: Home Visitations**
-- List of visits with: date, social worker, visit type badge, outcome badge (color-coded)
-- Family cooperation level indicator
-- Safety concerns flag (red if noted)
-- Expandable observations and follow-up notes
-- "Log Visit" button
-
-**Tab: Education**
-- Education records as cards or timeline
-- Progress chart: line chart of progress_percent over time
-- Attendance rate trend
-- Current enrollment status, education level, school name
-- "Add Record" button
-
-**Tab: Health & Wellbeing**
-- Health score trends: multi-line chart showing general_health, nutrition, sleep_quality, energy_level over time
-- BMI tracking with visual range indicator
-- Checkup status badges: medical, dental, psychological (green if done, gray if not)
-- "Add Record" button
-
-**Tab: Intervention Plans**
-- Cards grouped by plan_category
-- Each card: description, services provided, status badge, target date, progress toward target_value
-- Case conference date indicator
-- "Create Plan" button
-
-**Tab: Incidents**
-- Incident list with severity color-coding (Low=yellow, Medium=orange, High=red)
-- Each entry: date, type badge, severity, description, resolution status
-- "Report Incident" button
-
-**Case Conference Prep Button** (prominent, top of page):
-- Opens a full-page or large dialog with an auto-generated summary:
-  - Latest process recording summary
-  - Health & education trends (last 3 months)
-  - Recent incidents
-  - Active intervention plans and their status
-  - Home visitation outcomes
-  - ML reintegration readiness score
-  - All pulled from respective API endpoints and composed into a readable report
-
----
-
-### 9. Process Recording Page (`/admin/process-recordings`)
-
-- DataTable of all recordings across all residents
-- Columns: Date, Resident (link), Social Worker, Type, Duration, Emotional State (start→end), Progress, Concerns
-- Filters: resident_id, social_worker, session_type, date range, concerns_flagged
-- Click → expand inline or navigate to resident's recordings tab
-- Bulk view for social workers to see their caseload's recent sessions
-
----
-
-### 10. Home Visitations & Case Conferences (`/admin/home-visitations`)
-
-- DataTable of all visitations
-- Columns: Date, Resident (link), Social Worker, Visit Type, Cooperation Level, Outcome, Safety Concerns, Follow-up Needed
-- Filters: visit_type, family_cooperation_level, visit_outcome, safety_concerns, date range
-- Upcoming case conferences section (from intervention_plans.case_conference_date where date is future)
-
----
-
-### 11. Social Media Command Center (`/admin/social`)
-
-**This is the standout feature page. Make it exceptional.**
-
-**Layout**: Full-width, three-panel or tabbed design.
-
-**Top Bar — Platform Tabs**:
-- Horizontal tab bar with platform icons: Facebook, Instagram, LinkedIn, YouTube, TikTok, Twitter, WhatsApp
-- "All Platforms" as default view
-- Each tab filters all content below to that platform
-- Active tab has animated underline indicator
-
-**Panel 1 — Compose & Schedule**:
-- Rich compose form:
-  - Platform multi-select (which platforms to post to)
-  - Media upload area (drag & drop)
-  - Caption textarea with character count (varies by platform)
-  - Hashtag input with suggestions based on historical data
-  - Call to action toggle + type selector
-  - Content topic dropdown
-  - Schedule date/time picker OR "Post Now" button
-  - "AI Recommend" button that shows ML-suggested optimal time and content type
-- Recent scheduled posts queue (sortable timeline)
-
-**Panel 2 — Analytics Dashboard**:
-- Metric cards: Total Reach (this month), Engagement Rate (avg), Click-throughs, Donation Referrals
-- Animated counting numbers on each
-- Charts:
-  - Engagement over time (line chart, filterable by platform)
-  - Best performing content types (bar chart)
-  - Platform comparison (radar chart or grouped bars)
-  - **Social → Donation Correlation** (scatter plot: engagement_rate vs donation_referrals)
-  - Posting heatmap: day of week × hour showing engagement density
-- Top performing posts list with metrics
-
-**Panel 3 — Comments Inbox** (Tier 1 platforms):
-- Unified feed of recent comments across Facebook, Instagram, LinkedIn, YouTube
-- Each comment shows: platform icon, post thumbnail, commenter name, comment text, timestamp
-- Inline reply box (sends via respective API)
-- Moderate actions: hide, delete (where API supports)
-- Filter by platform, read/unread, sentiment
-
-**ML Recommendations Sidebar/Section**:
-- "Best time to post next": day + hour with predicted engagement
-- "Recommended content type": based on recent performance patterns
-- "Predicted engagement": for current draft based on characteristics
-- "Campaign insights": which campaigns drive donations vs. just engagement
-
----
-
-### 12. Reports & Analytics (`/admin/reports`)
-
-**Tabbed sections**:
-
-**Donation Reports**:
-- Total donations over time (area chart)
-- Breakdown by donation_type (stacked bar)
-- Campaign effectiveness comparison (grouped bars: donations by campaign_name)
-- Recurring vs one-time trends
-- Top donors table
-- Allocation distribution across safehouses (sankey or treemap)
-
-**Resident Outcomes**:
-- Education progress trends across all residents (aggregated line chart)
-- Health score improvements (before/after comparison)
-- Emotional state distribution shifts over time
-- Reintegration funnel: Not Started → In Progress → Completed
-- Safehouse comparison: avg outcomes by safehouse
-
-**Social Media Reports**:
-- Cross-platform comparison of engagement metrics
-- Content type effectiveness (which post_type drives what outcome)
-- Follower growth over time
-- Donation attribution: social media posts that led to donations
-
-**OKR Metric** (required for Thursday deliverable):
-- One prominent, tracked metric with clear explanation of why it's the most important
-- Suggestion: "Resident Progress Score" — composite of education, health, and emotional improvement across all active residents. Display prominently with trend.
-
----
-
-### 13. Donor Dashboard (`/donor/dashboard`) — Donor Role
-
-**Purpose**: Personalized view for logged-in donors showing their impact.
-
-**Sections**:
-1. **Welcome** — "Thank you, [name]. Here's the impact of your generosity."
-2. **My Donations Summary** — Total donated (₱), number of donations, active since date. Animated counters.
-3. **Where My Money Went** — Donut chart: allocation by safehouse and program area
-4. **Impact Metrics** — Connect their allocated safehouses to outcome data from `safehouse_monthly_metrics`:
-   - "Your donations to [Safehouse] helped serve [X] residents this month"
-   - "Average education progress: [Y]%, Average health score: [Z]/5"
-5. **My Donation History** — Simple table of their donations with dates and amounts
-6. **Call to Action** — "Give Again" button
-
----
-
-### 14. Safehouses Page (`/admin/safehouses`)
-
-- Grid of safehouse cards (not a table — more visual)
-- Each card: name, region badge, city, capacity visual (progress bar: occupancy/capacity), status badge
-- Click → detail view with: full info, partner assignments, residents at this safehouse, monthly metrics chart
-- Edit capability for admin
-
----
-
-## Shared Components to Build
-
-### StatCard
-```tsx
-// Animated stat card with counting number
-interface StatCardProps {
-  title: string
-  value: number
-  format?: "currency" | "number" | "percent"
-  trend?: { value: number; direction: "up" | "down" }
-  icon?: LucideIcon
-}
-```
-- Number animates from 0 to value using spring physics on mount
-- Trend arrow with green (up=good) or red (down=bad) coloring
-- Subtle hover scale
-
-### RiskBadge
-```tsx
-// Color-coded risk level badge
-interface RiskBadgeProps {
-  level: "Low" | "Medium" | "High" | "Critical"
-}
-```
-- Low: green, Medium: yellow, High: orange, Critical: red
-- Subtle pulse animation on Critical
-
-### EmotionalStateIndicator
-```tsx
-// Shows emotional state transition
-interface EmotionalStateIndicatorProps {
-  start: string  // e.g., "Anxious"
-  end: string    // e.g., "Calm"
-}
-```
-- Arrow from start to end with color coding (negative states in warm colors, positive in cool)
-
-### DataTableWrapper
-- Wraps TanStack Table with shadcn styling
-- Built-in: pagination, sorting, column visibility toggle, search, filter dropdowns
-- Row enter animation (staggered)
-- Skeleton loader while fetching
-
-### PageHeader
-```tsx
-interface PageHeaderProps {
-  title: string
-  description?: string
-  actions?: React.ReactNode  // Buttons like "Add New"
-  breadcrumbs?: { label: string; href: string }[]
-}
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 ```
 
-### DeleteConfirmDialog
-- Uses shadcn AlertDialog
-- "Are you sure?" with item name
-- Type-to-confirm for critical deletes (type the item name)
-- Required by security specs
+**Zod schemas** should match the backend DTOs. The TypeScript interfaces in `types/index.ts` align with the CSV columns; the create/update DTOs on the backend use PascalCase. The API client sends JSON with the casing you provide — make sure the field names match what the backend expects (PascalCase for .NET: `SupporterType`, `DisplayName`, etc.).
 
-### SkeletonPage
-- Full-page skeleton loader matching the layout of the page being loaded
-- Shimmer animation
+**Form container:** Use `Sheet` for side panels (add/edit forms) and `Dialog` for small confirmations (delete). Sheets should have `side="right"` and enough width for forms (`className="sm:max-w-lg"` override on SheetContent).
 
----
+**Submit pattern:**
+```typescript
+const mutation = useCreateThing();
 
-## Animation Patterns (Copy-Paste Reference)
-
-### Staggered List
-```tsx
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 }
+const onSubmit = form.handleSubmit(async (values) => {
+  try {
+    await mutation.mutateAsync(values);
+    toast.success("Created successfully");
+    form.reset();
+    setOpen(false);
+  } catch (err) {
+    // ApiError is thrown by api client, toast is shown by handleResponse
   }
-}
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
-}
-
-<motion.div variants={container} initial="hidden" animate="show">
-  {items.map(i => (
-    <motion.div key={i.id} variants={item}>{/* content */}</motion.div>
-  ))}
-</motion.div>
+});
 ```
 
-### Counting Number
-```tsx
-import { useSpring, animated } from "motion/react" // or use a dedicated CountingNumber component
-
-function AnimatedCounter({ value }: { value: number }) {
-  const spring = useSpring(0, { stiffness: 100, damping: 30 })
-  // Animate spring to value on mount
-  // Display with toLocaleString() for formatting
-}
+**Edit pattern:** Pre-populate the form when editing:
+```typescript
+useEffect(() => {
+  if (editItem) {
+    form.reset({
+      displayName: editItem.display_name,
+      supporterType: editItem.supporter_type,
+      // ... map snake_case DB fields to PascalCase form fields
+    });
+  }
+}, [editItem]);
 ```
-
-### Hover Card Scale
-```tsx
-<motion.div
-  whileHover={{ scale: 1.02 }}
-  whileTap={{ scale: 0.98 }}
-  transition={{ type: "spring", stiffness: 400, damping: 17 }}
->
-  <Card>...</Card>
-</motion.div>
-```
-
-### Chart Draw-In
-- Recharts supports `isAnimationActive` prop on all chart components
-- Set `animationBegin={200}` `animationDuration={800}` `animationEasing="ease-out"`
 
 ---
 
-## Auth Context
+## Step 10: Delete Confirmation
+
+Every delete action must use `DeleteConfirmDialog` (already exists in `components/shared/`). Wire it to the real delete mutation:
 
 ```tsx
-interface AuthContextType {
-  user: User | null
-  isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  loginWithGoogle: () => Promise<void>
-  logout: () => Promise<void>
-  isAdmin: boolean
-  isStaff: boolean
-  isDonor: boolean
-}
+<DeleteConfirmDialog
+  open={deleteOpen}
+  onOpenChange={setDeleteOpen}
+  title="Delete Supporter"
+  description={`This will permanently delete ${selectedItem?.display_name}.`}
+  onConfirm={async () => {
+    await deleteSupporter.mutateAsync(selectedItem.supporter_id);
+    toast.success("Supporter deleted");
+    setDeleteOpen(false);
+  }}
+/>
 ```
 
-- On app mount, call `/api/auth/me` to check session
-- Protected routes redirect to `/login` if unauthenticated
-- Role-based route guards: AdminRoute, StaffRoute, DonorRoute wrappers
-
 ---
 
-## API Client
+## Summary Checklist
 
-```tsx
-// lib/api.ts
-const api = {
-  baseURL: import.meta.env.VITE_API_URL || "/api",
-  
-  async get<T>(path: string, params?: Record<string, any>): Promise<T> { ... },
-  async post<T>(path: string, body: any): Promise<T> { ... },
-  async put<T>(path: string, body: any): Promise<T> { ... },
-  async delete(path: string): Promise<void> { ... },
-}
-```
-
-- Uses fetch with credentials: "include" (for cookie auth)
-- Automatic error handling: 401 → redirect to login, 403 → show forbidden, 500 → toast error
-- All responses typed with generics
-
----
-
-## Responsive Design
-
-- **Desktop**: Full sidebar + content layout, multi-column grids
-- **Tablet (768px)**: Collapsed sidebar (icon-only), 2-column grids
-- **Mobile (640px)**: No sidebar (hamburger menu → sheet overlay), single column, cards stack vertically
-- All DataTables: horizontal scroll on mobile with fixed first column
-- Charts: responsive containers that resize
-- Test every page at both breakpoints
-
----
-
-## Dark Mode
-
-- Implement via CSS class strategy (`dark` class on `<html>`)
-- Toggle in header bar (sun/moon icon button)
-- Save preference to a **browser-accessible cookie** (not httpOnly) — this is a security requirement
-- React reads the cookie on mount to set initial theme
-- All shadcn components support dark mode natively via CSS variables
-- Charts need dark-mode color adjustments (lighter lines on dark backgrounds)
-
----
-
-## Performance
-
-- React Query for all data fetching (caching, deduplication, background refetch)
-- Lazy load route components with `React.lazy` + `Suspense`
-- Skeleton loaders during suspense
-- Virtual scrolling for very long lists (TanStack Virtual if needed)
-- Image optimization: lazy loading, WebP format
-- Bundle splitting per route
+- [ ] Create all React Query hooks in `hooks/` directory (18+ hook files)
+- [ ] Delete `lib/mock-data.ts`
+- [ ] Remove `/admin/reports` route from `App.tsx`
+- [ ] Delete `pages/admin/ReportsPage.tsx`
+- [ ] Remove "Analytics" from sidebar nav in `AdminLayout.tsx`
+- [ ] Rewrite `AdminDashboard.tsx` — unified dashboard with tabbed analytics
+- [ ] Wire `DonorsPage` + fix Add Supporter sheet form
+- [ ] Wire `DonationsPage` + build Log Donation sheet form
+- [ ] Wire `ResidentsPage` + build Add Resident sheet form
+- [ ] Wire `ResidentDetailPage` tabs + add create forms per tab
+- [ ] Wire `ProcessRecordingsPage` + build Record Session sheet form
+- [ ] Wire `HomeVisitationsPage` + build Log Visit sheet form
+- [ ] Wire `SafehousesPage`
+- [ ] Wire `PartnersPage` + build Add Partner sheet form
+- [ ] Wire `UserManagementPage` + build Invite User dialog + wire role select
+- [ ] Wire `SocialMediaPage` compose/reply to real endpoints
+- [ ] Wire `LandingPage` impact stats to public API
+- [ ] Wire `ImpactDashboard` to public API
+- [ ] Wire `DonorDashboard` to donor API
+- [ ] Add loading states to every page
+- [ ] Add error states with retry to every page
+- [ ] Add empty states to list pages
+- [ ] Add delete confirmation to all delete actions
+- [ ] Apply page layout philosophy (hero metric, breathing room, storytelling)
+- [ ] Verify all forms submit PascalCase field names matching backend DTOs
+- [ ] Test every page with real data from the seeded database

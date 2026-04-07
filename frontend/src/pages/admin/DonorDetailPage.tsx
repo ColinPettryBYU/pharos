@@ -2,15 +2,18 @@ import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RiskBadge } from "@/components/shared/RiskBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { DataTableWrapper } from "@/components/shared/DataTableWrapper";
-import { mockSupporters, mockDonations, mockAllocations } from "@/lib/mock-data";
+import { useSupporter } from "@/hooks/useSupporters";
+import { useDonations, useDonationAllocations } from "@/hooks/useDonations";
 import { formatCurrency } from "@/lib/api";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Donation, DonationAllocation, RiskLevel } from "@/types";
+import type { Donation, RiskLevel } from "@/types";
 import { format } from "date-fns";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -30,12 +33,27 @@ const donationCols: ColumnDef<Donation>[] = [
 
 export default function DonorDetailPage() {
   const { id } = useParams();
-  const supporter = mockSupporters.find((s) => s.supporter_id === Number(id));
-  if (!supporter) return <div className="p-8 text-center text-muted-foreground">Supporter not found.</div>;
+  const numId = Number(id);
+  const { data: supporter, isLoading, error, refetch } = useSupporter(numId);
+  const { data: donationsData } = useDonations({ supporterId: numId });
+  const { data: allocationsData } = useDonationAllocations({ donorId: numId });
 
-  const donations = mockDonations.filter((d) => d.supporter_id === supporter.supporter_id);
+  if (isLoading) {
+    return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
+  }
+
+  if (error || !supporter) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground mb-4">Supporter not found</p>
+        <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
+
+  const donations: Donation[] = Array.isArray(donationsData) ? donationsData : (donationsData?.data ?? []);
+  const allocations = Array.isArray(allocationsData) ? allocationsData : (allocationsData?.data ?? []);
   const totalDonated = donations.reduce((sum, d) => sum + d.amount, 0);
-  const allocations = mockAllocations.filter((a) => donations.some((d) => d.donation_id === a.donation_id));
 
   const allocationByProgram = allocations.reduce<Record<string, number>>((acc, a) => {
     acc[a.program_area] = (acc[a.program_area] || 0) + a.amount_allocated;
@@ -61,13 +79,12 @@ export default function DonorDetailPage() {
         ]}
       />
 
-      {/* Header Info */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 text-primary text-2xl font-bold">
-                {supporter.first_name[0]}{supporter.last_name[0]}
+                {supporter.first_name?.[0]}{supporter.last_name?.[0]}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -115,7 +132,7 @@ export default function DonorDetailPage() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} />
-                    <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(v) => [formatCurrency(Number(v)), "Amount"]} contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px" }} />
                     <Area type="monotone" dataKey="amount" stroke="var(--color-primary)" fill="url(#colorAmt)" strokeWidth={2} animationDuration={1000} />
                   </AreaChart>
@@ -153,9 +170,7 @@ export default function DonorDetailPage() {
               <Heart className="mx-auto h-12 w-12 text-primary mb-4" />
               <h3 className="text-xl font-semibold mb-2">Your Impact</h3>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Your generous contributions of {formatCurrency(totalDonated)} have directly supported
-                safehouses across the Philippines, helping provide education, healthcare, and counseling
-                services to girls in need.
+                Generous contributions of {formatCurrency(totalDonated)} have directly supported safehouses across the Philippines.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
                 <div className="rounded-xl bg-muted/50 p-6">
@@ -163,11 +178,11 @@ export default function DonorDetailPage() {
                   <p className="text-sm text-muted-foreground">Programs Supported</p>
                 </div>
                 <div className="rounded-xl bg-muted/50 p-6">
-                  <p className="text-3xl font-bold text-primary tabular-nums">{new Set(allocations.map(a => a.safehouse_id)).size}</p>
+                  <p className="text-3xl font-bold text-primary tabular-nums">{new Set(allocations.map((a) => a.safehouse_id)).size}</p>
                   <p className="text-sm text-muted-foreground">Safehouses Reached</p>
                 </div>
                 <div className="rounded-xl bg-muted/50 p-6">
-                  <p className="text-3xl font-bold text-primary tabular-nums">{donations.filter(d => d.is_recurring).length}</p>
+                  <p className="text-3xl font-bold text-primary tabular-nums">{donations.filter((d) => d.is_recurring).length}</p>
                   <p className="text-sm text-muted-foreground">Recurring Donations</p>
                 </div>
               </div>
@@ -194,8 +209,8 @@ export default function DonorDetailPage() {
                 <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">
                   <li>Donation frequency: {donations.length > 5 ? "Regular" : "Infrequent"}</li>
                   <li>Last donation: {donations.length > 0 ? format(new Date(donations[donations.length - 1].donation_date), "MMM d, yyyy") : "N/A"}</li>
-                  <li>Campaign engagement: {donations.filter(d => d.campaign_name).length} campaign donations</li>
-                  <li>Recurring status: {donations.some(d => d.is_recurring) ? "Has recurring" : "No recurring"}</li>
+                  <li>Campaign engagement: {donations.filter((d) => d.campaign_name).length} campaign donations</li>
+                  <li>Recurring status: {donations.some((d) => d.is_recurring) ? "Has recurring" : "No recurring"}</li>
                 </ul>
                 <h4 className="text-sm font-semibold mt-4">Recommended Actions</h4>
                 <ul className="text-sm text-muted-foreground space-y-1.5 list-disc pl-5">

@@ -1,15 +1,45 @@
+import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTableWrapper } from "@/components/shared/DataTableWrapper";
-import { mockHomeVisitations, mockInterventionPlans } from "@/lib/mock-data";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { useHomeVisitations, useCreateHomeVisitation } from "@/hooks/useHomeVisitations";
 import type { HomeVisitation } from "@/types";
-import { format, isFuture } from "date-fns";
-import { Plus, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "motion/react";
+import { toast } from "sonner";
+
+const visitSchema = z.object({
+  ResidentId: z.coerce.number().min(1, "Resident is required"),
+  VisitType: z.string().min(1, "Visit type is required"),
+  VisitDate: z.string().min(1, "Date is required"),
+  LocationVisited: z.string().min(1, "Location is required"),
+  FamilyMembersPresent: z.string().optional(),
+  Purpose: z.string().min(1, "Purpose is required"),
+  Observations: z.string().optional(),
+  FamilyCooperationLevel: z.string().min(1, "Cooperation level is required"),
+  SafetyConcernsNoted: z.boolean().default(false),
+  FollowUpNeeded: z.boolean().default(false),
+  FollowUpNotes: z.string().optional(),
+  VisitOutcome: z.string().min(1, "Outcome is required"),
+});
+
+type VisitForm = z.infer<typeof visitSchema>;
 
 const columns: ColumnDef<HomeVisitation>[] = [
   {
@@ -22,10 +52,7 @@ const columns: ColumnDef<HomeVisitation>[] = [
     header: "Resident",
     cell: ({ row }) => <span className="font-medium text-sm">R-{String(row.getValue("resident_id")).padStart(3, "0")}</span>,
   },
-  {
-    accessorKey: "social_worker",
-    header: "Social Worker",
-  },
+  { accessorKey: "social_worker", header: "Social Worker" },
   {
     accessorKey: "visit_type",
     header: "Type",
@@ -53,82 +80,149 @@ const columns: ColumnDef<HomeVisitation>[] = [
     accessorKey: "safety_concerns_noted",
     header: "Safety",
     cell: ({ row }) =>
-      row.getValue("safety_concerns_noted") ? (
-        <Badge variant="destructive" className="text-xs">Concern</Badge>
-      ) : (
-        <span className="text-xs text-muted-foreground">OK</span>
-      ),
+      row.getValue("safety_concerns_noted") ? <Badge variant="destructive" className="text-xs">Concern</Badge> : <span className="text-xs text-muted-foreground">OK</span>,
   },
   {
     accessorKey: "follow_up_needed",
     header: "Follow-up",
     cell: ({ row }) =>
-      row.getValue("follow_up_needed") ? (
-        <Badge variant="outline" className="text-xs">Needed</Badge>
-      ) : null,
+      row.getValue("follow_up_needed") ? <Badge variant="outline" className="text-xs">Needed</Badge> : null,
   },
 ];
 
 export default function HomeVisitationsPage() {
   const navigate = useNavigate();
-  const upcomingConferences = mockInterventionPlans
-    .filter((p) => p.case_conference_date && isFuture(new Date(p.case_conference_date)))
-    .slice(0, 5);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { data, isLoading, error, refetch } = useHomeVisitations();
+  const createVisit = useCreateHomeVisitation();
+
+  const visitations = Array.isArray(data) ? data : (data?.data ?? []);
+
+  const form = useForm<VisitForm>({
+    resolver: zodResolver(visitSchema),
+    defaultValues: {
+      ResidentId: 0, VisitType: "", VisitDate: "", LocationVisited: "",
+      FamilyMembersPresent: "", Purpose: "", Observations: "",
+      FamilyCooperationLevel: "", SafetyConcernsNoted: false,
+      FollowUpNeeded: false, FollowUpNotes: "", VisitOutcome: "",
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await createVisit.mutateAsync(values as unknown as Record<string, unknown>);
+      toast.success("Visit logged successfully");
+      form.reset();
+      setSheetOpen(false);
+    } catch { /* handled by api client */ }
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground mb-4">Failed to load home visitations</p>
+        <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Home Visitations"
-        description="Track all home visits and upcoming case conferences."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/admin" },
-          { label: "Home Visitations" },
-        ]}
+        description="Track all home visits and family assessments."
+        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Home Visitations" }]}
         actions={
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Log Visit
+          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />Log Visit
           </Button>
         }
       />
 
-      {upcomingConferences.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
-                Upcoming Case Conferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {upcomingConferences.map((p) => (
-                  <div key={p.plan_id} className="flex items-center gap-3 text-sm">
-                    <span className="tabular-nums font-medium">
-                      {format(new Date(p.case_conference_date!), "MMM d, yyyy")}
-                    </span>
-                    <Badge variant="outline">{p.plan_category}</Badge>
-                    <span className="text-muted-foreground">Resident #{p.resident_id}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      {!isLoading && visitations.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-lg font-medium mb-2">No home visitations yet</p>
+          <p className="text-muted-foreground mb-4">Log the first visit to get started</p>
+          <Button onClick={() => setSheetOpen(true)}>Log Visit</Button>
+        </div>
+      ) : (
+        <DataTableWrapper
+          columns={columns}
+          data={visitations}
+          searchKey="social_worker"
+          searchPlaceholder="Search by social worker..."
+          isLoading={isLoading}
+          onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}`)}
+        />
       )}
 
-      <DataTableWrapper
-        columns={columns}
-        data={mockHomeVisitations}
-        searchKey="social_worker"
-        searchPlaceholder="Search by social worker..."
-        onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}`)}
-      />
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Log Home Visit</SheetTitle>
+            <SheetDescription>Document a home visitation.</SheetDescription>
+          </SheetHeader>
+          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>Resident ID</Label><Input type="number" {...form.register("ResidentId")} /></div>
+              <div className="space-y-2"><Label>Visit Date</Label><Input type="date" {...form.register("VisitDate")} /></div>
+            </div>
+            <div className="space-y-2">
+              <Label>Visit Type</Label>
+              <Select value={form.watch("VisitType")} onValueChange={(v) => form.setValue("VisitType", v)}>
+                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Initial Assessment">Initial Assessment</SelectItem>
+                  <SelectItem value="Routine Follow-Up">Routine Follow-Up</SelectItem>
+                  <SelectItem value="Reintegration Assessment">Reintegration Assessment</SelectItem>
+                  <SelectItem value="Post-Placement Monitoring">Post-Placement Monitoring</SelectItem>
+                  <SelectItem value="Emergency">Emergency</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label>Location Visited</Label><Input {...form.register("LocationVisited")} placeholder="Family residence..." /></div>
+            <div className="space-y-2"><Label>Family Members Present</Label><Input {...form.register("FamilyMembersPresent")} placeholder="Mother, grandmother..." /></div>
+            <div className="space-y-2"><Label>Purpose</Label><Textarea {...form.register("Purpose")} rows={2} /></div>
+            <div className="space-y-2"><Label>Observations</Label><Textarea {...form.register("Observations")} rows={3} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Cooperation Level</Label>
+                <Select value={form.watch("FamilyCooperationLevel")} onValueChange={(v) => form.setValue("FamilyCooperationLevel", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Highly Cooperative">Highly Cooperative</SelectItem>
+                    <SelectItem value="Cooperative">Cooperative</SelectItem>
+                    <SelectItem value="Neutral">Neutral</SelectItem>
+                    <SelectItem value="Uncooperative">Uncooperative</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Outcome</Label>
+                <Select value={form.watch("VisitOutcome")} onValueChange={(v) => form.setValue("VisitOutcome", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Favorable">Favorable</SelectItem>
+                    <SelectItem value="Needs Improvement">Needs Improvement</SelectItem>
+                    <SelectItem value="Unfavorable">Unfavorable</SelectItem>
+                    <SelectItem value="Inconclusive">Inconclusive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-6">
+              <div className="flex items-center gap-2"><Switch checked={form.watch("SafetyConcernsNoted")} onCheckedChange={(v) => form.setValue("SafetyConcernsNoted", v)} /><Label>Safety concerns</Label></div>
+              <div className="flex items-center gap-2"><Switch checked={form.watch("FollowUpNeeded")} onCheckedChange={(v) => form.setValue("FollowUpNeeded", v)} /><Label>Follow-up needed</Label></div>
+            </div>
+            {form.watch("FollowUpNeeded") && (
+              <div className="space-y-2"><Label>Follow-up Notes</Label><Textarea {...form.register("FollowUpNotes")} rows={2} /></div>
+            )}
+            <Button type="submit" className="w-full" disabled={createVisit.isPending}>
+              {createVisit.isPending ? "Saving..." : "Log Visit"}
+            </Button>
+          </form>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

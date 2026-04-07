@@ -32,6 +32,7 @@ import {
   Building2,
   Handshake,
   Shield,
+  Link2,
   Sun,
   Moon,
   Menu,
@@ -58,6 +59,7 @@ const navGroups: NavGroup[] = [
     title: "Overview",
     items: [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Analytics", href: "/admin/reports", icon: BarChart3 },
     ],
   },
   {
@@ -82,9 +84,8 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: "Reports",
+    title: "Operations",
     items: [
-      { label: "Analytics", href: "/admin/reports", icon: BarChart3 },
       { label: "Safehouses", href: "/admin/safehouses", icon: Building2 },
       { label: "Partners", href: "/admin/partners", icon: Handshake },
     ],
@@ -93,6 +94,7 @@ const navGroups: NavGroup[] = [
     title: "Settings",
     items: [
       { label: "User Management", href: "/admin/users", icon: Shield },
+      { label: "Social Accounts", href: "/admin/settings/social-accounts", icon: Link2 },
     ],
   },
 ];
@@ -158,8 +160,8 @@ function SidebarContent({
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
                       collapsed && "justify-center px-2",
                       isActive
-                        ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -245,7 +247,7 @@ export function AdminLayout() {
         initial={false}
         animate={{ width: collapsed ? 72 : 256 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="hidden md:flex flex-col border-r bg-sidebar shrink-0"
+        className="hidden md:flex flex-col bg-sidebar shrink-0"
       >
         <SidebarContent
           collapsed={collapsed}

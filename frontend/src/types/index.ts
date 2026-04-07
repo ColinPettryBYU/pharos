@@ -515,6 +515,23 @@ export interface SocialMediaComment {
   post_thumbnail?: string;
 }
 
+export interface ConnectedAccount {
+  id: number;
+  platform: Platform;
+  accountName: string;
+  accountId?: string;
+  connectedAt: string;
+  tokenExpiresAt?: string;
+  status: string;
+}
+
+export interface CommentInboxResponse {
+  comments: SocialMediaComment[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
 // --- Safehouse Monthly Metrics ---
 export interface SafehouseMonthlyMetric {
   metric_id: number;

@@ -1,89 +1,164 @@
 import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTableWrapper } from "@/components/shared/DataTableWrapper";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
-import { mockPartners } from "@/lib/mock-data";
+import {
+  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { usePartners, useCreatePartner, useDeletePartner } from "@/hooks/usePartners";
 import type { Partner } from "@/types";
 import { format } from "date-fns";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+const partnerSchema = z.object({
+  PartnerName: z.string().min(1, "Organization name is required"),
+  PartnerType: z.string().min(1, "Type is required"),
+  RoleType: z.string().optional(),
+  ContactName: z.string().min(1, "Contact name is required"),
+  Email: z.string().email("Valid email required"),
+  Phone: z.string().optional(),
+  Region: z.string().optional(),
+  Status: z.string().default("Active"),
+  StartDate: z.string().min(1, "Start date is required"),
+});
+
+type PartnerForm = z.infer<typeof partnerSchema>;
+
 const columns: ColumnDef<Partner>[] = [
-  {
-    accessorKey: "partner_name",
-    header: "Organization",
-    cell: ({ row }) => <span className="font-medium">{row.getValue("partner_name")}</span>,
-  },
-  {
-    accessorKey: "partner_type",
-    header: "Type",
-    cell: ({ row }) => <Badge variant="outline">{row.getValue("partner_type")}</Badge>,
-  },
-  {
-    accessorKey: "contact_name",
-    header: "Contact",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("email")}</span>,
-  },
-  {
-    accessorKey: "region",
-    header: "Region",
-  },
+  { accessorKey: "partner_name", header: "Organization", cell: ({ row }) => <span className="font-medium">{row.getValue("partner_name")}</span> },
+  { accessorKey: "partner_type", header: "Type", cell: ({ row }) => <Badge variant="outline">{row.getValue("partner_type")}</Badge> },
+  { accessorKey: "contact_name", header: "Contact" },
+  { accessorKey: "email", header: "Email", cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("email")}</span> },
+  { accessorKey: "region", header: "Region" },
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"} className="text-xs">
-        {row.getValue("status")}
-      </Badge>
-    ),
+    cell: ({ row }) => <Badge variant={row.getValue("status") === "Active" ? "default" : "secondary"} className="text-xs">{row.getValue("status")}</Badge>,
   },
   {
     accessorKey: "start_date",
     header: "Since",
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground tabular-nums">
-        {format(new Date(row.getValue("start_date")), "MMM yyyy")}
-      </span>
-    ),
+    cell: ({ row }) => <span className="text-sm text-muted-foreground tabular-nums">{format(new Date(row.getValue("start_date")), "MMM yyyy")}</span>,
   },
 ];
 
 export default function PartnersPage() {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [_deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
+
+  const { data, isLoading, error, refetch } = usePartners();
+  const createPartner = useCreatePartner();
+  const deletePartnerMut = useDeletePartner();
+
+  const partners = Array.isArray(data) ? data : (data?.data ?? []);
+
+  const form = useForm<PartnerForm>({
+    resolver: zodResolver(partnerSchema),
+    defaultValues: {
+      PartnerName: "", PartnerType: "", RoleType: "",
+      ContactName: "", Email: "", Phone: "",
+      Region: "", Status: "Active", StartDate: "",
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      await createPartner.mutateAsync(values as unknown as Record<string, unknown>);
+      toast.success("Partner added successfully");
+      form.reset();
+      setSheetOpen(false);
+    } catch { /* handled by api client */ }
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground mb-4">Failed to load partners</p>
+        <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Partners"
         description="Manage partner organizations and assignments."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/admin" },
-          { label: "Partners" },
-        ]}
+        breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Partners" }]}
         actions={
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Partner
-          </Button>
+          <Button onClick={() => setSheetOpen(true)} className="gap-2"><Plus className="h-4 w-4" />Add Partner</Button>
         }
       />
-      <DataTableWrapper columns={columns} data={mockPartners} searchKey="partner_name" searchPlaceholder="Search partners..." />
+
+      {!isLoading && partners.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-lg font-medium mb-2">No partners yet</p>
+          <p className="text-muted-foreground mb-4">Add the first partner to get started</p>
+          <Button onClick={() => setSheetOpen(true)}>Add Partner</Button>
+        </div>
+      ) : (
+        <DataTableWrapper columns={columns} data={partners} searchKey="partner_name" searchPlaceholder="Search partners..." isLoading={isLoading} />
+      )}
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Add Partner</SheetTitle>
+            <SheetDescription>Register a new partner organization.</SheetDescription>
+          </SheetHeader>
+          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <div className="space-y-2"><Label>Organization Name</Label><Input {...form.register("PartnerName")} placeholder="Organization name" /></div>
+            <div className="space-y-2">
+              <Label>Partner Type</Label>
+              <Select value={form.watch("PartnerType")} onValueChange={(v) => form.setValue("PartnerType", v)}>
+                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Government">Government</SelectItem>
+                  <SelectItem value="NGO">NGO</SelectItem>
+                  <SelectItem value="Faith-Based">Faith-Based</SelectItem>
+                  <SelectItem value="Corporate">Corporate</SelectItem>
+                  <SelectItem value="Academic">Academic</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label>Contact Name</Label><Input {...form.register("ContactName")} placeholder="Contact person" /></div>
+            <div className="space-y-2"><Label>Email</Label><Input type="email" {...form.register("Email")} placeholder="partner@example.org" /></div>
+            <div className="space-y-2"><Label>Phone</Label><Input {...form.register("Phone")} placeholder="+63 912 345 6789" /></div>
+            <div className="space-y-2"><Label>Region</Label><Input {...form.register("Region")} placeholder="Region" /></div>
+            <div className="space-y-2"><Label>Start Date</Label><Input type="date" {...form.register("StartDate")} /></div>
+            <Button type="submit" className="w-full" disabled={createPartner.isPending}>
+              {createPartner.isPending ? "Adding..." : "Add Partner"}
+            </Button>
+          </form>
+        </SheetContent>
+      </Sheet>
+
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        onConfirm={() => {
-          toast.success(`Partner deleted`);
-          setDeleteOpen(false);
+        itemName={deleteTarget?.partner_name || ""}
+        onConfirm={async () => {
+          if (deleteTarget) {
+            await deletePartnerMut.mutateAsync(deleteTarget.partner_id);
+            toast.success("Partner deleted");
+            setDeleteOpen(false);
+            setDeleteTarget(null);
+          }
         }}
-        itemName={_deleteTarget?.partner_name || ""}
+        loading={deletePartnerMut.isPending}
       />
     </div>
   );
