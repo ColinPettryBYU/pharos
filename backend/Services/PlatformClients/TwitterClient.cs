@@ -58,12 +58,16 @@ public class TwitterClient : ISocialPlatformClient
                $"&code_challenge_method=S256";
     }
 
-    public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri)
+    public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri, string? state = null)
     {
         try
         {
             var clientId = _config["SocialMedia:Twitter:ClientId"];
             var clientSecret = _config["SocialMedia:Twitter:ClientSecret"];
+
+            var codeVerifier = state != null
+                ? _cache.Get<string>($"twitter_pkce_{state}") ?? "challenge"
+                : "challenge";
 
             var authHeader = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
 
@@ -75,7 +79,7 @@ public class TwitterClient : ISocialPlatformClient
                 ["code"] = code,
                 ["grant_type"] = "authorization_code",
                 ["redirect_uri"] = redirectUri,
-                ["code_verifier"] = "challenge" // PKCE verifier from cache in real flow
+                ["code_verifier"] = codeVerifier
             });
 
             var response = await _http.SendAsync(request);

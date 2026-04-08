@@ -41,6 +41,7 @@ import {
   LogOut,
   Lightbulb,
   Search,
+  Sparkles,
 } from "lucide-react";
 
 interface NavItem {
@@ -60,6 +61,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Analytics", href: "/admin/reports", icon: BarChart3 },
+      { label: "Pharos AI", href: "/admin/chat", icon: Sparkles },
     ],
   },
   {

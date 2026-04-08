@@ -48,7 +48,7 @@ public class InstagramClient : ISocialPlatformClient
                $"&response_type=code";
     }
 
-    public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri)
+    public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri, string? state = null)
     {
         try
         {

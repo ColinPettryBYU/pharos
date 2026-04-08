@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,10 +17,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useHomeVisitations, useCreateHomeVisitation } from "@/hooks/useHomeVisitations";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useHomeVisitations, useCreateHomeVisitation, useUpdateHomeVisitation } from "@/hooks/useHomeVisitations";
 import { fmtDate } from "@/lib/utils";
 import type { HomeVisitation } from "@/types";
-import { Plus } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -41,60 +44,13 @@ const visitSchema = z.object({
 
 type VisitForm = z.infer<typeof visitSchema>;
 
-const columns: ColumnDef<HomeVisitation>[] = [
-  {
-    accessorKey: "visit_date",
-    header: "Date",
-    cell: ({ row }) => <span className="tabular-nums text-sm">{fmtDate(row.getValue("visit_date"))}</span>,
-  },
-  {
-    accessorKey: "resident_id",
-    header: "Resident",
-    cell: ({ row }) => <span className="font-medium text-sm">R-{String(row.getValue("resident_id")).padStart(3, "0")}</span>,
-  },
-  { accessorKey: "social_worker", header: "Social Worker" },
-  {
-    accessorKey: "visit_type",
-    header: "Type",
-    cell: ({ row }) => <Badge variant="outline" className="text-xs">{row.getValue("visit_type")}</Badge>,
-  },
-  {
-    accessorKey: "family_cooperation_level",
-    header: "Family Cooperation",
-    cell: ({ row }) => {
-      const level = row.getValue("family_cooperation_level") as string;
-      const color = level === "Highly Cooperative" ? "text-success" : level === "Uncooperative" ? "text-destructive" : "text-muted-foreground";
-      return <span className={`text-sm ${color}`}>{level}</span>;
-    },
-  },
-  {
-    accessorKey: "visit_outcome",
-    header: "Outcome",
-    cell: ({ row }) => {
-      const outcome = row.getValue("visit_outcome") as string;
-      const variant = outcome === "Favorable" ? "default" : outcome === "Unfavorable" ? "destructive" : "secondary";
-      return <Badge variant={variant} className="text-xs">{outcome}</Badge>;
-    },
-  },
-  {
-    accessorKey: "safety_concerns_noted",
-    header: "Safety",
-    cell: ({ row }) =>
-      row.getValue("safety_concerns_noted") ? <Badge variant="destructive" className="text-xs">Concern</Badge> : <span className="text-xs text-muted-foreground">OK</span>,
-  },
-  {
-    accessorKey: "follow_up_needed",
-    header: "Follow-up",
-    cell: ({ row }) =>
-      row.getValue("follow_up_needed") ? <Badge variant="outline" className="text-xs">Needed</Badge> : null,
-  },
-];
-
 export default function HomeVisitationsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<HomeVisitation | null>(null);
   const { data, isLoading, error, refetch } = useHomeVisitations({ pageSize: 1500 });
   const createVisit = useCreateHomeVisitation();
+  const updateVisit = useUpdateHomeVisitation();
 
   const visitations = Array.isArray(data) ? data : (data?.data ?? []);
 
@@ -109,14 +65,106 @@ export default function HomeVisitationsPage() {
     },
   });
 
+  useEffect(() => {
+    if (editTarget) {
+      form.reset({
+        ResidentId: editTarget.resident_id,
+        VisitType: editTarget.visit_type || "",
+        VisitDate: editTarget.visit_date ? editTarget.visit_date.split("T")[0] : "",
+        LocationVisited: editTarget.location_visited || "",
+        FamilyMembersPresent: editTarget.family_members_present || "",
+        Purpose: editTarget.purpose || "",
+        Observations: editTarget.observations || "",
+        FamilyCooperationLevel: editTarget.family_cooperation_level || "",
+        SafetyConcernsNoted: editTarget.safety_concerns_noted ?? false,
+        FollowUpNeeded: editTarget.follow_up_needed ?? false,
+        FollowUpNotes: editTarget.follow_up_notes || "",
+        VisitOutcome: editTarget.visit_outcome || "",
+      });
+    }
+  }, [editTarget, form]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await createVisit.mutateAsync(values as unknown as Record<string, unknown>);
-      toast.success("Visit logged successfully");
+      if (editTarget) {
+        await updateVisit.mutateAsync({ id: editTarget.visitation_id, data: values as unknown as Record<string, unknown> });
+        toast.success("Visit updated successfully");
+      } else {
+        await createVisit.mutateAsync(values as unknown as Record<string, unknown>);
+        toast.success("Visit logged successfully");
+      }
       form.reset();
       setSheetOpen(false);
+      setEditTarget(null);
     } catch { /* handled by api client */ }
   });
+
+  const columns: ColumnDef<HomeVisitation>[] = useMemo(() => [
+    {
+      accessorKey: "visit_date",
+      header: "Date",
+      cell: ({ row }) => <span className="tabular-nums text-sm">{fmtDate(row.getValue("visit_date"))}</span>,
+    },
+    {
+      accessorKey: "resident_id",
+      header: "Resident",
+      cell: ({ row }) => <span className="font-medium text-sm">R-{String(row.getValue("resident_id")).padStart(3, "0")}</span>,
+    },
+    { accessorKey: "social_worker", header: "Social Worker" },
+    {
+      accessorKey: "visit_type",
+      header: "Type",
+      cell: ({ row }) => <Badge variant="outline" className="text-xs">{row.getValue("visit_type")}</Badge>,
+    },
+    {
+      accessorKey: "family_cooperation_level",
+      header: "Family Cooperation",
+      cell: ({ row }) => {
+        const level = row.getValue("family_cooperation_level") as string;
+        const color = level === "Highly Cooperative" ? "text-success" : level === "Uncooperative" ? "text-destructive" : "text-muted-foreground";
+        return <span className={`text-sm ${color}`}>{level}</span>;
+      },
+    },
+    {
+      accessorKey: "visit_outcome",
+      header: "Outcome",
+      cell: ({ row }) => {
+        const outcome = row.getValue("visit_outcome") as string;
+        const variant = outcome === "Favorable" ? "default" : outcome === "Unfavorable" ? "destructive" : "secondary";
+        return <Badge variant={variant} className="text-xs">{outcome}</Badge>;
+      },
+    },
+    {
+      accessorKey: "safety_concerns_noted",
+      header: "Safety",
+      cell: ({ row }) =>
+        row.getValue("safety_concerns_noted") ? <Badge variant="destructive" className="text-xs">Concern</Badge> : <span className="text-xs text-muted-foreground">OK</span>,
+    },
+    {
+      accessorKey: "follow_up_needed",
+      header: "Follow-up",
+      cell: ({ row }) =>
+        row.getValue("follow_up_needed") ? <Badge variant="outline" className="text-xs">Needed</Badge> : null,
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const visit = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>}
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditTarget(visit); setSheetOpen(true); }}>
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (error) {
     return (
@@ -127,6 +175,8 @@ export default function HomeVisitationsPage() {
     );
   }
 
+  const isPending = editTarget ? updateVisit.isPending : createVisit.isPending;
+
   return (
     <div>
       <PageHeader
@@ -134,7 +184,7 @@ export default function HomeVisitationsPage() {
         description="Track all home visits and family assessments."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Home Visitations" }]}
         actions={
-          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+          <Button onClick={() => { setEditTarget(null); form.reset(); setSheetOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" />Log Visit
           </Button>
         }
@@ -157,11 +207,11 @@ export default function HomeVisitationsPage() {
         />
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) { setEditTarget(null); form.reset(); } }}>
         <SheetContent className="overflow-y-auto sm:max-w-lg">
           <SheetHeader>
-            <SheetTitle>Log Home Visit</SheetTitle>
-            <SheetDescription>Document a home visitation.</SheetDescription>
+            <SheetTitle>{editTarget ? "Edit Home Visit" : "Log Home Visit"}</SheetTitle>
+            <SheetDescription>{editTarget ? "Update visit details." : "Document a home visitation."}</SheetDescription>
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -219,8 +269,8 @@ export default function HomeVisitationsPage() {
               <div className="space-y-2"><Label>Follow-up Notes</Label><Textarea {...form.register("FollowUpNotes")} rows={2} /></div>
             )}
             <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
-            <Button type="submit" className="w-full" disabled={createVisit.isPending}>
-              {createVisit.isPending ? "Saving..." : "Log Visit"}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? "Saving..." : editTarget ? "Update Visit" : "Log Visit"}
             </Button>
           </form>
         </SheetContent>

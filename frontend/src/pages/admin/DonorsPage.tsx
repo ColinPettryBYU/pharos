@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
@@ -16,10 +16,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSupporters, useCreateSupporter, useDeleteSupporter } from "@/hooks/useSupporters";
-import { Plus } from "lucide-react";
+import { useSupporters, useCreateSupporter, useUpdateSupporter, useDeleteSupporter } from "@/hooks/useSupporters";
+import { Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Supporter, RiskLevel } from "@/types";
 import { fmtDate } from "@/lib/utils";
@@ -38,54 +41,11 @@ const supporterSchema = z.object({
 
 type SupporterForm = z.infer<typeof supporterSchema>;
 
-const columns: ColumnDef<Supporter>[] = [
-  {
-    accessorKey: "display_name",
-    header: "Name",
-    cell: ({ row }) => <span className="font-medium">{row.getValue("display_name")}</span>,
-  },
-  {
-    accessorKey: "supporter_type",
-    header: "Type",
-    cell: ({ row }) => <Badge variant="outline" className="text-xs">{row.getValue("supporter_type")}</Badge>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return <Badge variant={status === "Active" ? "default" : "secondary"} className="text-xs">{status}</Badge>;
-    },
-  },
-  {
-    accessorKey: "acquisition_channel",
-    header: "Channel",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("acquisition_channel")}</span>,
-  },
-  {
-    accessorKey: "first_donation_date",
-    header: "First Donation",
-    cell: ({ row }) => {
-      const date = row.getValue("first_donation_date") as string;
-      return <span className="text-sm text-muted-foreground tabular-nums">{fmtDate(date, "MMM d, yyyy", "N/A")}</span>;
-    },
-  },
-  {
-    accessorKey: "churn_risk",
-    header: "Churn Risk",
-    cell: ({ row }) => {
-      const risk = row.getValue("churn_risk") as number;
-      if (risk == null) return <span className="text-xs text-muted-foreground">-</span>;
-      const level: RiskLevel = risk < 25 ? "Low" : risk < 50 ? "Medium" : risk < 75 ? "High" : "Critical";
-      return <RiskBadge level={level} />;
-    },
-  },
-];
-
 export default function DonorsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [editTarget, setEditTarget] = useState<Supporter | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Supporter | null>(null);
 
@@ -93,6 +53,7 @@ export default function DonorsPage() {
     typeFilter !== "all" ? { supporterType: typeFilter } : {}
   );
   const createSupporter = useCreateSupporter();
+  const updateSupporter = useUpdateSupporter();
   const deleteSupporterMut = useDeleteSupporter();
 
   const supporters = Array.isArray(data) ? data : (data?.data ?? []);
@@ -105,14 +66,104 @@ export default function DonorsPage() {
     },
   });
 
+  useEffect(() => {
+    if (editTarget) {
+      form.reset({
+        FirstName: editTarget.first_name || "",
+        LastName: editTarget.last_name || "",
+        DisplayName: editTarget.display_name || "",
+        Email: editTarget.email || "",
+        Phone: editTarget.phone || "",
+        SupporterType: editTarget.supporter_type || "",
+        AcquisitionChannel: editTarget.acquisition_channel || "",
+        Region: editTarget.region || "",
+        Country: editTarget.country || "Philippines",
+      });
+    }
+  }, [editTarget, form]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await createSupporter.mutateAsync(values as Record<string, unknown>);
-      toast.success("Supporter added successfully");
+      if (editTarget) {
+        await updateSupporter.mutateAsync({ id: editTarget.supporter_id, data: values as Record<string, unknown> });
+        toast.success("Supporter updated successfully");
+      } else {
+        await createSupporter.mutateAsync(values as Record<string, unknown>);
+        toast.success("Supporter added successfully");
+      }
       form.reset();
       setSheetOpen(false);
+      setEditTarget(null);
     } catch { /* handled by api client */ }
   });
+
+  const columns: ColumnDef<Supporter>[] = useMemo(() => [
+    {
+      accessorKey: "display_name",
+      header: "Name",
+      cell: ({ row }) => <span className="font-medium">{row.getValue("display_name")}</span>,
+    },
+    {
+      accessorKey: "supporter_type",
+      header: "Type",
+      cell: ({ row }) => <Badge variant="outline" className="text-xs">{row.getValue("supporter_type")}</Badge>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        return <Badge variant={status === "Active" ? "default" : "secondary"} className="text-xs">{status}</Badge>;
+      },
+    },
+    {
+      accessorKey: "acquisition_channel",
+      header: "Channel",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("acquisition_channel")}</span>,
+    },
+    {
+      accessorKey: "first_donation_date",
+      header: "First Donation",
+      cell: ({ row }) => {
+        const date = row.getValue("first_donation_date") as string;
+        return <span className="text-sm text-muted-foreground tabular-nums">{fmtDate(date, "MMM d, yyyy", "N/A")}</span>;
+      },
+    },
+    {
+      accessorKey: "churn_risk",
+      header: "Churn Risk",
+      cell: ({ row }) => {
+        const risk = row.getValue("churn_risk") as number;
+        if (risk == null) return <span className="text-xs text-muted-foreground">-</span>;
+        const level: RiskLevel = risk < 25 ? "Low" : risk < 50 ? "Medium" : risk < 75 ? "High" : "Critical";
+        return <RiskBadge level={level} />;
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const supporter = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>}
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditTarget(supporter); setSheetOpen(true); }}>
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => { setDeleteTarget(supporter); setDeleteOpen(true); }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (error) {
     return (
@@ -123,6 +174,8 @@ export default function DonorsPage() {
     );
   }
 
+  const isPending = editTarget ? updateSupporter.isPending : createSupporter.isPending;
+
   return (
     <div>
       <PageHeader
@@ -130,7 +183,7 @@ export default function DonorsPage() {
         description="Manage donors, volunteers, and partner organizations."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Supporters" }]}
         actions={
-          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+          <Button onClick={() => { setEditTarget(null); form.reset(); setSheetOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" />Add Supporter
           </Button>
         }
@@ -166,11 +219,11 @@ export default function DonorsPage() {
         />
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) { setEditTarget(null); form.reset(); } }}>
         <SheetContent className="overflow-y-auto sm:max-w-lg">
           <SheetHeader>
-            <SheetTitle>Add New Supporter</SheetTitle>
-            <SheetDescription>Add a new donor, volunteer, or partner.</SheetDescription>
+            <SheetTitle>{editTarget ? "Edit Supporter" : "Add New Supporter"}</SheetTitle>
+            <SheetDescription>{editTarget ? "Update supporter information." : "Add a new donor, volunteer, or partner."}</SheetDescription>
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -229,8 +282,8 @@ export default function DonorsPage() {
             </div>
             <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <div className="pt-4">
-              <Button type="submit" className="w-full" disabled={createSupporter.isPending}>
-                {createSupporter.isPending ? "Adding..." : "Add Supporter"}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Saving..." : editTarget ? "Update Supporter" : "Add Supporter"}
               </Button>
             </div>
           </form>

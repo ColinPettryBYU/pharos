@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
@@ -12,16 +12,20 @@ import { Switch } from "@/components/ui/switch";
 import { RiskBadge } from "@/components/shared/RiskBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTableWrapper } from "@/components/shared/DataTableWrapper";
+import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useResidents, useCreateResident } from "@/hooks/useResidents";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useResidents, useCreateResident, useUpdateResident, useDeleteResident } from "@/hooks/useResidents";
 import type { Resident } from "@/types";
 import { fmtDate } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const residentSchema = z.object({
@@ -54,86 +58,22 @@ const residentSchema = z.object({
 
 type ResidentForm = z.infer<typeof residentSchema>;
 
-const columns: ColumnDef<Resident>[] = [
-  {
-    accessorKey: "case_control_no",
-    header: "Case No.",
-    cell: ({ row }) => <span className="font-mono text-sm font-medium">{row.getValue("case_control_no")}</span>,
-  },
-  {
-    accessorKey: "internal_code",
-    header: "Code",
-    cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.getValue("internal_code")}</span>,
-  },
-  {
-    accessorKey: "safehouse",
-    header: "Safehouse",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-xs">
-        {row.original.safehouse?.safehouse_code || `SH-${row.original.safehouse_id}`}
-      </Badge>
-    ),
-  },
-  {
-    accessorKey: "case_status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("case_status") as string;
-      return <Badge variant={status === "Active" ? "default" : "secondary"} className="text-xs">{status}</Badge>;
-    },
-  },
-  { accessorKey: "case_category", header: "Category" },
-  {
-    accessorKey: "current_risk_level",
-    header: "Risk Level",
-    cell: ({ row }) => <RiskBadge level={row.getValue("current_risk_level")} />,
-  },
-  {
-    accessorKey: "present_age",
-    header: "Age",
-    cell: ({ row }) => <span className="tabular-nums">{row.getValue("present_age")}</span>,
-  },
-  {
-    accessorKey: "date_of_admission",
-    header: "Admitted",
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground tabular-nums">
-        {fmtDate(row.getValue("date_of_admission"))}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "assigned_social_worker",
-    header: "Social Worker",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("assigned_social_worker")}</span>,
-  },
-  {
-    accessorKey: "reintegration_status",
-    header: "Reintegration",
-    cell: ({ row }) => {
-      const status = row.getValue("reintegration_status") as string;
-      const colors: Record<string, string> = {
-        "Not Started": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-        "In Progress": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-        "Completed": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
-        "On Hold": "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
-      };
-      return <Badge variant="outline" className={`border-0 text-xs ${colors[status] || ""}`}>{status}</Badge>;
-    },
-  },
-];
-
 export default function ResidentsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
+  const [editTarget, setEditTarget] = useState<Resident | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Resident | null>(null);
 
   const { data, isLoading, error, refetch } = useResidents({
     ...(statusFilter !== "all" ? { caseStatus: statusFilter } : {}),
     ...(riskFilter !== "all" ? { riskLevel: riskFilter } : {}),
   });
   const createResident = useCreateResident();
+  const updateResident = useUpdateResident();
+  const deleteResidentMut = useDeleteResident();
 
   const residents = Array.isArray(data) ? data : (data?.data ?? []);
 
@@ -150,14 +90,145 @@ export default function ResidentsPage() {
     },
   });
 
+  useEffect(() => {
+    if (editTarget) {
+      form.reset({
+        CaseControlNo: editTarget.case_control_no || "",
+        InternalCode: editTarget.internal_code || "",
+        SafehouseId: editTarget.safehouse_id,
+        CaseStatus: editTarget.case_status || "Active",
+        CaseCategory: editTarget.case_category || "",
+        Sex: editTarget.sex || "Female",
+        DateOfBirth: editTarget.date_of_birth ? editTarget.date_of_birth.split("T")[0] : "",
+        DateOfAdmission: editTarget.date_of_admission ? editTarget.date_of_admission.split("T")[0] : "",
+        BirthStatus: editTarget.birth_status || "",
+        PlaceOfBirth: editTarget.place_of_birth || "",
+        Religion: editTarget.religion || "",
+        ReferralSource: editTarget.referral_source || "",
+        ReferringAgencyPerson: editTarget.referring_agency_person || "",
+        AssignedSocialWorker: editTarget.assigned_social_worker || "",
+        ReintegrationType: editTarget.reintegration_type || "None",
+        ReintegrationStatus: editTarget.reintegration_status || "Not Started",
+        InitialRiskLevel: editTarget.initial_risk_level || "Medium",
+        SubCatOrphaned: editTarget.sub_cat_orphaned ?? false,
+        SubCatTrafficked: editTarget.sub_cat_trafficked ?? false,
+        SubCatChildLabor: editTarget.sub_cat_child_labor ?? false,
+        SubCatPhysicalAbuse: editTarget.sub_cat_physical_abuse ?? false,
+        SubCatSexualAbuse: editTarget.sub_cat_sexual_abuse ?? false,
+        SubCatAtRisk: editTarget.sub_cat_at_risk ?? false,
+        IsPwd: editTarget.is_pwd ?? false,
+        HasSpecialNeeds: editTarget.has_special_needs ?? false,
+      });
+    }
+  }, [editTarget, form]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await createResident.mutateAsync(values as unknown as Record<string, unknown>);
-      toast.success("Resident added successfully");
+      if (editTarget) {
+        await updateResident.mutateAsync({ id: editTarget.resident_id, data: values as unknown as Record<string, unknown> });
+        toast.success("Resident updated successfully");
+      } else {
+        await createResident.mutateAsync(values as unknown as Record<string, unknown>);
+        toast.success("Resident added successfully");
+      }
       form.reset();
       setSheetOpen(false);
+      setEditTarget(null);
     } catch { /* handled by api client */ }
   });
+
+  const columns: ColumnDef<Resident>[] = useMemo(() => [
+    {
+      accessorKey: "case_control_no",
+      header: "Case No.",
+      cell: ({ row }) => <span className="font-mono text-sm font-medium">{row.getValue("case_control_no")}</span>,
+    },
+    {
+      accessorKey: "internal_code",
+      header: "Code",
+      cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.getValue("internal_code")}</span>,
+    },
+    {
+      accessorKey: "safehouse",
+      header: "Safehouse",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-xs">
+          {row.original.safehouse?.safehouse_code || `SH-${row.original.safehouse_id}`}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "case_status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("case_status") as string;
+        return <Badge variant={status === "Active" ? "default" : "secondary"} className="text-xs">{status}</Badge>;
+      },
+    },
+    { accessorKey: "case_category", header: "Category" },
+    {
+      accessorKey: "current_risk_level",
+      header: "Risk Level",
+      cell: ({ row }) => <RiskBadge level={row.getValue("current_risk_level")} />,
+    },
+    {
+      accessorKey: "present_age",
+      header: "Age",
+      cell: ({ row }) => <span className="tabular-nums">{row.getValue("present_age")}</span>,
+    },
+    {
+      accessorKey: "date_of_admission",
+      header: "Admitted",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {fmtDate(row.getValue("date_of_admission"))}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "assigned_social_worker",
+      header: "Social Worker",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("assigned_social_worker")}</span>,
+    },
+    {
+      accessorKey: "reintegration_status",
+      header: "Reintegration",
+      cell: ({ row }) => {
+        const status = row.getValue("reintegration_status") as string;
+        const colors: Record<string, string> = {
+          "Not Started": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+          "In Progress": "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+          "Completed": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
+          "On Hold": "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300",
+        };
+        return <Badge variant="outline" className={`border-0 text-xs ${colors[status] || ""}`}>{status}</Badge>;
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const resident = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>}
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditTarget(resident); setSheetOpen(true); }}>
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => { setDeleteTarget(resident); setDeleteOpen(true); }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (error) {
     return (
@@ -168,6 +239,8 @@ export default function ResidentsPage() {
     );
   }
 
+  const isPending = editTarget ? updateResident.isPending : createResident.isPending;
+
   return (
     <div>
       <PageHeader
@@ -175,7 +248,7 @@ export default function ResidentsPage() {
         description="Manage all resident cases across safehouses."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Caseload" }]}
         actions={
-          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+          <Button onClick={() => { setEditTarget(null); form.reset(); setSheetOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" />Add Resident
           </Button>
         }
@@ -221,11 +294,11 @@ export default function ResidentsPage() {
         />
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) { setEditTarget(null); form.reset(); } }}>
         <SheetContent className="overflow-y-auto sm:max-w-lg">
           <SheetHeader>
-            <SheetTitle>Add New Resident</SheetTitle>
-            <SheetDescription>Intake a new resident into the system.</SheetDescription>
+            <SheetTitle>{editTarget ? "Edit Resident" : "Add New Resident"}</SheetTitle>
+            <SheetDescription>{editTarget ? "Update resident profile information." : "Intake a new resident into the system."}</SheetDescription>
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-6">
             <div>
@@ -314,15 +387,44 @@ export default function ResidentsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {editTarget && (
+                  <div className="space-y-1">
+                    <Label>Reintegration Status</Label>
+                    <Select value={form.watch("ReintegrationStatus") ?? ""} onValueChange={(v) => form.setValue("ReintegrationStatus", v ?? "")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Not Started">Not Started</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="On Hold">On Hold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={createResident.isPending}>
-              {createResident.isPending ? "Adding..." : "Add Resident"}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? "Saving..." : editTarget ? "Update Resident" : "Add Resident"}
             </Button>
           </form>
         </SheetContent>
       </Sheet>
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        itemName={deleteTarget?.case_control_no || ""}
+        onConfirm={async () => {
+          if (deleteTarget) {
+            await deleteResidentMut.mutateAsync(deleteTarget.resident_id);
+            toast.success("Resident deleted");
+            setDeleteOpen(false);
+            setDeleteTarget(null);
+          }
+        }}
+        loading={deleteResidentMut.isPending}
+      />
     </div>
   );
 }

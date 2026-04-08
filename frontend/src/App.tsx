@@ -32,6 +32,7 @@ const PartnersPage = lazy(() => import("@/pages/admin/PartnersPage"));
 const UserManagementPage = lazy(() => import("@/pages/admin/UserManagementPage"));
 const SocialAccountsPage = lazy(() => import("@/pages/admin/SocialAccountsPage"));
 const ReportsPage = lazy(() => import("@/pages/admin/ReportsPage"));
+const ChatPage = lazy(() => import("@/pages/admin/ChatPage"));
 
 const DonorDashboard = lazy(() => import("@/pages/donor/DonorDashboard"));
 
@@ -83,6 +84,7 @@ export default function App() {
                     <Route path="/admin/partners" element={<PartnersPage />} />
                     <Route path="/admin/users" element={<UserManagementPage />} />
                     <Route path="/admin/reports" element={<ReportsPage />} />
+                    <Route path="/admin/chat" element={<ChatPage />} />
                     <Route path="/admin/settings/social-accounts" element={<SocialAccountsPage />} />
                   </Route>
 

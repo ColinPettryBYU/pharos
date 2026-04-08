@@ -106,6 +106,22 @@ public class SocialMediaController : ControllerBase
 
     // ── Account Management ──
 
+    [HttpGet("accounts/status")]
+    [Authorize(Roles = "Admin,Staff")]
+    public IActionResult GetPlatformStatus()
+    {
+        var statuses = new Dictionary<string, bool>
+        {
+            ["facebook"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Meta:AppId"]),
+            ["instagram"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Meta:AppId"]),
+            ["linkedin"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:LinkedIn:ClientId"]),
+            ["youtube"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Google:ClientId"]),
+            ["tiktok"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:TikTok:ClientKey"]),
+            ["twitter"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Twitter:ClientId"]),
+        };
+        return Ok(statuses);
+    }
+
     [HttpGet("accounts")]
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<IEnumerable<ConnectedAccountDto>>> GetAccounts()
@@ -164,7 +180,7 @@ public class SocialMediaController : ControllerBase
             ?? $"{Request.Scheme}://{Request.Host}";
         var redirectUri = $"{baseUrl}/api/admin/social-media/accounts/{platform.ToLowerInvariant()}/callback";
 
-        var tokenResult = await client.ExchangeCodeAsync(code, redirectUri);
+        var tokenResult = await client.ExchangeCodeAsync(code, redirectUri, state);
 
         if (!string.IsNullOrWhiteSpace(tokenResult.Error))
         {

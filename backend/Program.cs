@@ -112,6 +112,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPartnerService, PartnerService>();
 builder.Services.AddScoped<IMLService, MLService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddHttpClient<IChatService, ChatService>();
 
 // ── Social Media Platform Clients ──
 builder.Services.AddMemoryCache();

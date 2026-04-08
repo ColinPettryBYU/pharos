@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,10 +18,13 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useProcessRecordings, useCreateProcessRecording } from "@/hooks/useProcessRecordings";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useProcessRecordings, useCreateProcessRecording, useUpdateProcessRecording } from "@/hooks/useProcessRecordings";
 import { fmtDate } from "@/lib/utils";
 import type { ProcessRecording } from "@/types";
-import { Plus } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -43,56 +46,13 @@ type RecordingForm = z.infer<typeof recordingSchema>;
 
 const emotionalStates = ["Calm", "Anxious", "Sad", "Angry", "Hopeful", "Withdrawn", "Happy", "Distressed"];
 
-const columns: ColumnDef<ProcessRecording>[] = [
-  {
-    accessorKey: "session_date",
-    header: "Date",
-    cell: ({ row }) => <span className="tabular-nums text-sm">{fmtDate(row.getValue("session_date"))}</span>,
-  },
-  {
-    accessorKey: "resident_id",
-    header: "Resident",
-    cell: ({ row }) => <span className="font-medium text-sm">R-{String(row.getValue("resident_id")).padStart(3, "0")}</span>,
-  },
-  {
-    accessorKey: "social_worker",
-    header: "Social Worker",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("social_worker")}</span>,
-  },
-  {
-    accessorKey: "session_type",
-    header: "Type",
-    cell: ({ row }) => <Badge variant="outline">{row.getValue("session_type")}</Badge>,
-  },
-  {
-    accessorKey: "session_duration_minutes",
-    header: "Duration",
-    cell: ({ row }) => <span className="text-sm tabular-nums">{row.getValue("session_duration_minutes")} min</span>,
-  },
-  {
-    id: "emotional",
-    header: "Emotional State",
-    cell: ({ row }) => <EmotionalStateIndicator start={row.original.emotional_state_observed} end={row.original.emotional_state_end} />,
-  },
-  {
-    accessorKey: "progress_noted",
-    header: "Progress",
-    cell: ({ row }) =>
-      row.getValue("progress_noted") ? <Badge className="bg-success/10 text-success border-0 text-xs">Yes</Badge> : <span className="text-xs text-muted-foreground">-</span>,
-  },
-  {
-    accessorKey: "concerns_flagged",
-    header: "Concerns",
-    cell: ({ row }) =>
-      row.getValue("concerns_flagged") ? <Badge variant="destructive" className="text-xs">Flagged</Badge> : <span className="text-xs text-muted-foreground">-</span>,
-  },
-];
-
 export default function ProcessRecordingsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ProcessRecording | null>(null);
   const { data, isLoading, error, refetch } = useProcessRecordings({ pageSize: 3000 });
   const createRecording = useCreateProcessRecording();
+  const updateRecording = useUpdateProcessRecording();
 
   const recordings = Array.isArray(data) ? data : (data?.data ?? []);
 
@@ -107,14 +67,101 @@ export default function ProcessRecordingsPage() {
     },
   });
 
+  useEffect(() => {
+    if (editTarget) {
+      form.reset({
+        ResidentId: editTarget.resident_id,
+        SessionType: editTarget.session_type || "",
+        SessionDurationMinutes: editTarget.session_duration_minutes || 45,
+        EmotionalStateObserved: editTarget.emotional_state_observed || "",
+        EmotionalStateEnd: editTarget.emotional_state_end || "",
+        SessionNarrative: editTarget.session_narrative || "",
+        InterventionsApplied: editTarget.interventions_applied || "",
+        FollowUpActions: editTarget.follow_up_actions || "",
+        ProgressNoted: editTarget.progress_noted ?? false,
+        ConcernsFlagged: editTarget.concerns_flagged ?? false,
+        ReferralMade: editTarget.referral_made ?? false,
+      });
+    }
+  }, [editTarget, form]);
+
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await createRecording.mutateAsync(values as unknown as Record<string, unknown>);
-      toast.success("Session recorded successfully");
+      if (editTarget) {
+        await updateRecording.mutateAsync({ id: editTarget.recording_id, data: values as unknown as Record<string, unknown> });
+        toast.success("Recording updated successfully");
+      } else {
+        await createRecording.mutateAsync(values as unknown as Record<string, unknown>);
+        toast.success("Session recorded successfully");
+      }
       form.reset();
       setSheetOpen(false);
+      setEditTarget(null);
     } catch { /* handled by api client */ }
   });
+
+  const columns: ColumnDef<ProcessRecording>[] = useMemo(() => [
+    {
+      accessorKey: "session_date",
+      header: "Date",
+      cell: ({ row }) => <span className="tabular-nums text-sm">{fmtDate(row.getValue("session_date"))}</span>,
+    },
+    {
+      accessorKey: "resident_id",
+      header: "Resident",
+      cell: ({ row }) => <span className="font-medium text-sm">R-{String(row.getValue("resident_id")).padStart(3, "0")}</span>,
+    },
+    {
+      accessorKey: "social_worker",
+      header: "Social Worker",
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("social_worker")}</span>,
+    },
+    {
+      accessorKey: "session_type",
+      header: "Type",
+      cell: ({ row }) => <Badge variant="outline">{row.getValue("session_type")}</Badge>,
+    },
+    {
+      accessorKey: "session_duration_minutes",
+      header: "Duration",
+      cell: ({ row }) => <span className="text-sm tabular-nums">{row.getValue("session_duration_minutes")} min</span>,
+    },
+    {
+      id: "emotional",
+      header: "Emotional State",
+      cell: ({ row }) => <EmotionalStateIndicator start={row.original.emotional_state_observed} end={row.original.emotional_state_end} />,
+    },
+    {
+      accessorKey: "progress_noted",
+      header: "Progress",
+      cell: ({ row }) =>
+        row.getValue("progress_noted") ? <Badge className="bg-success/10 text-success border-0 text-xs">Yes</Badge> : <span className="text-xs text-muted-foreground">-</span>,
+    },
+    {
+      accessorKey: "concerns_flagged",
+      header: "Concerns",
+      cell: ({ row }) =>
+        row.getValue("concerns_flagged") ? <Badge variant="destructive" className="text-xs">Flagged</Badge> : <span className="text-xs text-muted-foreground">-</span>,
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const recording = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>}
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { setEditTarget(recording); setSheetOpen(true); }}>
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ], []);
 
   if (error) {
     return (
@@ -125,6 +172,8 @@ export default function ProcessRecordingsPage() {
     );
   }
 
+  const isPending = editTarget ? updateRecording.isPending : createRecording.isPending;
+
   return (
     <div>
       <PageHeader
@@ -132,7 +181,7 @@ export default function ProcessRecordingsPage() {
         description="All counseling sessions across residents."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "Process Recordings" }]}
         actions={
-          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+          <Button onClick={() => { setEditTarget(null); form.reset(); setSheetOpen(true); }} className="gap-2">
             <Plus className="h-4 w-4" />Record Session
           </Button>
         }
@@ -155,11 +204,11 @@ export default function ProcessRecordingsPage() {
         />
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) { setEditTarget(null); form.reset(); } }}>
         <SheetContent className="overflow-y-auto sm:max-w-lg">
           <SheetHeader>
-            <SheetTitle>Record Session</SheetTitle>
-            <SheetDescription>Document a counseling session.</SheetDescription>
+            <SheetTitle>{editTarget ? "Edit Recording" : "Record Session"}</SheetTitle>
+            <SheetDescription>{editTarget ? "Update session details." : "Document a counseling session."}</SheetDescription>
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="space-y-2">
@@ -220,8 +269,8 @@ export default function ProcessRecordingsPage() {
               <div className="flex items-center gap-2"><Switch checked={form.watch("ReferralMade")} onCheckedChange={(v) => form.setValue("ReferralMade", v)} /><Label>Referral</Label></div>
             </div>
             <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
-            <Button type="submit" className="w-full" disabled={createRecording.isPending}>
-              {createRecording.isPending ? "Saving..." : "Save Recording"}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? "Saving..." : editTarget ? "Update Recording" : "Save Recording"}
             </Button>
           </form>
         </SheetContent>

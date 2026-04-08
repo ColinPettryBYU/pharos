@@ -52,7 +52,7 @@ public class YouTubeClient : ISocialPlatformClient
                $"&prompt=consent";
     }
 
-    public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri)
+    public async Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri, string? state = null)
     {
         try
         {

@@ -9,7 +9,7 @@ public interface ISocialPlatformClient
 
     string BuildOAuthUrl(string redirectUri, string state);
 
-    Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri);
+    Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri, string? state = null);
 
     Task<PostResult> PublishPostAsync(SocialMediaAccount account, ComposePostRequest request);
 

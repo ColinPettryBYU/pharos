@@ -84,12 +84,23 @@ export function useSocialAccounts() {
 export function useConnectSocialAccount() {
   return useMutation({
     mutationFn: async (platform: string) => {
-      const response = await api.post<{ redirectUrl: string }>(
+      const response = await api.post<{ redirect_url: string }>(
         `/admin/social-media/accounts/${platform}/connect`
       );
-      window.location.href = response.redirectUrl;
+      if (!response.redirect_url) {
+        throw new Error("No redirect URL received from server. API keys may not be configured for this platform.");
+      }
+      window.location.href = response.redirect_url;
       return response;
     },
+  });
+}
+
+export function usePlatformStatus() {
+  return useQuery({
+    queryKey: ["platformStatus"],
+    queryFn: () =>
+      api.get<Record<string, boolean>>("/admin/social-media/accounts/status"),
   });
 }
 
