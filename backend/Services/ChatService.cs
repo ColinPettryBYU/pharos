@@ -214,6 +214,18 @@ GUIDELINES:
             if (cleaned.EndsWith("```")) cleaned = cleaned[..^3];
             cleaned = cleaned.Trim();
 
+            // Gemini sometimes wraps JSON inside prose text — extract the JSON array
+            if (!cleaned.StartsWith("["))
+            {
+                var arrayStart = cleaned.IndexOf("[{");
+                if (arrayStart >= 0)
+                {
+                    var arrayEnd = cleaned.LastIndexOf("}]");
+                    if (arrayEnd > arrayStart)
+                        cleaned = cleaned[arrayStart..(arrayEnd + 2)];
+                }
+            }
+
             try
             {
                 using var blockDoc = JsonDocument.Parse(cleaned);

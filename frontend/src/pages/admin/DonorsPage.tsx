@@ -226,6 +226,7 @@ export default function DonorsPage() {
             <SheetDescription>{editTarget ? "Update supporter information." : "Add a new donor, volunteer, or partner."}</SheetDescription>
           </SheetHeader>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>First Name <span className="text-destructive">*</span></Label>
@@ -280,7 +281,6 @@ export default function DonorsPage() {
               <Label>Country <span className="text-destructive">*</span></Label>
               <Input {...form.register("Country")} placeholder="Country" />
             </div>
-            <p className="text-xs text-muted-foreground">Fields marked with <span className="text-destructive">*</span> are required.</p>
             <div className="pt-4">
               <Button type="submit" className="w-full" disabled={isPending}>
                 {isPending ? "Saving..." : editTarget ? "Update Supporter" : "Add Supporter"}

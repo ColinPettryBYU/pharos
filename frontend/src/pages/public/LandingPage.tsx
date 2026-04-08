@@ -202,7 +202,7 @@ export default function LandingPage() {
       <style dangerouslySetInnerHTML={{ __html: floatKeyframes }} />
 
       {/* ─── HERO ─── */}
-      <section className="relative min-h-[80vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         <img
           src="/images/girlsreadingstock.png"
           alt="Girls reading together"
@@ -278,8 +278,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <WaveDivider className="fill-muted/30" />
-
       {/* ─── STATS STRIP ─── */}
       <section ref={statsRef} className="relative bg-muted/30 py-12 sm:py-16">
         <div
@@ -302,15 +300,7 @@ export default function LandingPage() {
                   animate={statsInView ? { opacity: 1, scale: 1 } : {}}
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.03 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 17,
-                    }}
-                    className="rounded-xl bg-card p-6 shadow-sm text-center"
-                  >
+                  <div className="rounded-xl bg-card p-6 shadow-sm text-center">
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
                       <Icon className="h-6 w-6 text-primary" />
                     </div>
@@ -327,7 +317,7 @@ export default function LandingPage() {
                     <p className="mt-1 text-sm font-medium text-muted-foreground">
                       {stat.label}
                     </p>
-                  </motion.div>
+                  </div>
                 </motion.div>
               );
             })}
@@ -383,15 +373,7 @@ export default function LandingPage() {
                       viewport={{ once: true, margin: "-50px" }}
                       transition={{ duration: 0.5, delay: i * 0.05 }}
                     >
-                      <motion.div
-                        whileHover={{ y: -4 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 17,
-                        }}
-                      >
-                        <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm">
+                      <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm">
                           <CardContent className="p-5">
                             <div
                               className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg ${pillar.bg} ${pillar.color}`}
@@ -406,7 +388,6 @@ export default function LandingPage() {
                             </p>
                           </CardContent>
                         </Card>
-                      </motion.div>
                     </motion.div>
                   );
                 })}
@@ -543,7 +524,7 @@ export default function LandingPage() {
 
         <div className="relative min-h-[400px] flex items-center justify-center py-14 sm:py-20">
           <img
-            src="/images/girlsreadingstock.png"
+            src="/images/girlwomentalkingstock.png"
             alt=""
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover brightness-[0.35] dark:brightness-[0.25]"

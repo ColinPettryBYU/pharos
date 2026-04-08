@@ -506,7 +506,7 @@ export default function ChatPage() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] -m-4 sm:-m-6 lg:-m-8">
+    <div className="flex h-[calc(100vh-4rem)] -m-4 sm:-m-6 lg:-m-8">
       {/* Conversation sidebar */}
       <ConversationSidebar
         activeId={activeConversationId}
@@ -675,12 +675,12 @@ export default function ChatPage() {
         </div>
 
         {/* Sticky input bar */}
-        <div className="shrink-0 border-t bg-background px-4 sm:px-6 lg:px-8 py-3">
+        <div className="shrink-0 border-t bg-background px-4 sm:px-6 lg:px-8 py-4">
           <form
             onSubmit={handleSubmit}
-            className="max-w-3xl mx-auto flex items-end gap-2"
+            className="max-w-3xl mx-auto"
           >
-            <div className="relative flex-1">
+            <div className="relative">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -688,7 +688,7 @@ export default function ChatPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about residents, donations, social media..."
                 rows={1}
-                className="w-full resize-none rounded-xl border bg-card px-4 py-3 pr-4 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                className="w-full resize-none rounded-2xl border border-border bg-card pl-4 pr-14 py-3.5 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                 style={{ maxHeight: "120px" }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
@@ -697,15 +697,15 @@ export default function ChatPage() {
                     Math.min(target.scrollHeight, 120) + "px";
                 }}
               />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!input.trim() || mutation.isPending}
+                className="absolute right-2 bottom-2 rounded-xl h-9 w-9 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!input.trim() || mutation.isPending}
-              className="rounded-xl h-11 w-11 shrink-0"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
           </form>
         </div>
       </div>

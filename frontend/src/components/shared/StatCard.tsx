@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { motion, useSpring, useTransform } from "motion/react";
+import { useEffect, useState } from "react";
+import { useSpring, useTransform } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, formatNumber, formatPercent } from "@/lib/api";
 import { TrendingUp, TrendingDown, type LucideIcon } from "lucide-react";
@@ -57,18 +57,11 @@ export function StatCard({
   icon: Icon,
   className,
 }: StatCardProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
   return (
-    <motion.div
-      ref={ref}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
-    >
+    <div className="h-full">
       <Card
         className={cn(
-          "relative overflow-hidden transition-shadow hover:shadow-lg",
+          "relative overflow-hidden transition-shadow hover:shadow-lg h-full",
           className
         )}
       >
@@ -109,7 +102,7 @@ export function StatCard({
           )}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 

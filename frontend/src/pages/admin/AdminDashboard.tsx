@@ -85,6 +85,15 @@ export default function AdminDashboard() {
 
   return (
     <div>
+      <div className="flex items-center justify-between mb-2">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Home className="h-4 w-4" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
       <PageHeader
         title="Dashboard"
         description="Welcome back. Here's an overview of Pharos operations."
