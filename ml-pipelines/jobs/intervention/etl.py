@@ -38,6 +38,10 @@ def run():
     if 'session_duration_minutes' in recordings.columns:
         recordings['session_duration_minutes'] = pd.to_numeric(recordings['session_duration_minutes'], errors='coerce')
 
+    for df in [residents, recordings, education, health, interventions, incidents]:
+        if 'resident_id' in df.columns:
+            df['resident_id'] = pd.to_numeric(df['resident_id'], errors='coerce')
+
     # ── Step 1: Build month-level outcome measures ──
     health['month'] = health['record_date'].dt.to_period('M').dt.to_timestamp()
     edu_monthly = education.copy()

@@ -44,6 +44,27 @@ def run():
     if 'session_duration_minutes' in recordings.columns:
         recordings['session_duration_minutes'] = pd.to_numeric(recordings['session_duration_minutes'], errors='coerce')
 
+    for col in ['progress_noted', 'concerns_flagged', 'referral_made']:
+        if col in recordings.columns:
+            recordings[col] = recordings[col].map({True: 1, False: 0, 'True': 1, 'False': 0, 't': 1, 'f': 0, 'true': 1, 'false': 0}).fillna(0).astype(int)
+
+    bool_cols_residents = ['is_pwd', 'has_special_needs', 'family_is_4ps', 'family_solo_parent',
+                           'family_indigenous', 'family_parent_pwd', 'family_informal_settler'] + \
+                          [c for c in residents.columns if c.startswith('sub_cat_')]
+    for col in bool_cols_residents:
+        if col in residents.columns:
+            residents[col] = residents[col].map({True: 1, False: 0, 'True': 1, 'False': 0, 't': 1, 'f': 0, 'true': 1, 'false': 0}).fillna(0).astype(int)
+
+    bool_cols_health = ['medical_checkup_done', 'dental_checkup_done', 'psychological_checkup_done']
+    for col in bool_cols_health:
+        if col in health.columns:
+            health[col] = health[col].map({True: 1, False: 0, 'True': 1, 'False': 0, 't': 1, 'f': 0, 'true': 1, 'false': 0}).fillna(0).astype(int)
+
+    bool_cols_visits = ['follow_up_needed']
+    for col in bool_cols_visits:
+        if col in visitations.columns:
+            visitations[col] = visitations[col].map({True: 1, False: 0, 'True': 1, 'False': 0, 't': 1, 'f': 0, 'true': 1, 'false': 0}).fillna(0).astype(int)
+
     for df in [residents, recordings, education, health, interventions, visitations, incidents]:
         for col in ['resident_id']:
             if col in df.columns:
