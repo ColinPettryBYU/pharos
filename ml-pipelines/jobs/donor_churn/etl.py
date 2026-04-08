@@ -94,10 +94,12 @@ def run():
     print('[ETL] Computing donation features …')
     donation_features = _compute_donation_features(pre_cutoff_donations, monetary, donor_ids, cutoff_date)
 
-    donor_gaps = donations.sort_values(['supporter_id', 'donation_date']).groupby('supporter_id').apply(
-        lambda g: g['donation_date'].diff().dt.days.median()
-    ).reset_index()
-    donor_gaps.columns = ['supporter_id', 'median_gap_days']
+    donor_gaps = (
+        donations.sort_values(['supporter_id', 'donation_date'])
+        .groupby('supporter_id')['donation_date']
+        .apply(lambda g: g.diff().dt.days.median())
+        .reset_index(name='median_gap_days')
+    )
 
     donation_features = donation_features.merge(donor_gaps, on='supporter_id', how='left')
     donation_features['median_gap_days'] = donation_features['median_gap_days'].fillna(

@@ -60,11 +60,12 @@ def run():
         referrals_made=('referral_made', 'sum'),
     ).reset_index()
 
-    emotional_feats = recordings.groupby('resident_id').apply(
+    emotional_feats = recordings.groupby('resident_id', group_keys=False).apply(
         lambda g: pd.Series({
+            'resident_id': g['resident_id'].iloc[0],
             'pct_positive_end': g['emotional_state_end'].isin(positive_emotions).mean(),
         })
-    ).reset_index()
+    ).reset_index(drop=True)
 
     def session_frequency(g):
         if len(g) > 1:
@@ -75,7 +76,12 @@ def run():
             })
         return pd.Series({'session_freq_days': np.nan, 'last_session_recency': 9999})
 
-    freq_feats = recordings.groupby('resident_id').apply(session_frequency).reset_index()
+    freq_feats = recordings.groupby('resident_id', group_keys=False).apply(
+        lambda g: pd.Series({
+            'resident_id': g['resident_id'].iloc[0],
+            **session_frequency(g),
+        })
+    ).reset_index(drop=True)
 
     rec_features = rec_agg.merge(emotional_feats, on='resident_id', how='outer')
     rec_features = rec_features.merge(freq_feats, on='resident_id', how='outer')
@@ -101,7 +107,9 @@ def run():
             })
         return pd.Series({'edu_progress_trend': 0, 'latest_progress': 0, 'latest_attendance': 0})
 
-    edu_trends = education.groupby('resident_id').apply(edu_trend).reset_index()
+    edu_trends = education.groupby('resident_id', group_keys=False).apply(
+        lambda g: pd.Series({'resident_id': g['resident_id'].iloc[0], **edu_trend(g)})
+    ).reset_index(drop=True)
     edu_features = edu_agg.merge(edu_trends, on='resident_id', how='outer')
 
     # ── Health features ──
@@ -125,7 +133,9 @@ def run():
             return pd.Series({'health_trend': slope, 'latest_health_score': y[-1]})
         return pd.Series({'health_trend': 0, 'latest_health_score': 0})
 
-    health_trends = health.groupby('resident_id').apply(health_trend).reset_index()
+    health_trends = health.groupby('resident_id', group_keys=False).apply(
+        lambda g: pd.Series({'resident_id': g['resident_id'].iloc[0], **health_trend(g)})
+    ).reset_index(drop=True)
     health_features = health_agg.merge(health_trends, on='resident_id', how='outer')
 
     # ── Visitation features ──
@@ -149,7 +159,9 @@ def run():
                 return pd.Series({'cooperation_trend': slope, 'latest_cooperation': vals.iloc[-1]})
         return pd.Series({'cooperation_trend': 0, 'latest_cooperation': 2})
 
-    coop_trends = visitations.groupby('resident_id').apply(coop_trend).reset_index()
+    coop_trends = visitations.groupby('resident_id', group_keys=False).apply(
+        lambda g: pd.Series({'resident_id': g['resident_id'].iloc[0], **coop_trend(g)})
+    ).reset_index(drop=True)
     visit_features = visit_features.merge(coop_trends, on='resident_id', how='outer')
 
     # ── Intervention features ──
