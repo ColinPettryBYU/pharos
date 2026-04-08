@@ -102,7 +102,7 @@ def run():
 
     emotional_feats = recordings.groupby('resident_id', group_keys=False).apply(
         lambda g: pd.Series({
-            'resident_id': g['resident_id'].iloc[0],
+            'resident_id': g.name,
             'pct_positive_end': g['emotional_state_end'].isin(positive_emotions).mean(),
         })
     ).reset_index(drop=True)
@@ -118,7 +118,7 @@ def run():
 
     freq_feats = recordings.groupby('resident_id', group_keys=False).apply(
         lambda g: pd.Series({
-            'resident_id': g['resident_id'].iloc[0],
+            'resident_id': g.name,
             **session_frequency(g),
         })
     ).reset_index(drop=True)
@@ -148,7 +148,7 @@ def run():
         return pd.Series({'edu_progress_trend': 0, 'latest_progress': 0, 'latest_attendance': 0})
 
     edu_trends = education.groupby('resident_id', group_keys=False).apply(
-        lambda g: pd.Series({'resident_id': g['resident_id'].iloc[0], **edu_trend(g)})
+        lambda g: pd.Series({'resident_id': g.name, **edu_trend(g)})
     ).reset_index(drop=True)
     edu_features = edu_agg.merge(edu_trends, on='resident_id', how='outer')
 
@@ -174,7 +174,7 @@ def run():
         return pd.Series({'health_trend': 0, 'latest_health_score': 0})
 
     health_trends = health.groupby('resident_id', group_keys=False).apply(
-        lambda g: pd.Series({'resident_id': g['resident_id'].iloc[0], **health_trend(g)})
+        lambda g: pd.Series({'resident_id': g.name, **health_trend(g)})
     ).reset_index(drop=True)
     health_features = health_agg.merge(health_trends, on='resident_id', how='outer')
 
@@ -200,7 +200,7 @@ def run():
         return pd.Series({'cooperation_trend': 0, 'latest_cooperation': 2})
 
     coop_trends = visitations.groupby('resident_id', group_keys=False).apply(
-        lambda g: pd.Series({'resident_id': g['resident_id'].iloc[0], **coop_trend(g)})
+        lambda g: pd.Series({'resident_id': g.name, **coop_trend(g)})
     ).reset_index(drop=True)
     visit_features = visit_features.merge(coop_trends, on='resident_id', how='outer')
 
