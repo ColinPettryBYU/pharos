@@ -203,7 +203,7 @@ export default function HomeVisitationsPage() {
           searchKey="social_worker"
           searchPlaceholder="Search by social worker..."
           isLoading={isLoading}
-          onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}`)}
+          onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}?tab=visitations`)}
         />
       )}
 

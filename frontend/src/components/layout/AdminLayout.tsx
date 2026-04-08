@@ -48,6 +48,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  isChild?: boolean;
 }
 
 interface NavGroup {
@@ -68,8 +69,8 @@ const navGroups: NavGroup[] = [
     title: "Case Management",
     items: [
       { label: "Caseload", href: "/admin/residents", icon: Users },
-      { label: "Recordings", href: "/admin/process-recordings", icon: FileText },
-      { label: "Home Visits", href: "/admin/home-visitations", icon: Home },
+      { label: "Recordings", href: "/admin/process-recordings", icon: FileText, isChild: true },
+      { label: "Home Visits", href: "/admin/home-visitations", icon: Home, isChild: true },
     ],
   },
   {
@@ -148,12 +149,16 @@ function SidebarContent({
               )}
             </AnimatePresence>
             <div className="space-y-0.5">
-              {group.items.map((item) => {
+              {group.items.map((item, itemIdx) => {
                 const isActive =
                   currentPath === item.href ||
                   (item.href !== "/admin" &&
                     currentPath.startsWith(item.href));
                 const Icon = item.icon;
+                const isLastChild =
+                  item.isChild &&
+                  (itemIdx === group.items.length - 1 ||
+                    !group.items[itemIdx + 1]?.isChild);
 
                 const linkContent = (
                   <Link
@@ -161,12 +166,13 @@ function SidebarContent({
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
                       collapsed && "justify-center px-2",
+                      item.isChild && !collapsed && "ml-4 text-[13px]",
                       isActive
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <Icon className={cn("shrink-0", item.isChild ? "h-3.5 w-3.5" : "h-4 w-4")} />
                     <AnimatePresence>
                       {!collapsed && (
                         <motion.span
@@ -190,6 +196,21 @@ function SidebarContent({
                         {item.label}
                       </TooltipContent>
                     </Tooltip>
+                  );
+                }
+
+                if (item.isChild) {
+                  return (
+                    <div key={item.href} className="relative">
+                      <div
+                        className={cn(
+                          "absolute left-[22px] w-px bg-border",
+                          isLastChild ? "top-0 h-[20px]" : "top-0 bottom-0"
+                        )}
+                      />
+                      <div className="absolute left-[22px] top-[20px] h-px w-3 bg-border" />
+                      {linkContent}
+                    </div>
                   );
                 }
 

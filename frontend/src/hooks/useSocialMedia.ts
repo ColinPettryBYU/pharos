@@ -112,3 +112,25 @@ export function useDisconnectSocialAccount() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["socialAccounts"] }),
   });
 }
+
+export function useSavePlatformCredentials() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      platform,
+      clientId,
+      clientSecret,
+    }: {
+      platform: string;
+      clientId: string;
+      clientSecret: string;
+    }) =>
+      api.post(`/admin/social-media/accounts/credentials/${platform}`, {
+        clientId,
+        clientSecret,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["platformStatus"] });
+    },
+  });
+}

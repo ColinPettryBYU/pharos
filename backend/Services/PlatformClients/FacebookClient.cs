@@ -17,6 +17,8 @@ public class FacebookClient : ISocialPlatformClient
     private readonly ITokenEncryptionService _tokenService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<FacebookClient> _logger;
+    private string? _overrideClientId;
+    private string? _overrideClientSecret;
 
     public string PlatformName => "Facebook";
 
@@ -34,9 +36,18 @@ public class FacebookClient : ISocialPlatformClient
         _logger = logger;
     }
 
+    public void SetCredentialOverrides(string? clientId, string? clientSecret)
+    {
+        _overrideClientId = clientId;
+        _overrideClientSecret = clientSecret;
+    }
+
+    private string? ResolveAppId() => _overrideClientId ?? _config["SocialMedia:Meta:AppId"];
+    private string? ResolveAppSecret() => _overrideClientSecret ?? _config["SocialMedia:Meta:AppSecret"];
+
     public string BuildOAuthUrl(string redirectUri, string state)
     {
-        var appId = _config["SocialMedia:Meta:AppId"];
+        var appId = ResolveAppId();
         var scopes = "pages_manage_posts,pages_read_engagement,pages_manage_metadata," +
                      "instagram_basic,instagram_content_publish,instagram_manage_comments," +
                      "instagram_manage_insights";
@@ -53,8 +64,8 @@ public class FacebookClient : ISocialPlatformClient
     {
         try
         {
-            var appId = _config["SocialMedia:Meta:AppId"];
-            var appSecret = _config["SocialMedia:Meta:AppSecret"];
+            var appId = ResolveAppId();
+            var appSecret = ResolveAppSecret();
 
             var shortLivedResponse = await _http.GetFromJsonAsync<JsonElement>(
                 $"{GraphApiBase}/oauth/access_token" +
@@ -267,8 +278,8 @@ public class FacebookClient : ISocialPlatformClient
     {
         try
         {
-            var appId = _config["SocialMedia:Meta:AppId"];
-            var appSecret = _config["SocialMedia:Meta:AppSecret"];
+            var appId = ResolveAppId();
+            var appSecret = ResolveAppSecret();
             var currentToken = _tokenService.Decrypt(account.EncryptedRefreshToken ?? account.EncryptedAccessToken);
 
             var response = await _http.GetFromJsonAsync<JsonElement>(

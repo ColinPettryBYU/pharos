@@ -7,6 +7,8 @@ public interface ISocialPlatformClient
 {
     string PlatformName { get; }
 
+    void SetCredentialOverrides(string? clientId, string? clientSecret);
+
     string BuildOAuthUrl(string redirectUri, string state);
 
     Task<OAuthTokenResult> ExchangeCodeAsync(string code, string redirectUri, string? state = null);

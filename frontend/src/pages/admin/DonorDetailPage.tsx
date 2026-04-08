@@ -1,15 +1,24 @@
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "motion/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RiskBadge } from "@/components/shared/RiskBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
 import { DataTableWrapper } from "@/components/shared/DataTableWrapper";
-import { useSupporter } from "@/hooks/useSupporters";
+import { useSupporter, useUpdateSupporter } from "@/hooks/useSupporters";
 import { useDonations, useDonationAllocations } from "@/hooks/useDonations";
 import { formatCurrency } from "@/lib/api";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -19,7 +28,18 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { Mail, Phone, Globe, Calendar, DollarSign, TrendingUp, Heart, AlertTriangle } from "lucide-react";
+import { Mail, Phone, Globe, Calendar, DollarSign, TrendingUp, Heart, AlertTriangle, Pencil } from "lucide-react";
+
+const editSupporterSchema = z.object({
+  DisplayName: z.string().min(1, "Name is required"),
+  SupporterType: z.string().min(1, "Required"),
+  Status: z.string().min(1, "Required"),
+  Email: z.string().email("Invalid email").optional().or(z.literal("")),
+  Phone: z.string().optional(),
+  Region: z.string().optional(),
+  Country: z.string().min(1, "Required"),
+});
+type EditSupporterValues = z.infer<typeof editSupporterSchema>;
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"];
 
@@ -37,6 +57,47 @@ export default function DonorDetailPage() {
   const { data: supporter, isLoading, error, refetch } = useSupporter(numId);
   const { data: donationsData } = useDonations({ supporterId: numId });
   const { data: allocationsData } = useDonationAllocations({ donorId: numId });
+
+  const updateSupporter = useUpdateSupporter();
+  const [editOpen, setEditOpen] = useState(false);
+
+  const form = useForm<EditSupporterValues>({
+    resolver: zodResolver(editSupporterSchema),
+    defaultValues: {
+      DisplayName: "",
+      SupporterType: "",
+      Status: "",
+      Email: "",
+      Phone: "",
+      Region: "",
+      Country: "",
+    },
+  });
+
+  useEffect(() => {
+    if (editOpen && supporter) {
+      form.reset({
+        DisplayName: supporter.display_name ?? "",
+        SupporterType: supporter.supporter_type ?? "",
+        Status: supporter.status ?? "",
+        Email: supporter.email ?? "",
+        Phone: supporter.phone ?? "",
+        Region: supporter.region ?? "",
+        Country: supporter.country ?? "",
+      });
+    }
+  }, [editOpen, supporter, form]);
+
+  const onEditSubmit = form.handleSubmit(async (values) => {
+    try {
+      await updateSupporter.mutateAsync({ id: numId, data: values });
+      toast.success("Supporter updated successfully");
+      setEditOpen(false);
+      refetch();
+    } catch {
+      toast.error("Failed to update supporter");
+    }
+  });
 
   if (isLoading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
@@ -77,6 +138,12 @@ export default function DonorDetailPage() {
           { label: "Supporters", href: "/admin/donors" },
           { label: supporter.display_name },
         ]}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit Supporter
+          </Button>
+        }
       />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
@@ -223,6 +290,88 @@ export default function DonorDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Supporter</SheetTitle>
+          </SheetHeader>
+          <form onSubmit={onEditSubmit} className="space-y-5 mt-6">
+            <div className="space-y-2">
+              <Label htmlFor="DisplayName">Display Name</Label>
+              <Input id="DisplayName" {...form.register("DisplayName")} />
+              {form.formState.errors.DisplayName && (
+                <p className="text-sm text-destructive">{form.formState.errors.DisplayName.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="SupporterType">Supporter Type</Label>
+              <Select
+                value={form.watch("SupporterType") ?? ""}
+                onValueChange={(v) => form.setValue("SupporterType", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="SupporterType"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["MonetaryDonor", "InKindDonor", "Volunteer", "SkillsContributor", "SocialMediaAdvocate", "PartnerOrganization"].map((s) => (
+                    <SelectItem key={s} value={s}>{s.replace(/([A-Z])/g, " $1").trim()}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="Status">Status</Label>
+              <Select
+                value={form.watch("Status") ?? ""}
+                onValueChange={(v) => form.setValue("Status", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="Status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Active", "Inactive", "Lapsed"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="Email">Email</Label>
+              <Input id="Email" type="email" {...form.register("Email")} />
+              {form.formState.errors.Email && (
+                <p className="text-sm text-destructive">{form.formState.errors.Email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="Phone">Phone</Label>
+              <Input id="Phone" {...form.register("Phone")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="Region">Region</Label>
+              <Input id="Region" {...form.register("Region")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="Country">Country</Label>
+              <Input id="Country" {...form.register("Country")} />
+              {form.formState.errors.Country && (
+                <p className="text-sm text-destructive">{form.formState.errors.Country.message}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateSupporter.isPending}>
+                {updateSupporter.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

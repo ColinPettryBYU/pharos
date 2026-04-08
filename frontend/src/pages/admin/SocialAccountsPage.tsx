@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -21,6 +22,7 @@ import {
   useConnectSocialAccount,
   useDisconnectSocialAccount,
   usePlatformStatus,
+  useSavePlatformCredentials,
 } from "@/hooks/useSocialMedia";
 import {
   Globe,
@@ -38,6 +40,8 @@ import {
   ChevronDown,
   ChevronRight,
   RefreshCw,
+  KeyRound,
+  Save,
 } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { toast } from "sonner";
@@ -119,68 +123,40 @@ const platformConfigs: PlatformConfig[] = [
   },
 ];
 
-const platformSetupInstructions: Record<string, { envVars: string[]; steps: string[]; link: string; linkLabel: string }> = {
+const platformCredentialLabels: Record<string, { idLabel: string; secretLabel: string; link: string; linkLabel: string }> = {
   facebook: {
-    envVars: ["SocialMedia__Meta__AppId", "SocialMedia__Meta__AppSecret"],
-    steps: [
-      "Create a Business App at Meta for Developers",
-      "Add Facebook Login product",
-      "Set Valid OAuth Redirect URI to: {BACKEND_URL}/api/admin/social-media/accounts/facebook/callback",
-      "Copy App ID and App Secret to environment variables",
-    ],
+    idLabel: "Meta App ID",
+    secretLabel: "Meta App Secret",
     link: "https://developers.facebook.com/",
     linkLabel: "Meta for Developers",
   },
   instagram: {
-    envVars: ["SocialMedia__Meta__AppId", "SocialMedia__Meta__AppSecret"],
-    steps: [
-      "Uses the same Meta App as Facebook",
-      "Ensure instagram_basic and instagram_content_publish scopes are enabled",
-      "Connect a Facebook Page with a linked Instagram Business Account",
-    ],
+    idLabel: "Meta App ID",
+    secretLabel: "Meta App Secret",
     link: "https://developers.facebook.com/",
     linkLabel: "Meta for Developers",
   },
   linkedin: {
-    envVars: ["SocialMedia__LinkedIn__ClientId", "SocialMedia__LinkedIn__ClientSecret"],
-    steps: [
-      "Create an App at LinkedIn Developer Portal",
-      "Verify your company page",
-      'Add "Community Management API" product',
-      "Set Redirect URL to: {BACKEND_URL}/api/admin/social-media/accounts/linkedin/callback",
-    ],
+    idLabel: "Client ID",
+    secretLabel: "Client Secret",
     link: "https://www.linkedin.com/developers/",
     linkLabel: "LinkedIn Developer Portal",
   },
   youtube: {
-    envVars: ["SocialMedia__Google__ClientId", "SocialMedia__Google__ClientSecret"],
-    steps: [
-      "Create a project in Google Cloud Console",
-      "Enable YouTube Data API v3",
-      "Create OAuth 2.0 credentials (Web application)",
-      "Add Redirect URI: {BACKEND_URL}/api/admin/social-media/accounts/youtube/callback",
-    ],
+    idLabel: "Google Client ID",
+    secretLabel: "Google Client Secret",
     link: "https://console.cloud.google.com/",
     linkLabel: "Google Cloud Console",
   },
   tiktok: {
-    envVars: ["SocialMedia__TikTok__ClientKey", "SocialMedia__TikTok__ClientSecret"],
-    steps: [
-      "Create an App at TikTok for Developers",
-      "Apply for Content Posting API access",
-      "Set Redirect URI: {BACKEND_URL}/api/admin/social-media/accounts/tiktok/callback",
-    ],
+    idLabel: "Client Key",
+    secretLabel: "Client Secret",
     link: "https://developers.tiktok.com/",
     linkLabel: "TikTok for Developers",
   },
   twitter: {
-    envVars: ["SocialMedia__Twitter__ClientId", "SocialMedia__Twitter__ClientSecret"],
-    steps: [
-      "Create a Project + App at X Developer Portal",
-      "Enable OAuth 2.0 (User Authentication)",
-      "Set Redirect URI: {BACKEND_URL}/api/admin/social-media/accounts/twitter/callback",
-      'Select "Read and Write" permissions',
-    ],
+    idLabel: "Client ID",
+    secretLabel: "Client Secret",
     link: "https://developer.twitter.com/",
     linkLabel: "X Developer Portal",
   },
@@ -201,10 +177,41 @@ function formatDate(value?: string | null): string {
   return isValid(d) ? format(d, "MMM d, yyyy") : "—";
 }
 
-function SetupGuide({ platformKey }: { platformKey: string }) {
+function CredentialForm({
+  platformKey,
+  onSaved,
+}: {
+  platformKey: string;
+  onSaved: () => void;
+}) {
   const [open, setOpen] = useState(false);
-  const instructions = platformSetupInstructions[platformKey];
-  if (!instructions) return null;
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const saveMutation = useSavePlatformCredentials();
+  const labels = platformCredentialLabels[platformKey];
+  if (!labels) return null;
+
+  const handleSave = () => {
+    if (!clientId.trim() || !clientSecret.trim()) {
+      toast.error("Both fields are required.");
+      return;
+    }
+    saveMutation.mutate(
+      { platform: platformKey, clientId: clientId.trim(), clientSecret: clientSecret.trim() },
+      {
+        onSuccess: () => {
+          toast.success(`Credentials saved for ${platformKey}.`);
+          setClientId("");
+          setClientSecret("");
+          setOpen(false);
+          onSaved();
+        },
+        onError: () => {
+          toast.error("Failed to save credentials.");
+        },
+      }
+    );
+  };
 
   return (
     <div className="mt-3">
@@ -214,34 +221,55 @@ function SetupGuide({ platformKey }: { platformKey: string }) {
         className="flex w-full items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-        Setup Guide
+        <KeyRound className="h-3.5 w-3.5" />
+        Configure API Credentials
       </button>
       {open && (
-        <div className="mt-2 space-y-2 rounded-lg bg-muted/50 p-3 text-xs">
-          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-            {instructions.steps.map((step, i) => (
-              <li key={i}>{step}</li>
-            ))}
-          </ol>
-          <div className="pt-1 border-t border-border/50">
-            <p className="font-medium text-muted-foreground">Environment variables needed:</p>
-            <ul className="mt-1 space-y-0.5">
-              {instructions.envVars.map((v) => (
-                <li key={v}>
-                  <code className="rounded bg-muted px-1 py-0.5 text-[11px]">{v}</code>
-                </li>
-              ))}
-            </ul>
+        <div className="mt-2 space-y-3 rounded-lg bg-muted/50 p-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">{labels.idLabel}</label>
+            <Input
+              type="text"
+              placeholder={labels.idLabel}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="h-8 text-sm"
+            />
           </div>
-          <a
-            href={instructions.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline pt-1"
-          >
-            <ExternalLink className="h-3 w-3" />
-            {instructions.linkLabel}
-          </a>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">{labels.secretLabel}</label>
+            <Input
+              type="password"
+              placeholder={labels.secretLabel}
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <a
+              href={labels.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <ExternalLink className="h-3 w-3" />
+              {labels.linkLabel}
+            </a>
+            <Button
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Save className="h-3 w-3" />
+              )}
+              Save Credentials
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -424,9 +452,9 @@ export default function SocialAccountsPage() {
                     {!isConnected && platform.connectable && !configured && (
                       <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20 p-3">
                         <div className="flex items-start gap-2">
-                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                          <KeyRound className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                           <p className="text-xs text-amber-800 dark:text-amber-300">
-                            API keys not configured. Add the required environment variables to enable this platform.
+                            API credentials not configured. Enter your app credentials below to enable this platform.
                           </p>
                         </div>
                       </div>
@@ -445,22 +473,31 @@ export default function SocialAccountsPage() {
                           Disconnect
                         </Button>
                       ) : platform.connectable && configured ? (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="w-full gap-2"
-                          onClick={() => handleConnect(platform.key)}
-                          disabled={connectMutation.isPending}
-                        >
-                          {connectMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <ExternalLink className="h-4 w-4" />
-                          )}
-                          Connect {platform.name}
-                        </Button>
+                        <div className="space-y-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full gap-2"
+                            onClick={() => handleConnect(platform.key)}
+                            disabled={connectMutation.isPending}
+                          >
+                            {connectMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ExternalLink className="h-4 w-4" />
+                            )}
+                            Connect {platform.name}
+                          </Button>
+                          <CredentialForm
+                            platformKey={platform.key}
+                            onSaved={() => refetchAccounts()}
+                          />
+                        </div>
                       ) : platform.connectable && !configured ? (
-                        <SetupGuide platformKey={platform.key} />
+                        <CredentialForm
+                          platformKey={platform.key}
+                          onSaved={() => refetchAccounts()}
+                        />
                       ) : (
                         <p className="text-center text-xs text-muted-foreground">
                           Analytics available from imported data

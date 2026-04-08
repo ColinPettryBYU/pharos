@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pharos.Api.Data;
@@ -11,9 +12,11 @@ using Pharos.Api.Data;
 namespace Pharos.Api.Migrations
 {
     [DbContext(typeof(PharosDbContext))]
-    partial class PharosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408201027_AddSocialMediaCredentials")]
+    partial class AddSocialMediaCredentials
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

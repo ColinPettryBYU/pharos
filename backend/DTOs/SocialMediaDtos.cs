@@ -135,3 +135,8 @@ public record PlatformPostResult(
     string? PostUrl,
     string? Error
 );
+
+public record SaveCredentialsRequest(
+    string ClientId,
+    string ClientSecret
+);

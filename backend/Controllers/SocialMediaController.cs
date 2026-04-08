@@ -18,6 +18,7 @@ public class SocialMediaController : ControllerBase
     private readonly PharosDbContext _db;
     private readonly IPlatformClientFactory _clientFactory;
     private readonly ITokenEncryptionService _tokenService;
+    private readonly ISocialCredentialService _credentialService;
     private readonly IConfiguration _config;
     private readonly ILogger<SocialMediaController> _logger;
 
@@ -26,6 +27,7 @@ public class SocialMediaController : ControllerBase
         PharosDbContext db,
         IPlatformClientFactory clientFactory,
         ITokenEncryptionService tokenService,
+        ISocialCredentialService credentialService,
         IConfiguration config,
         ILogger<SocialMediaController> logger)
     {
@@ -33,6 +35,7 @@ public class SocialMediaController : ControllerBase
         _db = db;
         _clientFactory = clientFactory;
         _tokenService = tokenService;
+        _credentialService = credentialService;
         _config = config;
         _logger = logger;
     }
@@ -108,18 +111,28 @@ public class SocialMediaController : ControllerBase
 
     [HttpGet("accounts/status")]
     [Authorize(Roles = "Admin,Staff")]
-    public IActionResult GetPlatformStatus()
+    public async Task<IActionResult> GetPlatformStatus()
     {
-        var statuses = new Dictionary<string, bool>
-        {
-            ["facebook"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Meta:AppId"]),
-            ["instagram"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Meta:AppId"]),
-            ["linkedin"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:LinkedIn:ClientId"]),
-            ["youtube"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Google:ClientId"]),
-            ["tiktok"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:TikTok:ClientKey"]),
-            ["twitter"] = !string.IsNullOrWhiteSpace(_config["SocialMedia:Twitter:ClientId"]),
-        };
+        var statuses = await _credentialService.GetCredentialStatusAsync();
         return Ok(statuses);
+    }
+
+    [HttpGet("accounts/credentials")]
+    public async Task<IActionResult> GetCredentialStatus()
+    {
+        var statuses = await _credentialService.GetCredentialStatusAsync();
+        return Ok(statuses);
+    }
+
+    [HttpPost("accounts/credentials/{platform}")]
+    public async Task<IActionResult> SaveCredentials(string platform, [FromBody] SaveCredentialsRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ClientId) || string.IsNullOrWhiteSpace(request.ClientSecret))
+            return BadRequest(new { message = "Both Client ID and Client Secret are required." });
+
+        await _credentialService.SaveCredentialsAsync(platform, request.ClientId, request.ClientSecret);
+        _logger.LogInformation("Saved API credentials for {Platform}", platform);
+        return Ok(new { message = $"Credentials saved for {platform}." });
     }
 
     [HttpGet("accounts")]
@@ -136,11 +149,15 @@ public class SocialMediaController : ControllerBase
     }
 
     [HttpPost("accounts/{platform}/connect")]
-    public IActionResult ConnectAccount(string platform)
+    public async Task<IActionResult> ConnectAccount(string platform)
     {
         var client = _clientFactory.GetClient(platform);
         if (client == null)
             return BadRequest(new { message = $"Unsupported platform: {platform}" });
+
+        var (clientId, clientSecret) = await _credentialService.GetCredentialsAsync(platform);
+        if (!string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret))
+            client.SetCredentialOverrides(clientId, clientSecret);
 
         var baseUrl = _config["SocialMedia:CallbackBaseUrl"]
             ?? $"{Request.Scheme}://{Request.Host}";
@@ -175,6 +192,10 @@ public class SocialMediaController : ControllerBase
         var client = _clientFactory.GetClient(platform);
         if (client == null)
             return Redirect($"{frontendUrl}/admin/settings/social-accounts?error=unsupported_platform");
+
+        var (credClientId, credClientSecret) = await _credentialService.GetCredentialsAsync(platform);
+        if (!string.IsNullOrWhiteSpace(credClientId) && !string.IsNullOrWhiteSpace(credClientSecret))
+            client.SetCredentialOverrides(credClientId, credClientSecret);
 
         var baseUrl = _config["SocialMedia:CallbackBaseUrl"]
             ?? $"{Request.Scheme}://{Request.Host}";

@@ -131,6 +131,7 @@ builder.Services.AddScoped<ISocialPlatformClient, YouTubeClient>();
 builder.Services.AddScoped<ISocialPlatformClient, TikTokClient>();
 builder.Services.AddScoped<ISocialPlatformClient, TwitterClient>();
 builder.Services.AddScoped<IPlatformClientFactory, PlatformClientFactory>();
+builder.Services.AddScoped<ISocialCredentialService, SocialCredentialService>();
 
 // ── Controllers & Swagger ──
 builder.Services.AddControllers()

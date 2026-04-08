@@ -19,6 +19,8 @@ public class LinkedInClient : ISocialPlatformClient
     private readonly ITokenEncryptionService _tokenService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<LinkedInClient> _logger;
+    private string? _overrideClientId;
+    private string? _overrideClientSecret;
 
     public string PlatformName => "LinkedIn";
 
@@ -36,9 +38,18 @@ public class LinkedInClient : ISocialPlatformClient
         _logger = logger;
     }
 
+    public void SetCredentialOverrides(string? clientId, string? clientSecret)
+    {
+        _overrideClientId = clientId;
+        _overrideClientSecret = clientSecret;
+    }
+
+    private string? ResolveClientId() => _overrideClientId ?? _config["SocialMedia:LinkedIn:ClientId"];
+    private string? ResolveClientSecret() => _overrideClientSecret ?? _config["SocialMedia:LinkedIn:ClientSecret"];
+
     public string BuildOAuthUrl(string redirectUri, string state)
     {
-        var clientId = _config["SocialMedia:LinkedIn:ClientId"];
+        var clientId = ResolveClientId();
         var scopes = "r_organization_social w_organization_social rw_organization_admin";
 
         return $"https://www.linkedin.com/oauth/v2/authorization" +
@@ -53,8 +64,8 @@ public class LinkedInClient : ISocialPlatformClient
     {
         try
         {
-            var clientId = _config["SocialMedia:LinkedIn:ClientId"];
-            var clientSecret = _config["SocialMedia:LinkedIn:ClientSecret"];
+            var clientId = ResolveClientId();
+            var clientSecret = ResolveClientSecret();
 
             var tokenResponse = await _http.PostAsync(
                 "https://www.linkedin.com/oauth/v2/accessToken",
@@ -248,8 +259,8 @@ public class LinkedInClient : ISocialPlatformClient
 
         try
         {
-            var clientId = _config["SocialMedia:LinkedIn:ClientId"];
-            var clientSecret = _config["SocialMedia:LinkedIn:ClientSecret"];
+            var clientId = ResolveClientId();
+            var clientSecret = ResolveClientSecret();
             var refreshToken = _tokenService.Decrypt(account.EncryptedRefreshToken);
 
             var response = await _http.PostAsync(

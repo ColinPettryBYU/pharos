@@ -25,6 +25,7 @@ public class PharosDbContext : DbContext
     public DbSet<SafehouseMonthlyMetric> SafehouseMonthlyMetrics => Set<SafehouseMonthlyMetric>();
     public DbSet<PublicImpactSnapshot> PublicImpactSnapshots => Set<PublicImpactSnapshot>();
     public DbSet<SocialMediaAccount> SocialMediaAccounts => Set<SocialMediaAccount>();
+    public DbSet<SocialMediaCredential> SocialMediaCredentials => Set<SocialMediaCredential>();
 
     // ── ML Prediction Tables ──
     public DbSet<DonorChurnScore> DonorChurnScores => Set<DonorChurnScore>();
@@ -510,6 +511,20 @@ public class PharosDbContext : DbContext
             entity.Property(e => e.TokenExpiresAt).HasColumnName("token_expires_at");
             entity.Property(e => e.PageId).HasColumnName("page_id").HasMaxLength(200);
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50);
+        });
+
+        // ── SocialMediaCredential ──
+        modelBuilder.Entity<SocialMediaCredential>(entity =>
+        {
+            entity.ToTable("social_media_credentials");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Platform).HasColumnName("platform").HasMaxLength(50);
+            entity.Property(e => e.EncryptedClientId).HasColumnName("encrypted_client_id").HasMaxLength(2000);
+            entity.Property(e => e.EncryptedClientSecret).HasColumnName("encrypted_client_secret").HasMaxLength(2000);
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasIndex(e => e.Platform).IsUnique();
         });
 
         // ── DonorChurnScore (ML) ──

@@ -18,6 +18,8 @@ public class YouTubeClient : ISocialPlatformClient
     private readonly ITokenEncryptionService _tokenService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<YouTubeClient> _logger;
+    private string? _overrideClientId;
+    private string? _overrideClientSecret;
 
     public string PlatformName => "YouTube";
 
@@ -35,9 +37,18 @@ public class YouTubeClient : ISocialPlatformClient
         _logger = logger;
     }
 
+    public void SetCredentialOverrides(string? clientId, string? clientSecret)
+    {
+        _overrideClientId = clientId;
+        _overrideClientSecret = clientSecret;
+    }
+
+    private string? ResolveClientId() => _overrideClientId ?? _config["SocialMedia:Google:ClientId"];
+    private string? ResolveClientSecret() => _overrideClientSecret ?? _config["SocialMedia:Google:ClientSecret"];
+
     public string BuildOAuthUrl(string redirectUri, string state)
     {
-        var clientId = _config["SocialMedia:Google:ClientId"];
+        var clientId = ResolveClientId();
         var scopes = "https://www.googleapis.com/auth/youtube.upload " +
                      "https://www.googleapis.com/auth/youtube.force-ssl " +
                      "https://www.googleapis.com/auth/youtube.readonly";
@@ -56,8 +67,8 @@ public class YouTubeClient : ISocialPlatformClient
     {
         try
         {
-            var clientId = _config["SocialMedia:Google:ClientId"];
-            var clientSecret = _config["SocialMedia:Google:ClientSecret"];
+            var clientId = ResolveClientId();
+            var clientSecret = ResolveClientSecret();
 
             var tokenResponse = await _http.PostAsync(
                 "https://oauth2.googleapis.com/token",
@@ -227,8 +238,8 @@ public class YouTubeClient : ISocialPlatformClient
 
         try
         {
-            var clientId = _config["SocialMedia:Google:ClientId"];
-            var clientSecret = _config["SocialMedia:Google:ClientSecret"];
+            var clientId = ResolveClientId();
+            var clientSecret = ResolveClientSecret();
             var refreshToken = _tokenService.Decrypt(account.EncryptedRefreshToken);
 
             var response = await _http.PostAsync(

@@ -18,6 +18,21 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+const floatKeyframes = `
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0) rotate(12deg); }
+  50% { transform: translateY(-15px) rotate(18deg); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+`;
+
 const pillars = [
   {
     title: "Safety",
@@ -118,6 +133,30 @@ function WaveDivider({
   );
 }
 
+function FlowingLines({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      className={`absolute inset-0 h-full w-full pointer-events-none opacity-[0.04] ${className}`}
+      viewBox="0 0 1440 800"
+      fill="none"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M-100,400 C200,100 600,700 900,300 C1200,-100 1400,500 1540,200"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="text-primary"
+      />
+      <path
+        d="M-100,500 C300,200 500,600 800,400 C1100,200 1300,600 1540,300"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        className="text-accent"
+      />
+    </svg>
+  );
+}
+
 export default function LandingPage() {
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" });
@@ -160,6 +199,8 @@ export default function LandingPage() {
 
   return (
     <div className="overflow-x-hidden">
+      <style dangerouslySetInnerHTML={{ __html: floatKeyframes }} />
+
       {/* ─── HERO ─── */}
       <section className="relative min-h-[80vh] flex items-center overflow-hidden">
         <img
@@ -172,6 +213,20 @@ export default function LandingPage() {
 
         <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-0 right-1/4 h-60 w-60 rounded-full bg-accent/10 blur-3xl" />
+
+        {/* Floating geometric shapes in hero */}
+        <div
+          className="pointer-events-none absolute top-[20%] right-[8%] h-20 w-20 rounded-full border border-primary/10"
+          style={{ animation: "float-slow 8s ease-in-out infinite" }}
+        />
+        <div
+          className="pointer-events-none absolute top-[35%] right-[15%] h-14 w-14 rounded-xl bg-accent/5 rotate-12"
+          style={{ animation: "float-medium 6s ease-in-out infinite" }}
+        />
+        <div
+          className="pointer-events-none absolute bottom-[25%] right-[5%] h-10 w-10 rounded-lg border border-accent/10 rotate-45"
+          style={{ animation: "float-fast 5s ease-in-out infinite" }}
+        />
 
         <div className="relative mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
           <div className="max-w-2xl text-center sm:text-left">
@@ -226,7 +281,7 @@ export default function LandingPage() {
       <WaveDivider className="fill-muted/30" />
 
       {/* ─── STATS STRIP ─── */}
-      <section ref={statsRef} className="relative bg-muted/30 py-16 sm:py-20">
+      <section ref={statsRef} className="relative bg-muted/30 py-12 sm:py-16">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{
@@ -280,13 +335,24 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <WaveDivider className="fill-background" flip />
-      <WaveDivider className="fill-background" />
-
       {/* ─── MISSION + IMAGE SPLIT ─── */}
-      <AnimatedSection className="relative py-20 sm:py-28">
+      <AnimatedSection className="relative py-12 sm:py-16">
         <div className="absolute -top-20 right-0 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute bottom-0 -left-20 h-72 w-72 rounded-full bg-accent/5 blur-3xl" />
+        <div className="absolute top-1/2 left-1/3 h-96 w-96 rounded-full bg-rose/5 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 right-1/4 h-80 w-80 rounded-full bg-primary/3 blur-3xl pointer-events-none" />
+
+        <FlowingLines />
+
+        {/* Floating shapes in mission section */}
+        <div
+          className="pointer-events-none absolute top-[10%] left-[5%] h-16 w-16 rounded-full border border-primary/8"
+          style={{ animation: "float-slow 9s ease-in-out infinite" }}
+        />
+        <div
+          className="pointer-events-none absolute bottom-[15%] right-[10%] h-12 w-12 rounded-xl bg-accent/5 -rotate-12"
+          style={{ animation: "float-medium 7s ease-in-out infinite" }}
+        />
 
         <div
           id="mission"
@@ -304,7 +370,9 @@ export default function LandingPage() {
                 pillars, we guide each girl from crisis to confidence.
               </p>
 
-              <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="relative mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Dotted decorative border behind pillar cards */}
+                <div className="pointer-events-none absolute -inset-3 rounded-2xl border border-dashed border-primary/8" />
                 {pillars.map((pillar, i) => {
                   const Icon = pillar.icon;
                   return (
@@ -410,6 +478,8 @@ export default function LandingPage() {
                     className="relative flex items-start gap-5 lg:flex-col lg:items-center lg:text-center"
                   >
                     <div className="relative z-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold shadow-lg">
+                      {/* Dashed ring behind each step number */}
+                      <div className="pointer-events-none absolute -inset-3 rounded-full border border-dashed border-primary/20" />
                       {i + 1}
                     </div>
                     <motion.div
@@ -433,10 +503,12 @@ export default function LandingPage() {
       </section>
 
       {/* ─── QUOTE ─── */}
-      <section className="relative py-24 sm:py-32 overflow-hidden">
+      <section className="relative py-14 sm:py-18 overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="h-[500px] w-[500px] rounded-full bg-gradient-to-br from-primary/8 via-accent/5 to-transparent blur-3xl" />
         </div>
+        <div className="absolute top-0 left-[10%] h-96 w-96 rounded-full bg-accent/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-[15%] h-80 w-80 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
 
         <div
           ref={quoteRef}
@@ -469,12 +541,26 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <WaveDivider className="fill-background" />
 
-        <div className="relative min-h-[400px] flex items-center justify-center py-20 sm:py-28">
+        <div className="relative min-h-[400px] flex items-center justify-center py-14 sm:py-20">
           <img
             src="/images/girlsreadingstock.png"
             alt=""
             aria-hidden
             className="absolute inset-0 h-full w-full object-cover brightness-[0.35] dark:brightness-[0.25]"
+          />
+
+          {/* Floating shapes in CTA */}
+          <div
+            className="pointer-events-none absolute top-[15%] left-[10%] h-16 w-16 rounded-full border border-white/10"
+            style={{ animation: "float-slow 10s ease-in-out infinite" }}
+          />
+          <div
+            className="pointer-events-none absolute bottom-[20%] right-[8%] h-12 w-12 rounded-xl bg-white/5 rotate-12"
+            style={{ animation: "float-medium 7s ease-in-out infinite" }}
+          />
+          <div
+            className="pointer-events-none absolute top-[40%] right-[20%] h-8 w-8 rounded-lg border border-white/8 -rotate-6"
+            style={{ animation: "float-fast 6s ease-in-out infinite" }}
           />
 
           <div

@@ -1,24 +1,44 @@
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RiskBadge } from "@/components/shared/RiskBadge";
 import { EmotionalStateIndicator } from "@/components/shared/EmotionalStateIndicator";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
   useResident, useResidentRecordings, useResidentVisitations,
   useResidentEducation, useResidentHealth, useResidentInterventions,
-  useResidentIncidents,
+  useResidentIncidents, useUpdateResident,
 } from "@/hooks/useResidents";
 import { fmtDate } from "@/lib/utils";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { User, MapPin, Calendar, GraduationCap, AlertTriangle, Target } from "lucide-react";
+import { User, MapPin, Calendar, GraduationCap, AlertTriangle, Target, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const editResidentSchema = z.object({
+  CaseStatus: z.string().min(1, "Required"),
+  CaseCategory: z.string().min(1, "Required"),
+  CurrentRiskLevel: z.string().min(1, "Required"),
+  ReintegrationType: z.string().min(1, "Required"),
+  ReintegrationStatus: z.string().min(1, "Required"),
+  AssignedSocialWorker: z.string().min(1, "Required"),
+  NotesRestricted: z.string().optional(),
+});
+type EditResidentValues = z.infer<typeof editResidentSchema>;
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -29,8 +49,11 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+const VALID_TABS = ["overview", "recordings", "visitations", "education", "health", "interventions", "incidents"] as const;
+
 export default function ResidentDetailPage() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const numId = Number(id);
   const { data: resident, isLoading, error, refetch } = useResident(numId);
   const { data: recordings } = useResidentRecordings(numId);
@@ -39,6 +62,50 @@ export default function ResidentDetailPage() {
   const { data: healthRecordsRaw } = useResidentHealth(numId);
   const { data: plansRaw } = useResidentInterventions(numId);
   const { data: incidentsRaw } = useResidentIncidents(numId);
+
+  const updateResident = useUpdateResident();
+  const [editOpen, setEditOpen] = useState(false);
+
+  const tabFromUrl = searchParams.get("tab") ?? "overview";
+  const activeTab = VALID_TABS.includes(tabFromUrl as typeof VALID_TABS[number]) ? tabFromUrl : "overview";
+
+  const form = useForm<EditResidentValues>({
+    resolver: zodResolver(editResidentSchema),
+    defaultValues: {
+      CaseStatus: "",
+      CaseCategory: "",
+      CurrentRiskLevel: "",
+      ReintegrationType: "",
+      ReintegrationStatus: "",
+      AssignedSocialWorker: "",
+      NotesRestricted: "",
+    },
+  });
+
+  useEffect(() => {
+    if (editOpen && resident) {
+      form.reset({
+        CaseStatus: resident.case_status ?? "",
+        CaseCategory: resident.case_category ?? "",
+        CurrentRiskLevel: resident.current_risk_level ?? "",
+        ReintegrationType: resident.reintegration_type ?? "",
+        ReintegrationStatus: resident.reintegration_status ?? "",
+        AssignedSocialWorker: resident.assigned_social_worker ?? "",
+        NotesRestricted: resident.notes_restricted ?? "",
+      });
+    }
+  }, [editOpen, resident, form]);
+
+  const onEditSubmit = form.handleSubmit(async (values) => {
+    try {
+      await updateResident.mutateAsync({ id: numId, data: values });
+      toast.success("Resident updated successfully");
+      setEditOpen(false);
+      refetch();
+    } catch {
+      toast.error("Failed to update resident");
+    }
+  });
 
   const eduRecords: any[] = Array.isArray(eduRecordsRaw) ? eduRecordsRaw : (eduRecordsRaw as any)?.data ?? [];
   const healthRecords: any[] = Array.isArray(healthRecordsRaw) ? healthRecordsRaw : (healthRecordsRaw as any)?.data ?? [];
@@ -87,6 +154,12 @@ export default function ResidentDetailPage() {
           { label: "Caseload", href: "/admin/residents" },
           { label: resident.case_control_no },
         ]}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit Resident
+          </Button>
+        }
       />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -125,7 +198,7 @@ export default function ResidentDetailPage() {
         </Card>
       </motion.div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })} className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="recordings">Recordings</TabsTrigger>
@@ -358,6 +431,119 @@ export default function ResidentDetailPage() {
           </motion.div>
         </TabsContent>
       </Tabs>
+
+      <Sheet open={editOpen} onOpenChange={setEditOpen}>
+        <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Resident</SheetTitle>
+          </SheetHeader>
+          <form onSubmit={onEditSubmit} className="space-y-5 mt-6">
+            <div className="space-y-2">
+              <Label htmlFor="CaseStatus">Case Status</Label>
+              <Select
+                value={form.watch("CaseStatus") ?? ""}
+                onValueChange={(v) => form.setValue("CaseStatus", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="CaseStatus"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Active", "Closed", "Transferred"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="CaseCategory">Case Category</Label>
+              <Select
+                value={form.watch("CaseCategory") ?? ""}
+                onValueChange={(v) => form.setValue("CaseCategory", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="CaseCategory"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Abandoned", "Foundling", "Surrendered", "Neglected"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="CurrentRiskLevel">Current Risk Level</Label>
+              <Select
+                value={form.watch("CurrentRiskLevel") ?? ""}
+                onValueChange={(v) => form.setValue("CurrentRiskLevel", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="CurrentRiskLevel"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Low", "Medium", "High", "Critical"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ReintegrationType">Reintegration Type</Label>
+              <Select
+                value={form.watch("ReintegrationType") ?? ""}
+                onValueChange={(v) => form.setValue("ReintegrationType", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="ReintegrationType"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Family Reunification", "Foster Care", "Adoption (Domestic)", "Adoption (Inter-Country)", "Independent Living", "None"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ReintegrationStatus">Reintegration Status</Label>
+              <Select
+                value={form.watch("ReintegrationStatus") ?? ""}
+                onValueChange={(v) => form.setValue("ReintegrationStatus", v ?? "", { shouldValidate: true })}
+              >
+                <SelectTrigger id="ReintegrationStatus"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Not Started", "In Progress", "Completed", "On Hold"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="AssignedSocialWorker">Assigned Social Worker</Label>
+              <Input
+                id="AssignedSocialWorker"
+                {...form.register("AssignedSocialWorker")}
+              />
+              {form.formState.errors.AssignedSocialWorker && (
+                <p className="text-sm text-destructive">{form.formState.errors.AssignedSocialWorker.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="NotesRestricted">Notes</Label>
+              <textarea
+                id="NotesRestricted"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                {...form.register("NotesRestricted")}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateResident.isPending}>
+                {updateResident.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

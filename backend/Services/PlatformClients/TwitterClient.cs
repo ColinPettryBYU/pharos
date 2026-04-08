@@ -19,6 +19,8 @@ public class TwitterClient : ISocialPlatformClient
     private readonly ITokenEncryptionService _tokenService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<TwitterClient> _logger;
+    private string? _overrideClientId;
+    private string? _overrideClientSecret;
 
     public string PlatformName => "Twitter";
 
@@ -36,9 +38,18 @@ public class TwitterClient : ISocialPlatformClient
         _logger = logger;
     }
 
+    public void SetCredentialOverrides(string? clientId, string? clientSecret)
+    {
+        _overrideClientId = clientId;
+        _overrideClientSecret = clientSecret;
+    }
+
+    private string? ResolveClientId() => _overrideClientId ?? _config["SocialMedia:Twitter:ClientId"];
+    private string? ResolveClientSecret() => _overrideClientSecret ?? _config["SocialMedia:Twitter:ClientSecret"];
+
     public string BuildOAuthUrl(string redirectUri, string state)
     {
-        var clientId = _config["SocialMedia:Twitter:ClientId"];
+        var clientId = ResolveClientId();
         var scopes = "tweet.write tweet.read users.read offline.access";
 
         // OAuth 2.0 with PKCE
@@ -62,8 +73,8 @@ public class TwitterClient : ISocialPlatformClient
     {
         try
         {
-            var clientId = _config["SocialMedia:Twitter:ClientId"];
-            var clientSecret = _config["SocialMedia:Twitter:ClientSecret"];
+            var clientId = ResolveClientId();
+            var clientSecret = ResolveClientSecret();
 
             var codeVerifier = state != null
                 ? _cache.Get<string>($"twitter_pkce_{state}") ?? "challenge"
@@ -188,8 +199,8 @@ public class TwitterClient : ISocialPlatformClient
 
         try
         {
-            var clientId = _config["SocialMedia:Twitter:ClientId"];
-            var clientSecret = _config["SocialMedia:Twitter:ClientSecret"];
+            var clientId = ResolveClientId();
+            var clientSecret = ResolveClientSecret();
             var refreshToken = _tokenService.Decrypt(account.EncryptedRefreshToken);
 
             var authHeader = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));

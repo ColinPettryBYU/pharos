@@ -18,6 +18,8 @@ public class TikTokClient : ISocialPlatformClient
     private readonly ITokenEncryptionService _tokenService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<TikTokClient> _logger;
+    private string? _overrideClientId;
+    private string? _overrideClientSecret;
 
     public string PlatformName => "TikTok";
 
@@ -35,9 +37,18 @@ public class TikTokClient : ISocialPlatformClient
         _logger = logger;
     }
 
+    public void SetCredentialOverrides(string? clientId, string? clientSecret)
+    {
+        _overrideClientId = clientId;
+        _overrideClientSecret = clientSecret;
+    }
+
+    private string? ResolveClientKey() => _overrideClientId ?? _config["SocialMedia:TikTok:ClientKey"];
+    private string? ResolveClientSecret() => _overrideClientSecret ?? _config["SocialMedia:TikTok:ClientSecret"];
+
     public string BuildOAuthUrl(string redirectUri, string state)
     {
-        var clientKey = _config["SocialMedia:TikTok:ClientKey"];
+        var clientKey = ResolveClientKey();
         var scopes = "video.publish,video.upload,user.info.basic";
 
         return $"https://www.tiktok.com/v2/auth/authorize/" +
@@ -52,8 +63,8 @@ public class TikTokClient : ISocialPlatformClient
     {
         try
         {
-            var clientKey = _config["SocialMedia:TikTok:ClientKey"];
-            var clientSecret = _config["SocialMedia:TikTok:ClientSecret"];
+            var clientKey = ResolveClientKey();
+            var clientSecret = ResolveClientSecret();
 
             var body = new
             {
@@ -189,8 +200,8 @@ public class TikTokClient : ISocialPlatformClient
 
         try
         {
-            var clientKey = _config["SocialMedia:TikTok:ClientKey"];
-            var clientSecret = _config["SocialMedia:TikTok:ClientSecret"];
+            var clientKey = ResolveClientKey();
+            var clientSecret = ResolveClientSecret();
             var refreshToken = _tokenService.Decrypt(account.EncryptedRefreshToken);
 
             var body = new

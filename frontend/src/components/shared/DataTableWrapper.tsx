@@ -156,7 +156,12 @@ export function DataTableWrapper<TData, TValue>({
                     className={`transition-colors hover:bg-muted/20 ${
                       onRowClick ? "cursor-pointer" : ""
                     }`}
-                    onClick={() => onRowClick?.(row.original)}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest("button, [role='menuitem'], [data-radix-collection-item], [role='menu'], a"))
+                        return;
+                      onRowClick?.(row.original);
+                    }}
                     whileHover={onRowClick ? { backgroundColor: "oklch(0 0 0 / 0.02)" } : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (
