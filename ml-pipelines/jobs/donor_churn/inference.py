@@ -4,7 +4,7 @@ and upserts results to the donor_churn_scores table.
 """
 import joblib
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 from jobs.config import ARTIFACTS_DIR
 from jobs.utils_db import upsert_dataframe
@@ -26,7 +26,7 @@ def run():
         labels=['Low Risk', 'Medium Risk', 'High Risk'],
     )
     risk_df['risk_tier'] = risk_df['risk_tier'].astype(str)
-    risk_df['computed_at'] = datetime.utcnow()
+    risk_df['computed_at'] = datetime.now(timezone.utc)
 
     out = risk_df[['supporter_id', 'churn_risk_score', 'risk_tier', 'computed_at']]
     print(f'[INFERENCE] Upserting {len(out)} rows → donor_churn_scores')

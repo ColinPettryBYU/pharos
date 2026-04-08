@@ -4,7 +4,7 @@ and upserts results to the resident_readiness_scores table.
 """
 import joblib
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 from jobs.config import ARTIFACTS_DIR
 from jobs.utils_db import upsert_dataframe
@@ -26,7 +26,7 @@ def run():
         labels=['Not Ready', 'In Progress', 'Nearly Ready', 'Ready'],
     )
     readiness_df['readiness_tier'] = readiness_df['readiness_tier'].astype(str)
-    readiness_df['computed_at'] = datetime.utcnow()
+    readiness_df['computed_at'] = datetime.now(timezone.utc)
 
     out = readiness_df[['resident_id', 'readiness_score', 'readiness_tier', 'computed_at']]
     print(f'[INFERENCE] Upserting {len(out)} rows → resident_readiness_scores')

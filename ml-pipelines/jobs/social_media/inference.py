@@ -6,7 +6,7 @@ to the ml_social_media_recommendations table.
 import numpy as np
 import joblib
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 from jobs.config import ARTIFACTS_DIR
 from jobs.utils_db import read_table, upsert_dataframe
@@ -76,7 +76,7 @@ def run():
                 recommendations.append(best_config)
 
     rec_df = pd.DataFrame(recommendations)
-    rec_df['computed_at'] = datetime.utcnow()
+    rec_df['computed_at'] = datetime.now(timezone.utc)
 
     out = rec_df[[
         'platform', 'post_type', 'recommended_hour', 'recommended_day',

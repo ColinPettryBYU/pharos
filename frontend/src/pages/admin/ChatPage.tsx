@@ -701,7 +701,7 @@ export default function ChatPage() {
                 type="submit"
                 size="icon"
                 disabled={!input.trim() || mutation.isPending}
-                className="absolute right-2 bottom-2 rounded-xl h-9 w-9 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl h-9 w-9 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30"
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>
