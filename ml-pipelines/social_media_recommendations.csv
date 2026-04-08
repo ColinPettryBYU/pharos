@@ -1,0 +1,2 @@
+caption_length,num_hashtags,mentions_count,has_call_to_action,features_resident_story,is_boosted,boost_budget_php,hour_sin,hour_cos,is_weekend,follower_count_at_post,has_donate_cta,platform,post_type,media_type,content_topic,sentiment_tone,post_hour,day_of_week,predicted_donations
+200,5,0,1,1,0,0,0.49999999999999994,-0.8660254037844387,0,1543.0,1,WhatsApp,ImpactStory,Photo,DonorImpact,Hopeful,10,Monday,61.29

@@ -1,0 +1,10 @@
+outcome,intervention,coefficient,p_value,significant
+delta_health_score,Psychosocial,0.0,0.0624,True
+delta_health_score,Legal,0.0,0.9729,False
+delta_health_score,Reintegration,0.0,0.4061,False
+delta_edu_progress,Psychosocial,0.0,0.0967,True
+delta_edu_progress,Legal,0.0,0.0974,True
+delta_edu_progress,Reintegration,-0.0,0.7225,False
+delta_pct_positive_end,Psychosocial,0.0,0.7032,False
+delta_pct_positive_end,Legal,0.0,0.7328,False
+delta_pct_positive_end,Reintegration,0.0,0.7289,False

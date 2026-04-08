@@ -1,0 +1,61 @@
+resident_id,readiness_score_100,readiness_tier
+1,2.6,Not Ready
+2,98.7,Ready
+3,97.9,Ready
+4,0.5,Not Ready
+5,99.1,Ready
+6,0.8,Not Ready
+7,0.9,Not Ready
+8,1.1,Not Ready
+9,0.7,Not Ready
+10,0.4,Not Ready
+11,93.6,Ready
+12,95.9,Ready
+13,98.0,Ready
+14,1.1,Not Ready
+15,0.2,Not Ready
+16,96.8,Ready
+17,0.2,Not Ready
+18,1.3,Not Ready
+19,99.4,Ready
+20,10.3,Not Ready
+21,98.0,Ready
+22,5.1,Not Ready
+23,0.3,Not Ready
+24,0.2,Not Ready
+25,99.4,Ready
+26,0.2,Not Ready
+27,1.5,Not Ready
+28,0.2,Not Ready
+29,99.1,Ready
+30,98.2,Ready
+31,0.2,Not Ready
+32,1.6,Not Ready
+33,3.1,Not Ready
+34,97.9,Ready
+35,1.2,Not Ready
+36,98.9,Ready
+37,0.2,Not Ready
+38,0.2,Not Ready
+39,0.2,Not Ready
+40,0.7,Not Ready
+41,1.1,Not Ready
+42,0.2,Not Ready
+43,0.5,Not Ready
+44,98.1,Ready
+45,0.5,Not Ready
+46,0.3,Not Ready
+47,0.4,Not Ready
+48,0.4,Not Ready
+49,98.6,Ready
+50,0.2,Not Ready
+51,0.4,Not Ready
+52,98.2,Ready
+53,99.1,Ready
+54,0.7,Not Ready
+55,0.5,Not Ready
+56,97.7,Ready
+57,5.9,Not Ready
+58,0.3,Not Ready
+59,50.3,Nearly Ready
+60,1.2,Not Ready
