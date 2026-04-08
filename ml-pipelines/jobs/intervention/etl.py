@@ -28,6 +28,16 @@ def run():
     interventions['target_date'] = pd.to_datetime(interventions['target_date'], utc=True).dt.tz_localize(None)
     incidents['incident_date'] = pd.to_datetime(incidents['incident_date'], utc=True).dt.tz_localize(None)
 
+    for col in ['general_health_score', 'nutrition_score', 'sleep_quality_score',
+                 'energy_level_score', 'height_cm', 'weight_kg', 'bmi']:
+        if col in health.columns:
+            health[col] = pd.to_numeric(health[col], errors='coerce')
+    for col in ['progress_percent', 'attendance_rate']:
+        if col in education.columns:
+            education[col] = pd.to_numeric(education[col], errors='coerce')
+    if 'session_duration_minutes' in recordings.columns:
+        recordings['session_duration_minutes'] = pd.to_numeric(recordings['session_duration_minutes'], errors='coerce')
+
     # ── Step 1: Build month-level outcome measures ──
     health['month'] = health['record_date'].dt.to_period('M').dt.to_timestamp()
     edu_monthly = education.copy()

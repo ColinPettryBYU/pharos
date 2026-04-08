@@ -30,6 +30,25 @@ def run():
     visitations['visit_date'] = pd.to_datetime(visitations['visit_date'], utc=True).dt.tz_localize(None)
     incidents['incident_date'] = pd.to_datetime(incidents['incident_date'], utc=True).dt.tz_localize(None)
 
+    numeric_cols_health = ['general_health_score', 'nutrition_score', 'sleep_quality_score',
+                           'energy_level_score', 'height_cm', 'weight_kg', 'bmi']
+    for col in numeric_cols_health:
+        if col in health.columns:
+            health[col] = pd.to_numeric(health[col], errors='coerce')
+
+    numeric_cols_edu = ['progress_percent', 'attendance_rate']
+    for col in numeric_cols_edu:
+        if col in education.columns:
+            education[col] = pd.to_numeric(education[col], errors='coerce')
+
+    if 'session_duration_minutes' in recordings.columns:
+        recordings['session_duration_minutes'] = pd.to_numeric(recordings['session_duration_minutes'], errors='coerce')
+
+    for df in [residents, recordings, education, health, interventions, visitations, incidents]:
+        for col in ['resident_id']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
     res = residents[residents['reintegration_status'].isin(
         ['Completed', 'Not Started', 'On Hold', 'In Progress'])].copy()
 

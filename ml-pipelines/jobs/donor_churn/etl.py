@@ -76,6 +76,17 @@ def run():
     supporters['first_donation_date'] = pd.to_datetime(supporters['first_donation_date'], utc=True).dt.tz_localize(None)
     donations['donation_date'] = pd.to_datetime(donations['donation_date'], utc=True).dt.tz_localize(None)
 
+    for col in ['amount', 'estimated_value']:
+        if col in donations.columns:
+            donations[col] = pd.to_numeric(donations[col], errors='coerce')
+    for col in ['supporter_id']:
+        if col in donations.columns:
+            donations[col] = pd.to_numeric(donations[col], errors='coerce')
+        if col in supporters.columns:
+            supporters[col] = pd.to_numeric(supporters[col], errors='coerce')
+    if 'is_recurring' in donations.columns:
+        donations['is_recurring'] = donations['is_recurring'].astype(bool)
+
     reference_date = donations['donation_date'].max()
     cutoff_date = reference_date - pd.Timedelta(days=180)
 
