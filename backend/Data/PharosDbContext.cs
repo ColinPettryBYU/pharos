@@ -27,6 +27,10 @@ public class PharosDbContext : DbContext
     public DbSet<SocialMediaAccount> SocialMediaAccounts => Set<SocialMediaAccount>();
     public DbSet<SocialMediaCredential> SocialMediaCredentials => Set<SocialMediaCredential>();
 
+    // ── Chat History ──
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
     // ── ML Prediction Tables ──
     public DbSet<DonorChurnScore> DonorChurnScores => Set<DonorChurnScore>();
     public DbSet<ResidentReadinessScore> ResidentReadinessScores => Set<ResidentReadinessScore>();
@@ -578,6 +582,37 @@ public class PharosDbContext : DbContext
             entity.Property(e => e.IncludeCallToAction).HasColumnName("include_call_to_action");
             entity.Property(e => e.PredictedDonations).HasColumnName("predicted_donations");
             entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
+        });
+
+        // ── ChatConversation ──
+        modelBuilder.Entity<ChatConversation>(entity =>
+        {
+            entity.ToTable("chat_conversations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id").HasMaxLength(450);
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(300);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasIndex(e => e.UserId);
+        });
+
+        // ── ChatMessage ──
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.ToTable("chat_messages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ConversationId).HasColumnName("conversation_id");
+            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(20);
+            entity.Property(e => e.ContentJson).HasColumnName("content_json");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(e => e.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(e => e.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

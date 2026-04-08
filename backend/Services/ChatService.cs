@@ -8,7 +8,7 @@ namespace Pharos.Api.Services;
 
 public interface IChatService
 {
-    Task<ChatResponse> SendMessageAsync(ChatRequest request);
+    Task<ChatResponse> SendMessageAsync(ChatRequest request, string? userId = null);
 }
 
 public class ChatService : IChatService
@@ -26,11 +26,11 @@ public class ChatService : IChatService
         _logger = logger;
     }
 
-    public async Task<ChatResponse> SendMessageAsync(ChatRequest request)
+    public async Task<ChatResponse> SendMessageAsync(ChatRequest request, string? userId = null)
     {
         var apiKey = _config["Google:GeminiApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
-            return new ChatResponse([new TextBlock("AI chat is not configured. Please add a Google Gemini API key.")]);
+            return new ChatResponse([new TextBlock("AI chat is not configured. Set the Google__GeminiApiKey environment variable (or Google:GeminiApiKey in appsettings).")]);
 
         var context = await BuildDatabaseContextAsync(request.Message);
         var systemPrompt = BuildSystemPrompt(context);
@@ -42,8 +42,7 @@ public class ChatService : IChatService
             generationConfig = new
             {
                 temperature = 0.7,
-                maxOutputTokens = 2048,
-                responseMimeType = "application/json"
+                maxOutputTokens = 4096,
             },
             systemInstruction = new
             {
@@ -56,17 +55,23 @@ public class ChatService : IChatService
 
         try
         {
+            _logger.LogInformation("Calling Gemini API for user message: {Msg}", request.Message[..Math.Min(80, request.Message.Length)]);
             var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest);
             var responseJson = await httpResponse.Content.ReadAsStringAsync();
 
             if (!httpResponse.IsSuccessStatusCode)
             {
                 _logger.LogError("Gemini API returned {StatusCode}: {Body}", httpResponse.StatusCode, responseJson);
-                return new ChatResponse([new TextBlock("Sorry, the AI service returned an error. Please try again.")]);
+                return new ChatResponse([new TextBlock($"Sorry, the AI service returned an error (HTTP {(int)httpResponse.StatusCode}). Check the server logs or verify your Google__GeminiApiKey is valid.")]);
             }
 
             var blocks = ParseGeminiResponse(responseJson);
             return new ChatResponse(blocks);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error calling Gemini API");
+            return new ChatResponse([new TextBlock("Sorry, I couldn't reach the AI service. Please check the server's network connectivity.")]);
         }
         catch (Exception ex)
         {

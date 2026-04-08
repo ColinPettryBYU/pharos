@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Sparkles, ArrowUp, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Sparkles,
+  ArrowUp,
+  TrendingUp,
+  TrendingDown,
+  Plus,
+  Trash2,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -12,8 +21,18 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { useSendMessage } from "@/hooks/useChat";
+import {
+  useSendMessage,
+  useConversations,
+  useConversationMessages,
+  useDeleteConversation,
+} from "@/hooks/useChat";
 import type { ChatBlock, ChatHistoryItem } from "@/hooks/useChat";
+import { formatDistanceToNow } from "date-fns";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface Message {
   id: string;
@@ -23,6 +42,10 @@ interface Message {
   timestamp: Date;
 }
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const SUGGESTED_QUESTIONS = [
   "How many active residents do we have?",
   "Show me donation trends this year",
@@ -30,6 +53,10 @@ const SUGGESTED_QUESTIONS = [
   "What's our social media engagement like?",
   "Compare education progress across safehouses",
 ];
+
+// ---------------------------------------------------------------------------
+// Block renderers (unchanged)
+// ---------------------------------------------------------------------------
 
 function TextBlockRenderer({ block }: { block: ChatBlock }) {
   return <p className="text-sm leading-relaxed">{block.content}</p>;
@@ -184,12 +211,206 @@ function ThinkingIndicator() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Sidebar
+// ---------------------------------------------------------------------------
+
+interface ConversationSidebarProps {
+  activeId: number | null;
+  onSelect: (id: number | null) => void;
+  open: boolean;
+  onToggle: () => void;
+}
+
+function ConversationSidebar({
+  activeId,
+  onSelect,
+  open,
+  onToggle,
+}: ConversationSidebarProps) {
+  const { data: conversations, isLoading } = useConversations();
+  const deleteConversation = useDeleteConversation();
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
+
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    await deleteConversation.mutateAsync(id);
+    if (activeId === id) {
+      onSelect(null);
+    }
+  };
+
+  return (
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            onClick={onToggle}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar panel */}
+      <motion.aside
+        initial={false}
+        animate={{ width: open ? 256 : 0 }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className={cn(
+          "shrink-0 overflow-hidden border-r bg-card",
+          "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-xl"
+        )}
+      >
+        <div className="flex h-full w-64 flex-col">
+          {/* Header */}
+          <div className="flex items-center gap-2 border-b px-3 py-3">
+            <Button
+              variant="outline"
+              className="flex-1 justify-start gap-2"
+              onClick={() => onSelect(null)}
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              onClick={onToggle}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Conversation list */}
+          <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
+            {isLoading ? (
+              <div className="space-y-2 px-1 pt-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-12 rounded-lg bg-muted/50 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : conversations && conversations.length > 0 ? (
+              conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => {
+                    onSelect(conv.id);
+                    if (window.innerWidth < 768) onToggle();
+                  }}
+                  onMouseEnter={() => setHoveredId(conv.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  className={cn(
+                    "group relative flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left transition-colors",
+                    activeId === conv.id
+                      ? "bg-primary/10 text-primary"
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">
+                      {conv.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(conv.updated_at), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                  {hoveredId === conv.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 opacity-60 hover:opacity-100 hover:text-destructive"
+                      onClick={(e) => handleDelete(e, conv.id)}
+                      disabled={deleteConversation.isPending}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </button>
+              ))
+            ) : (
+              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                No conversations yet
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.aside>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mutation = useSendMessage();
+
+  const { data: conversationData, isLoading: isLoadingMessages } =
+    useConversationMessages(activeConversationId);
+
+  // Load messages when switching to an existing conversation
+  useEffect(() => {
+    if (!conversationData) return;
+
+    const loaded: Message[] = conversationData.messages.map((m) => {
+      if (m.role === "user") {
+        let text = "";
+        try {
+          const parsed = JSON.parse(m.content_json);
+          text = parsed.text ?? "";
+        } catch {
+          text = m.content_json;
+        }
+        return {
+          id: String(m.id),
+          role: "user" as const,
+          content: text,
+          timestamp: new Date(m.created_at),
+        };
+      }
+
+      let blocks: ChatBlock[] = [];
+      try {
+        blocks = JSON.parse(m.content_json);
+      } catch {
+        blocks = [{ type: "text", content: m.content_json }];
+      }
+      return {
+        id: String(m.id),
+        role: "assistant" as const,
+        blocks,
+        timestamp: new Date(m.created_at),
+      };
+    });
+
+    setMessages(loaded);
+  }, [conversationData]);
+
+  // Clear messages when starting a new chat
+  const handleSelectConversation = useCallback((id: number | null) => {
+    setActiveConversationId(id);
+    if (id === null) {
+      setMessages([]);
+    }
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -230,9 +451,17 @@ export default function ChatPage() {
       }));
 
       mutation.mutate(
-        { message: trimmed, history },
+        {
+          message: trimmed,
+          conversation_id: activeConversationId ?? undefined,
+          history,
+        },
         {
           onSuccess: (data) => {
+            if (data.conversation_id && !activeConversationId) {
+              setActiveConversationId(data.conversation_id);
+            }
+
             const assistantMsg: Message = {
               id: crypto.randomUUID(),
               role: "assistant",
@@ -259,7 +488,7 @@ export default function ChatPage() {
         }
       );
     },
-    [messages, mutation]
+    [messages, mutation, activeConversationId]
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -277,145 +506,208 @@ export default function ChatPage() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] -m-4 sm:-m-6 lg:-m-8">
-      {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
-        <AnimatePresence mode="wait">
-          {!hasMessages ? (
-            <motion.div
-              key="welcome"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="flex flex-col items-center justify-center h-full"
+    <div className="flex h-[calc(100vh-8rem)] -m-4 sm:-m-6 lg:-m-8">
+      {/* Conversation sidebar */}
+      <ConversationSidebar
+        activeId={activeConversationId}
+        onSelect={handleSelectConversation}
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen((o) => !o)}
+      />
+
+      {/* Chat area */}
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Sidebar toggle (when collapsed) */}
+        {!sidebarOpen && (
+          <div className="shrink-0 flex items-center px-4 pt-3 pb-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setSidebarOpen(true)}
             >
-              <div className="max-w-lg w-full text-center space-y-6">
-                <div className="flex items-center justify-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <h1 className="text-2xl font-semibold tracking-tight">
-                    Pharos AI Assistant
-                  </h1>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    I can help you understand your organization's data.
-                    Try asking:
-                  </p>
-                </div>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {SUGGESTED_QUESTIONS.map((q) => (
-                    <motion.button
-                      key={q}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => sendMessage(q)}
-                      className="rounded-full border bg-card px-4 py-2 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50 cursor-pointer"
-                    >
-                      {q}
-                    </motion.button>
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Messages area */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6"
+        >
+          <AnimatePresence mode="wait">
+            {isLoadingMessages && activeConversationId ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center h-full"
+              >
+                <div className="flex items-center gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40"
+                      animate={{
+                        opacity: [0.3, 1, 0.3],
+                        scale: [0.85, 1.1, 0.85],
+                      }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                        ease: "easeInOut",
+                      }}
+                    />
                   ))}
                 </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="conversation"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="max-w-3xl mx-auto space-y-6"
-            >
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className={cn(
-                    "flex items-start gap-3",
-                    msg.role === "user" && "justify-end"
-                  )}
-                >
-                  {msg.role === "assistant" && (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0 mt-0.5">
-                      <Sparkles className="h-4 w-4 text-primary" />
+              </motion.div>
+            ) : !hasMessages ? (
+              <motion.div
+                key="welcome"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col items-center justify-center h-full"
+              >
+                <div className="max-w-lg w-full text-center space-y-6">
+                  <div className="flex items-center justify-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                      <Sparkles className="h-8 w-8 text-primary" />
                     </div>
-                  )}
+                  </div>
+                  <div className="space-y-2">
+                    <h1 className="text-2xl font-semibold tracking-tight">
+                      Pharos AI Assistant
+                    </h1>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      I can help you understand your organization's data.
+                      Try asking:
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {SUGGESTED_QUESTIONS.map((q) => (
+                      <motion.button
+                        key={q}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => sendMessage(q)}
+                        className="rounded-full border bg-card px-4 py-2 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50 cursor-pointer"
+                      >
+                        {q}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="conversation"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="max-w-3xl mx-auto space-y-6"
+              >
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn(
+                      "flex items-start gap-3",
+                      msg.role === "user" && "justify-end"
+                    )}
+                  >
+                    {msg.role === "assistant" && (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
 
-                  {msg.role === "user" ? (
-                    <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 max-w-[80%] shadow-sm">
-                      <p className="text-sm leading-relaxed">{msg.content}</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl rounded-tl-sm bg-card border px-5 py-4 max-w-[85%] shadow-sm space-y-4">
-                      {msg.blocks &&
-                        groupStatBlocks(msg.blocks).map((item, i) => {
-                          if (Array.isArray(item)) {
+                    {msg.role === "user" ? (
+                      <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 max-w-[80%] shadow-sm">
+                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl rounded-tl-sm bg-card border px-5 py-4 max-w-[85%] shadow-sm space-y-4">
+                        {msg.blocks &&
+                          groupStatBlocks(msg.blocks).map((item, i) => {
+                            if (Array.isArray(item)) {
+                              return (
+                                <div
+                                  key={i}
+                                  className={cn(
+                                    "grid gap-3",
+                                    item.length === 1 && "grid-cols-1",
+                                    item.length === 2 && "grid-cols-2",
+                                    item.length >= 3 &&
+                                      "grid-cols-2 sm:grid-cols-3"
+                                  )}
+                                >
+                                  {item.map((stat, si) => (
+                                    <BlockRenderer
+                                      key={si}
+                                      block={stat}
+                                      index={i + si}
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
                             return (
-                              <div
-                                key={i}
-                                className={cn(
-                                  "grid gap-3",
-                                  item.length === 1 && "grid-cols-1",
-                                  item.length === 2 && "grid-cols-2",
-                                  item.length >= 3 && "grid-cols-2 sm:grid-cols-3"
-                                )}
-                              >
-                                {item.map((stat, si) => (
-                                  <BlockRenderer key={si} block={stat} index={i + si} />
-                                ))}
-                              </div>
+                              <BlockRenderer key={i} block={item} index={i} />
                             );
-                          }
-                          return <BlockRenderer key={i} block={item} index={i} />;
-                        })}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+                          })}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
 
-              <AnimatePresence>
-                {mutation.isPending && <ThinkingIndicator />}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+                <AnimatePresence>
+                  {mutation.isPending && <ThinkingIndicator />}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-      {/* Sticky input bar */}
-      <div className="shrink-0 border-t bg-background px-4 sm:px-6 lg:px-8 py-3">
-        <form
-          onSubmit={handleSubmit}
-          className="max-w-3xl mx-auto flex items-end gap-2"
-        >
-          <div className="relative flex-1">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about residents, donations, social media..."
-              rows={1}
-              className="w-full resize-none rounded-xl border bg-card px-4 py-3 pr-4 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
-              style={{ maxHeight: "120px" }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = "auto";
-                target.style.height = Math.min(target.scrollHeight, 120) + "px";
-              }}
-            />
-          </div>
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || mutation.isPending}
-            className="rounded-xl h-11 w-11 shrink-0"
+        {/* Sticky input bar */}
+        <div className="shrink-0 border-t bg-background px-4 sm:px-6 lg:px-8 py-3">
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-3xl mx-auto flex items-end gap-2"
           >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
-        </form>
+            <div className="relative flex-1">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask about residents, donations, social media..."
+                rows={1}
+                className="w-full resize-none rounded-xl border bg-card px-4 py-3 pr-4 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-shadow"
+                style={{ maxHeight: "120px" }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "auto";
+                  target.style.height =
+                    Math.min(target.scrollHeight, 120) + "px";
+                }}
+              />
+            </div>
+            <Button
+              type="submit"
+              size="icon"
+              disabled={!input.trim() || mutation.isPending}
+              className="rounded-xl h-11 w-11 shrink-0"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );
