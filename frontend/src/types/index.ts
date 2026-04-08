@@ -576,8 +576,8 @@ export interface ReintegrationReadiness {
 }
 
 export interface SocialMediaRecommendation {
-  best_post_time: { day: string; hour: number };
-  recommended_content_type: PostType;
+  best_post_time?: { day: string; hour: number };
+  recommended_content_type?: PostType;
   predicted_engagement_rate: number;
   campaign_insights: string[];
 }

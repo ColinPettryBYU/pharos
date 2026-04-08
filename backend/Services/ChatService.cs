@@ -168,7 +168,9 @@ GUIDELINES:
 - All currency values are in Philippine Pesos (₱)
 - Keep responses concise and actionable
 - Be empathetic — this data represents real children's lives
-- Never fabricate data — only use what's provided in the context above";
+- Never fabricate data — only use what's provided in the context above
+
+CRITICAL OUTPUT RULE: Your ENTIRE response must be ONLY the raw JSON array. Do NOT include any text, explanation, greeting, or markdown fences before or after the JSON. Start your response with the [ character and end with the ] character. No exceptions.";
     }
 
     private static List<object> BuildContents(ChatRequest request)
@@ -209,21 +211,22 @@ GUIDELINES:
             var blocks = new List<ChatBlock>();
 
             var cleaned = text.Trim();
-            if (cleaned.StartsWith("```json")) cleaned = cleaned[7..];
-            if (cleaned.StartsWith("```")) cleaned = cleaned[3..];
-            if (cleaned.EndsWith("```")) cleaned = cleaned[..^3];
-            cleaned = cleaned.Trim();
 
-            // Gemini sometimes wraps JSON inside prose text — extract the JSON array
-            if (!cleaned.StartsWith("["))
+            // Strip markdown fences and extract the JSON array from anywhere in the text.
+            // Gemini often returns prose before/after: "Here are the stats:\n```json\n[...]\n```"
+            var jsonStart = cleaned.IndexOf('[');
+            var jsonEnd = cleaned.LastIndexOf(']');
+            if (jsonStart >= 0 && jsonEnd > jsonStart)
             {
-                var arrayStart = cleaned.IndexOf("[{");
-                if (arrayStart >= 0)
-                {
-                    var arrayEnd = cleaned.LastIndexOf("}]");
-                    if (arrayEnd > arrayStart)
-                        cleaned = cleaned[arrayStart..(arrayEnd + 2)];
-                }
+                cleaned = cleaned[jsonStart..(jsonEnd + 1)];
+            }
+            else
+            {
+                // Fallback: strip fences the old way
+                if (cleaned.StartsWith("```json")) cleaned = cleaned[7..];
+                else if (cleaned.StartsWith("```")) cleaned = cleaned[3..];
+                if (cleaned.EndsWith("```")) cleaned = cleaned[..^3];
+                cleaned = cleaned.Trim();
             }
 
             try

@@ -68,6 +68,57 @@ const pillars = [
   },
 ];
 
+const stories = [
+  {
+    pillar: "Safety",
+    icon: Shield,
+    color: "text-blue-500",
+    bg: "bg-blue-500/10",
+    border: "border-l-blue-500",
+    quote:
+      "When Maria* arrived at our safehouse at age 9, she hadn't slept through the night in over a year. She flinched at every sound, every shadow. Within three months, surrounded by caregivers who never left, she slept through her first full night — and woke up smiling.",
+    heading: "A Safe Place to Rest",
+    description:
+      "Our safehouses provide 24/7 security, trauma-informed care, and the steady presence every child needs to begin feeling safe again.",
+  },
+  {
+    pillar: "Healing",
+    icon: Heart,
+    color: "text-rose-500",
+    bg: "bg-rose-500/10",
+    border: "border-l-rose-500",
+    quote:
+      "Through weekly art therapy sessions, Ana* found a way to express feelings she couldn't yet put into words. Her first painting was entirely black. Six months later, she painted a garden — and asked to hang it on her wall.",
+    heading: "Finding Voice Through Art",
+    description:
+      "Professional counselors use play therapy, art, and group sessions to help each girl process trauma at her own pace, rebuilding trust and self-worth.",
+  },
+  {
+    pillar: "Justice",
+    icon: Scale,
+    color: "text-amber-500",
+    bg: "bg-amber-500/10",
+    border: "border-l-amber-500",
+    quote:
+      "With the support of our legal advocacy team, Joy* saw her case through the courts over 18 difficult months. On the day the verdict was read, she stood tall and said, 'They believed me.'",
+    heading: "Her Day in Court",
+    description:
+      "Our legal team walks alongside every girl through the justice system — preparing testimony, attending hearings, and ensuring her rights are protected at every step.",
+  },
+  {
+    pillar: "Empowerment",
+    icon: Sparkles,
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+    border: "border-l-emerald-500",
+    quote:
+      "After completing her vocational training in tailoring, Rosa* started her own small alterations business in her hometown. She now supports herself and mentors two younger girls in the program.",
+    heading: "Building a Future",
+    description:
+      "Through education, vocational training, and mentorship, we equip each girl with the skills and confidence to write her own next chapter.",
+  },
+];
+
 const steps = [
   {
     title: "We Rescue",
@@ -175,24 +226,24 @@ export default function LandingPage() {
   const impactStats = [
     {
       label: "Girls Served",
-      value: summary?.totalResidents ?? 60,
+      value: summary?.totalResidents ?? 0,
       icon: Users,
       suffix: "+",
     },
     {
       label: "Safehouses",
-      value: summary?.totalSafehouses ?? 9,
+      value: summary?.totalSafehouses ?? 0,
       icon: Building2,
     },
     {
       label: "Donations Received",
-      value: summary?.totalDonations ?? 420,
+      value: summary?.totalDonations ?? 0,
       icon: HandHeart,
       suffix: "+",
     },
     {
       label: "Regions Covered",
-      value: summary?.regionsCount ?? 3,
+      value: summary?.regionsCount ?? 0,
       icon: Globe,
     },
   ];
@@ -415,6 +466,94 @@ export default function LandingPage() {
         </div>
       </AnimatedSection>
 
+      {/* ─── STORIES / BLOG POSTS ─── */}
+      <AnimatedSection className="relative py-20 sm:py-28">
+        <FlowingLines />
+        <div className="absolute top-1/3 -right-20 h-96 w-96 rounded-full bg-rose-500/5 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -left-20 h-80 w-80 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center mb-16">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Stories of Transformation
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Behind every number is a girl with a name, a story, and a future
+              worth fighting for.
+            </p>
+          </div>
+
+          <div className="space-y-8 sm:space-y-12">
+            {stories.map((story, i) => {
+              const Icon = story.icon;
+              const isEven = i % 2 === 0;
+              return (
+                <motion.div
+                  key={story.pillar}
+                  initial={{ opacity: 0, x: isEven ? -30 : 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{
+                    duration: 0.6,
+                    delay: i * 0.08,
+                    ease: "easeOut",
+                  }}
+                >
+                  <Card
+                    className={`overflow-hidden border-l-4 ${story.border} bg-card/80 backdrop-blur-sm`}
+                  >
+                    <CardContent className="p-0">
+                      <div
+                        className={`flex flex-col ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}
+                      >
+                        {/* Accent panel */}
+                        <div
+                          className={`flex flex-col items-center justify-center gap-3 px-8 py-8 md:w-48 md:shrink-0 ${story.bg}`}
+                        >
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-background/80 shadow-sm ${story.color}`}
+                          >
+                            <Icon className="h-7 w-7" />
+                          </div>
+                          <span
+                            className={`text-sm font-bold uppercase tracking-widest ${story.color}`}
+                          >
+                            {story.pillar}
+                          </span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex flex-col justify-center gap-4 p-6 sm:p-8">
+                          <h3 className="text-xl font-semibold tracking-tight">
+                            {story.heading}
+                          </h3>
+                          <blockquote className="border-l-2 border-muted-foreground/20 pl-4 text-[0.95rem] italic leading-relaxed text-muted-foreground">
+                            &ldquo;{story.quote}&rdquo;
+                          </blockquote>
+                          <p className="text-sm leading-relaxed text-muted-foreground/80">
+                            {story.description}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-10 text-center text-xs text-muted-foreground/60"
+          >
+            *Names changed to protect the identities of the girls in our care.
+          </motion.p>
+        </div>
+      </AnimatedSection>
+
       {/* ─── HOW IT WORKS — TIMELINE ─── */}
       <section className="relative bg-muted/30">
         <WaveDivider className="fill-muted/30" />
@@ -523,11 +662,9 @@ export default function LandingPage() {
         <WaveDivider className="fill-background" />
 
         <div className="relative min-h-[400px] flex items-center justify-center py-14 sm:py-20">
-          <img
-            src="/images/girlwomentalkingstock.png"
-            alt=""
+          <div
             aria-hidden
-            className="absolute inset-0 h-full w-full object-cover brightness-[0.35] dark:brightness-[0.25]"
+            className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-accent/60 dark:from-primary/80 dark:via-primary/50 dark:to-accent/40"
           />
 
           {/* Floating shapes in CTA */}

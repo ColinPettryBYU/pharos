@@ -1,0 +1,65 @@
+name: ML Pipeline — Nightly Refresh
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  ml-nightly-refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r ml-pipelines/requirements.txt
+
+      - name: Run Donor Churn Pipeline
+        working-directory: ml-pipelines
+        run: |
+          python -m jobs.donor_churn.etl
+          python -m jobs.donor_churn.train
+          python -m jobs.donor_churn.inference
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+
+      - name: Run Reintegration Pipeline
+        working-directory: ml-pipelines
+        run: |
+          python -m jobs.reintegration.etl
+          python -m jobs.reintegration.train
+          python -m jobs.reintegration.inference
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+
+      - name: Run Social Media Pipeline
+        working-directory: ml-pipelines
+        run: |
+          python -m jobs.social_media.etl
+          python -m jobs.social_media.train
+          python -m jobs.social_media.inference
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+
+      - name: Run Intervention Pipeline
+        working-directory: ml-pipelines
+        run: |
+          python -m jobs.intervention.etl
+          python -m jobs.intervention.train
+          python -m jobs.intervention.inference
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-artifacts-${{ github.run_number }}
+          path: ml-pipelines/artifacts/
+          retention-days: 30

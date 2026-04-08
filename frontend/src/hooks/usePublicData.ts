@@ -9,6 +9,7 @@ interface SafehouseSummary {
   regionsCount: number;
   avgEducationProgress: number;
   avgHealthScore: number;
+  regionBreakdown?: Record<string, number>;
 }
 
 export function usePublicSafehouses() {

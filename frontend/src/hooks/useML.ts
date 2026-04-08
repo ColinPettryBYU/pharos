@@ -22,12 +22,11 @@ export function useSocialMediaRecommendations() {
     queryKey: ["ml", "social-recommendations"],
     queryFn: async (): Promise<SocialMediaRecommendation> => {
       const raw: any = await api.get("/ml/social-media-recommendations");
+      const day = raw?.recommended_day_of_week ?? raw?.best_post_time?.day;
+      const hour = raw?.recommended_post_hour ?? raw?.best_post_time?.hour;
       return {
-        best_post_time: {
-          day: raw?.recommended_day_of_week ?? raw?.best_post_time?.day ?? "Tuesday",
-          hour: raw?.recommended_post_hour ?? raw?.best_post_time?.hour ?? 10,
-        },
-        recommended_content_type: raw?.recommended_post_type ?? raw?.recommended_content_type ?? "ImpactStory",
+        best_post_time: day != null && hour != null ? { day, hour } : undefined,
+        recommended_content_type: raw?.recommended_post_type ?? raw?.recommended_content_type ?? undefined,
         predicted_engagement_rate: raw?.predicted_engagement_rate ?? 0,
         campaign_insights: raw?.insights?.map((i: any) => i.description) ?? raw?.campaign_insights ?? [],
       };

@@ -2,6 +2,26 @@ import { toast } from "sonner";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
+function toSnakeCase(str: string): string {
+  return str
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1_$2")
+    .toLowerCase();
+}
+
+function convertKeysToSnakeCase(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(convertKeysToSnakeCase);
+  if (typeof obj === "object" && !(obj instanceof Date)) {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      result[toSnakeCase(key)] = convertKeysToSnakeCase(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
 class ApiError extends Error {
   status: number;
   errors?: string[];
@@ -75,7 +95,7 @@ export const api = {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
     });
     return handleResponse<T>(response);
   },
@@ -88,7 +108,7 @@ export const api = {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? JSON.stringify(convertKeysToSnakeCase(body)) : undefined,
     });
     return handleResponse<T>(response);
   },

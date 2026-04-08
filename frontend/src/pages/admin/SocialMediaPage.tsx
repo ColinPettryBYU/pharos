@@ -394,9 +394,8 @@ export default function SocialMediaPage() {
                     <p className="font-medium text-primary">Best Time to Post</p>
                     <p className="text-muted-foreground">
                       {mlRecs?.best_post_time
-                        ? `${mlRecs.best_post_time.day} ${mlRecs.best_post_time.hour}:00`
-                        : "Wednesday 10:00 AM"}{" "}
-                      — higher engagement
+                        ? `${mlRecs.best_post_time.day} ${mlRecs.best_post_time.hour}:00 — higher engagement`
+                        : "Loading recommendations…"}
                     </p>
                   </div>
                   <div className="rounded-lg bg-success/5 p-3">
@@ -404,8 +403,9 @@ export default function SocialMediaPage() {
                       Recommended Content
                     </p>
                     <p className="text-muted-foreground">
-                      {mlRecs?.recommended_content_type ?? "ImpactStory"} posts
-                      drive more donations
+                      {mlRecs?.recommended_content_type
+                        ? `${mlRecs.recommended_content_type} posts drive more donations`
+                        : "Loading recommendations…"}
                     </p>
                   </div>
                   {mlRecs?.campaign_insights?.map(
@@ -571,17 +571,15 @@ export default function SocialMediaPage() {
                   From social media optimizer model
                 </p>
                 <ul className="mt-4 space-y-2 text-sm">
-                  {(
-                    mlRecs?.campaign_insights ?? [
-                      "Impact Stories drive +45% donations",
-                      "Video content boosts +28% engagement",
-                      "Posts with CTA increase +23% click-throughs",
-                    ]
-                  ).map((insight: string, i: number) => (
-                    <li key={i} className="text-muted-foreground">
-                      {insight}
-                    </li>
-                  ))}
+                  {(mlRecs?.campaign_insights ?? []).length > 0 ? (
+                    mlRecs!.campaign_insights.map((insight: string, i: number) => (
+                      <li key={i} className="text-muted-foreground">
+                        {insight}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-muted-foreground">Loading insights…</li>
+                  )}
                 </ul>
               </CardContent>
             </Card>

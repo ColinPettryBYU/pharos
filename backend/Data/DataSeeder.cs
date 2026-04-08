@@ -489,138 +489,19 @@ public static class DataSeeder
     }
 
     /// <summary>
-    /// Seeds ML prediction tables from CSVs exported by Jupyter notebooks.
-    /// Gracefully skips missing files so the app still starts without ML outputs.
+    /// ML prediction tables are now managed by the Python pipelines
+    /// (ml-pipelines/jobs/). The nightly GitHub Actions workflow
+    /// (ml-pipeline.yml) runs ETL → Train → Inference for each pipeline
+    /// and upserts results directly into the database.
     /// </summary>
     public static async Task SeedMLPredictionsAsync(PharosDbContext context, string mlDir, ILogger logger)
     {
-        if (await context.DonorChurnScores.AnyAsync())
-        {
-            logger.LogInformation("ML prediction tables already seeded. Skipping.");
-            return;
-        }
-
-        logger.LogInformation("Seeding ML prediction tables from {Path}...", mlDir);
-
-        // 1. Donor Churn Predictions
-        var churnPath = Path.Combine(mlDir, "donor_churn_predictions.csv");
-        if (File.Exists(churnPath))
-        {
-            var rows = File.ReadAllLines(churnPath).Skip(1)
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Select(line =>
-                {
-                    var cols = line.Split(',');
-                    return new DonorChurnScore
-                    {
-                        SupporterId = int.Parse(cols[0].Trim()),
-                        ChurnRiskScore = double.Parse(cols[1].Trim(), CultureInfo.InvariantCulture),
-                        RiskTier = cols[2].Trim().Trim('"'),
-                        ComputedAt = DateTime.UtcNow
-                    };
-                }).ToList();
-            await context.DonorChurnScores.AddRangeAsync(rows);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Seeded {Count} donor churn scores.", rows.Count);
-        }
-        else
-        {
-            logger.LogWarning("ML file not found: {Path}. Skipping donor churn scores.", churnPath);
-        }
-
-        // 2. Reintegration Readiness Scores
-        var readinessPath = Path.Combine(mlDir, "reintegration_readiness_scores.csv");
-        if (File.Exists(readinessPath))
-        {
-            var rows = File.ReadAllLines(readinessPath).Skip(1)
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Select(line =>
-                {
-                    var cols = line.Split(',');
-                    return new ResidentReadinessScore
-                    {
-                        ResidentId = int.Parse(cols[0].Trim()),
-                        ReadinessScore = double.Parse(cols[1].Trim(), CultureInfo.InvariantCulture),
-                        ReadinessTier = cols[2].Trim().Trim('"'),
-                        ComputedAt = DateTime.UtcNow
-                    };
-                }).ToList();
-            await context.ResidentReadinessScores.AddRangeAsync(rows);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Seeded {Count} resident readiness scores.", rows.Count);
-        }
-        else
-        {
-            logger.LogWarning("ML file not found: {Path}. Skipping readiness scores.", readinessPath);
-        }
-
-        // 3. Intervention Effectiveness Matrix
-        var effectivenessPath = Path.Combine(mlDir, "intervention_effectiveness_matrix.csv");
-        if (File.Exists(effectivenessPath))
-        {
-            var rows = File.ReadAllLines(effectivenessPath).Skip(1)
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Select(line =>
-                {
-                    var cols = line.Split(',');
-                    return new InterventionEffectivenessRow
-                    {
-                        Outcome = cols[0].Trim().Trim('"'),
-                        Intervention = cols[1].Trim().Trim('"'),
-                        Coefficient = double.Parse(cols[2].Trim(), CultureInfo.InvariantCulture),
-                        PValue = double.Parse(cols[3].Trim(), CultureInfo.InvariantCulture),
-                        Significant = bool.Parse(cols[4].Trim())
-                    };
-                }).ToList();
-            await context.InterventionEffectiveness.AddRangeAsync(rows);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Seeded {Count} intervention effectiveness rows.", rows.Count);
-        }
-        else
-        {
-            logger.LogWarning("ML file not found: {Path}. Skipping intervention effectiveness.", effectivenessPath);
-        }
-
-        // 4. Social Media Recommendations
-        var socialPath = Path.Combine(mlDir, "social_media_recommendations.csv");
-        if (File.Exists(socialPath))
-        {
-            var header = File.ReadLines(socialPath).First().Split(',').Select(h => h.Trim().Trim('"')).ToList();
-            var platformIdx = header.IndexOf("platform");
-            var postTypeIdx = header.IndexOf("post_type");
-            var postHourIdx = header.IndexOf("post_hour");
-            var dayIdx = header.IndexOf("day_of_week");
-            var storyIdx = header.IndexOf("features_resident_story");
-            var ctaIdx = header.IndexOf("has_call_to_action");
-            var donationsIdx = header.IndexOf("predicted_donations");
-
-            var rows = File.ReadAllLines(socialPath).Skip(1)
-                .Where(line => !string.IsNullOrWhiteSpace(line))
-                .Select(line =>
-                {
-                    var cols = line.Split(',');
-                    return new MlSocialMediaRecommendation
-                    {
-                        Platform = cols[platformIdx].Trim().Trim('"'),
-                        PostType = cols[postTypeIdx].Trim().Trim('"'),
-                        RecommendedHour = int.Parse(cols[postHourIdx].Trim()),
-                        RecommendedDay = cols[dayIdx].Trim().Trim('"'),
-                        IncludeResidentStory = cols[storyIdx].Trim() == "1" || cols[storyIdx].Trim().Equals("True", StringComparison.OrdinalIgnoreCase),
-                        IncludeCallToAction = cols[ctaIdx].Trim() == "1" || cols[ctaIdx].Trim().Equals("True", StringComparison.OrdinalIgnoreCase),
-                        PredictedDonations = double.Parse(cols[donationsIdx].Trim(), CultureInfo.InvariantCulture),
-                        ComputedAt = DateTime.UtcNow
-                    };
-                }).ToList();
-            await context.MlSocialMediaRecommendations.AddRangeAsync(rows);
-            await context.SaveChangesAsync();
-            logger.LogInformation("Seeded {Count} social media recommendations.", rows.Count);
-        }
-        else
-        {
-            logger.LogWarning("ML file not found: {Path}. Skipping social media recommendations.", socialPath);
-        }
-
-        logger.LogInformation("ML prediction seeding completed.");
+        logger.LogInformation(
+            "ML prediction tables are now managed by Python pipelines. " +
+            "Skipping CSV-based seeding. Run the GitHub Actions workflow " +
+            "'ML Pipeline — Nightly Refresh' or execute the Python jobs " +
+            "manually to populate these tables.");
+        await Task.CompletedTask;
     }
 
     // ── Helpers ──
