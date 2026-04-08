@@ -34,7 +34,7 @@ export default function DonorDashboard() {
   const { data: donationsData, isLoading: donationsLoading } = useDonorDonations();
   const { data: impact, isLoading: impactLoading } = useDonorImpact();
 
-  const donations = Array.isArray(donationsData) ? donationsData : [];
+  const donations: any[] = Array.isArray(donationsData) ? donationsData : (donationsData as any)?.data ?? [];
   const totalDonated = impact?.totalDonated ?? donations.reduce((s, d) => s + d.amount, 0);
   const isLoading = profileLoading || donationsLoading || impactLoading;
 

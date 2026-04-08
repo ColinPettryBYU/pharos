@@ -18,7 +18,7 @@ public class HomeVisitationsController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<HomeVisitationDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] int? residentId = null,
         [FromQuery] string? visitType = null,
         [FromQuery] string? search = null)

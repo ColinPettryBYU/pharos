@@ -18,7 +18,7 @@ public class InterventionPlansController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<InterventionPlanDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] int? residentId = null,
         [FromQuery] string? status = null)
     {

@@ -142,10 +142,12 @@ public class DonorService : IDonorService
 
     // ── Donations ──
 
-    public async Task<PagedResult<DonationDto>> GetDonationsAsync(int page, int pageSize, string? donationType, string? campaignName, string? search)
+    public async Task<PagedResult<DonationDto>> GetDonationsAsync(int page, int pageSize, string? donationType, string? campaignName, string? search, int? supporterId = null)
     {
         var query = _db.Donations.Include(d => d.Supporter).AsQueryable();
 
+        if (supporterId.HasValue)
+            query = query.Where(d => d.SupporterId == supporterId.Value);
         if (!string.IsNullOrWhiteSpace(donationType))
             query = query.Where(d => d.DonationType == donationType);
         if (!string.IsNullOrWhiteSpace(campaignName))

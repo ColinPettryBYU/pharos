@@ -93,7 +93,7 @@ const columns: ColumnDef<HomeVisitation>[] = [
 export default function HomeVisitationsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { data, isLoading, error, refetch } = useHomeVisitations();
+  const { data, isLoading, error, refetch } = useHomeVisitations({ pageSize: 1500 });
   const createVisit = useCreateHomeVisitation();
 
   const visitations = Array.isArray(data) ? data : (data?.data ?? []);

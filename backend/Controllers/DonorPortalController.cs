@@ -44,7 +44,7 @@ public class DonorPortalController : ControllerBase
     [HttpGet("my-donations")]
     public async Task<ActionResult<PagedResult<DonationDto>>> GetMyDonations(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 500)
     {
         var supporterId = await GetLinkedSupporterId();
         if (!supporterId.HasValue) return NotFound(new { message = "No linked supporter profile found." });

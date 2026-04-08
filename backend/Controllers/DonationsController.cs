@@ -18,12 +18,13 @@ public class DonationsController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<DonationDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] string? donationType = null,
         [FromQuery] string? campaignName = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] int? supporterId = null)
     {
-        var result = await _service.GetDonationsAsync(page, pageSize, donationType, campaignName, search);
+        var result = await _service.GetDonationsAsync(page, pageSize, donationType, campaignName, search, supporterId);
         return Ok(result);
     }
 
@@ -73,7 +74,7 @@ public class DonationAllocationsController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<DonationAllocationDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] int? safehouseId = null)
     {
         var result = await _service.GetAllocationsAsync(page, pageSize, safehouseId);

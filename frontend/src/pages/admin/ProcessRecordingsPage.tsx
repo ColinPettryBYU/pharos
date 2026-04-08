@@ -91,7 +91,7 @@ const columns: ColumnDef<ProcessRecording>[] = [
 export default function ProcessRecordingsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { data, isLoading, error, refetch } = useProcessRecordings();
+  const { data, isLoading, error, refetch } = useProcessRecordings({ pageSize: 3000 });
   const createRecording = useCreateProcessRecording();
 
   const recordings = Array.isArray(data) ? data : (data?.data ?? []);

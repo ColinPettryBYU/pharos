@@ -40,12 +40,12 @@ export default function ResidentDetailPage() {
   const { data: plansRaw } = useResidentInterventions(numId);
   const { data: incidentsRaw } = useResidentIncidents(numId);
 
-  const eduRecords = Array.isArray(eduRecordsRaw) ? eduRecordsRaw : [];
-  const healthRecords = Array.isArray(healthRecordsRaw) ? healthRecordsRaw : [];
-  const plans = Array.isArray(plansRaw) ? plansRaw : [];
-  const incidents = Array.isArray(incidentsRaw) ? incidentsRaw : [];
-  const recordingsList = Array.isArray(recordings) ? recordings : [];
-  const visitationsList = Array.isArray(visitations) ? visitations : [];
+  const eduRecords: any[] = Array.isArray(eduRecordsRaw) ? eduRecordsRaw : (eduRecordsRaw as any)?.data ?? [];
+  const healthRecords: any[] = Array.isArray(healthRecordsRaw) ? healthRecordsRaw : (healthRecordsRaw as any)?.data ?? [];
+  const plans: any[] = Array.isArray(plansRaw) ? plansRaw : (plansRaw as any)?.data ?? [];
+  const incidents: any[] = Array.isArray(incidentsRaw) ? incidentsRaw : (incidentsRaw as any)?.data ?? [];
+  const recordingsList: any[] = Array.isArray(recordings) ? recordings : (recordings as any)?.data ?? [];
+  const visitationsList: any[] = Array.isArray(visitations) ? visitations : (visitations as any)?.data ?? [];
 
   if (isLoading) {
     return <div className="space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
@@ -334,10 +334,10 @@ export default function ResidentDetailPage() {
             {incidents.length === 0 ? (
               <Card><CardContent className="p-8 text-center text-muted-foreground">No incidents reported.</CardContent></Card>
             ) : incidents.map((inc) => {
-              const severityColors = { Low: "border-l-yellow-500", Medium: "border-l-orange-500", High: "border-l-red-500" };
+              const severityColors: Record<string, string> = { Low: "border-l-yellow-500", Medium: "border-l-orange-500", High: "border-l-red-500" };
               return (
                 <motion.div key={inc.incident_id} variants={item}>
-                  <Card className={cn("border-l-4", severityColors[inc.severity])}>
+                  <Card className={cn("border-l-4", severityColors[inc.severity] ?? "")}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <AlertTriangle className={cn("h-4 w-4", inc.severity === "High" ? "text-destructive" : "text-warning")} />

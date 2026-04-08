@@ -12,7 +12,7 @@ public interface IDonorService
     Task<bool> DeleteSupporterAsync(int id);
 
     // Donations
-    Task<PagedResult<DonationDto>> GetDonationsAsync(int page, int pageSize, string? donationType, string? campaignName, string? search);
+    Task<PagedResult<DonationDto>> GetDonationsAsync(int page, int pageSize, string? donationType, string? campaignName, string? search, int? supporterId = null);
     Task<DonationDetailDto?> GetDonationByIdAsync(int id);
     Task<DonationDto> CreateDonationAsync(CreateDonationRequest request);
     Task<DonationDto?> UpdateDonationAsync(int id, UpdateDonationRequest request);

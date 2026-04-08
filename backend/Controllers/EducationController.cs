@@ -18,7 +18,7 @@ public class EducationController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<EducationRecordDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] int? residentId = null)
     {
         var result = await _service.GetEducationRecordsAsync(page, pageSize, residentId);

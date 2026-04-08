@@ -20,7 +20,7 @@ public class PublicController : ControllerBase
     [HttpGet("impact-snapshots")]
     public async Task<ActionResult<PagedResult<PublicImpactSnapshotDto>>> GetImpactSnapshots(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 500)
     {
         var result = await _reportService.GetImpactSnapshotsAsync(page, pageSize);
         return Ok(result);

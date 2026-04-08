@@ -18,7 +18,7 @@ public class HealthController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<HealthRecordDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] int? residentId = null)
     {
         var result = await _service.GetHealthRecordsAsync(page, pageSize, residentId);

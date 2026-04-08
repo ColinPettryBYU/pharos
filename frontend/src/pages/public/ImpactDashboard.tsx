@@ -24,7 +24,7 @@ export default function ImpactDashboard() {
   const { data: snapshots, isLoading: snapshotsLoading } = usePublicImpactSnapshots();
   const { data: summary, isLoading: summaryLoading } = usePublicSafehouses();
 
-  const snapshotList = Array.isArray(snapshots) ? snapshots : [];
+  const snapshotList: any[] = Array.isArray(snapshots) ? snapshots : (snapshots as any)?.data ?? [];
   const latest = snapshotList[0];
   const isLoading = snapshotsLoading || summaryLoading;
 

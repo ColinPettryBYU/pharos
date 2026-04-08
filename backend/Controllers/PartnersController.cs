@@ -18,7 +18,7 @@ public class PartnersController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<PartnerDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] string? partnerType = null,
         [FromQuery] string? status = null,
         [FromQuery] string? search = null)

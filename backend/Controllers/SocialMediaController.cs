@@ -41,7 +41,7 @@ public class SocialMediaController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<SocialMediaPostDto>>> GetPosts(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] string? platform = null,
         [FromQuery] string? postType = null,
         [FromQuery] string? contentTopic = null,
@@ -76,7 +76,7 @@ public class SocialMediaController : ControllerBase
     public async Task<ActionResult<CommentInboxResponse>> GetCommentInbox(
         [FromQuery] string? platform = null,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 500)
     {
         var result = await _service.GetCommentInboxAsync(platform, page, pageSize);
         return Ok(result);

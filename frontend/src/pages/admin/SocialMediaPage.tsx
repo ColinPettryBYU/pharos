@@ -68,7 +68,7 @@ export default function SocialMediaPage() {
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
 
   const platformFilter = activePlatform !== "All" ? { platform: activePlatform } : {};
-  const { data: postsData, isLoading: postsLoading } = useSocialPosts(platformFilter);
+  const { data: postsData, isLoading: postsLoading } = useSocialPosts({ ...platformFilter, pageSize: 1000 });
   const { data: commentsData } = useSocialComments(platformFilter);
   const { data: mlRecs } = useSocialMediaRecommendations();
   const composePost = useComposePost();

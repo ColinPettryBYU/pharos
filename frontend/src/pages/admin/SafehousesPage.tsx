@@ -24,7 +24,7 @@ export default function SafehousesPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Safehouse | null>(null);
 
-  const list = Array.isArray(safehouses) ? safehouses : [];
+  const list: any[] = Array.isArray(safehouses) ? safehouses : (safehouses as any)?.data ?? [];
 
   if (error) {
     return (

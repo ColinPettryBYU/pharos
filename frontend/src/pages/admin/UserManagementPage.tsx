@@ -49,7 +49,7 @@ export default function UserManagementPage() {
   const updateRole = useUpdateUserRole();
   const deleteUserMut = useDeleteUser();
 
-  const userList = Array.isArray(users) ? users : [];
+  const userList: any[] = Array.isArray(users) ? users : (users as any)?.data ?? [];
 
   const form = useForm<InviteForm>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,7 +112,7 @@ export default function UserManagementPage() {
                     <p className="text-sm text-muted-foreground">{user.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {user.roles?.map((role) => (
+                    {user.roles?.map((role: string) => (
                       <Badge key={role} variant={role === "Admin" ? "default" : "secondary"} className="text-xs">{role}</Badge>
                     ))}
                   </div>

@@ -18,7 +18,7 @@ public class ResidentsController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<ResidentDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] string? caseStatus = null,
         [FromQuery] string? riskLevel = null,
         [FromQuery] int? safehouseId = null,
@@ -76,7 +76,7 @@ public class ResidentsController : ControllerBase
     public async Task<ActionResult<PagedResult<ProcessRecordingDto>>> GetResidentProcessRecordings(
         int id,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 500)
     {
         var result = await _service.GetProcessRecordingsAsync(page, pageSize, residentId: id, null, null);
         return Ok(result);
@@ -87,7 +87,7 @@ public class ResidentsController : ControllerBase
     public async Task<ActionResult<PagedResult<HomeVisitationDto>>> GetResidentHomeVisitations(
         int id,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 500)
     {
         var result = await _service.GetHomeVisitationsAsync(page, pageSize, residentId: id, null, null);
         return Ok(result);

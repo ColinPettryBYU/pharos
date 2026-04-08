@@ -18,7 +18,7 @@ public class SafehousesController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<SafehouseDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] string? status = null,
         [FromQuery] string? search = null)
     {

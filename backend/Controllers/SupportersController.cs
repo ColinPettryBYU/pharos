@@ -18,7 +18,7 @@ public class SupportersController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<SupporterDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] string? supporterType = null,
         [FromQuery] string? status = null,
         [FromQuery] string? search = null)

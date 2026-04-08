@@ -18,7 +18,7 @@ public class ProcessRecordingsController : ControllerBase
     [Authorize(Roles = "Admin,Staff")]
     public async Task<ActionResult<PagedResult<ProcessRecordingDto>>> GetAll(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
+        [FromQuery] int pageSize = 500,
         [FromQuery] int? residentId = null,
         [FromQuery] string? sessionType = null,
         [FromQuery] string? search = null)
