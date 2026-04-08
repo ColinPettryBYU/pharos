@@ -20,13 +20,13 @@ def run():
     interventions = read_table('intervention_plans')
     incidents = read_table('incident_reports')
 
-    residents['date_of_admission'] = pd.to_datetime(residents['date_of_admission'])
-    recordings['session_date'] = pd.to_datetime(recordings['session_date'])
-    education['record_date'] = pd.to_datetime(education['record_date'])
-    health['record_date'] = pd.to_datetime(health['record_date'])
-    interventions['created_at'] = pd.to_datetime(interventions['created_at'])
-    interventions['target_date'] = pd.to_datetime(interventions['target_date'])
-    incidents['incident_date'] = pd.to_datetime(incidents['incident_date'])
+    residents['date_of_admission'] = pd.to_datetime(residents['date_of_admission'], utc=True).dt.tz_localize(None)
+    recordings['session_date'] = pd.to_datetime(recordings['session_date'], utc=True).dt.tz_localize(None)
+    education['record_date'] = pd.to_datetime(education['record_date'], utc=True).dt.tz_localize(None)
+    health['record_date'] = pd.to_datetime(health['record_date'], utc=True).dt.tz_localize(None)
+    interventions['created_at'] = pd.to_datetime(interventions['created_at'], utc=True).dt.tz_localize(None)
+    interventions['target_date'] = pd.to_datetime(interventions['target_date'], utc=True).dt.tz_localize(None)
+    incidents['incident_date'] = pd.to_datetime(incidents['incident_date'], utc=True).dt.tz_localize(None)
 
     # ── Step 1: Build month-level outcome measures ──
     health['month'] = health['record_date'].dt.to_period('M').dt.to_timestamp()

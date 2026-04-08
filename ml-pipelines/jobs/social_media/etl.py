@@ -16,7 +16,7 @@ def run():
     posts = read_table('social_media_posts')
     donations = read_table('donations')
 
-    posts['created_at'] = pd.to_datetime(posts['created_at'])
+    posts['created_at'] = pd.to_datetime(posts['created_at'], utc=True).dt.tz_localize(None)
 
     posts['engagement_rate'] = pd.to_numeric(posts['engagement_rate'], errors='coerce').fillna(0)
     posts['donation_referrals'] = pd.to_numeric(posts['donation_referrals'], errors='coerce').fillna(0)

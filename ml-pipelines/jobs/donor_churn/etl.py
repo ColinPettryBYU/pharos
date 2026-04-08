@@ -73,8 +73,8 @@ def run():
     donations = read_table('donations')
     allocations = read_table('donation_allocations')
 
-    supporters['first_donation_date'] = pd.to_datetime(supporters['first_donation_date'])
-    donations['donation_date'] = pd.to_datetime(donations['donation_date'])
+    supporters['first_donation_date'] = pd.to_datetime(supporters['first_donation_date'], utc=True).dt.tz_localize(None)
+    donations['donation_date'] = pd.to_datetime(donations['donation_date'], utc=True).dt.tz_localize(None)
 
     reference_date = donations['donation_date'].max()
     cutoff_date = reference_date - pd.Timedelta(days=180)
