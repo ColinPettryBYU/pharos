@@ -102,16 +102,21 @@ public class MLService : IMLService
                 r.Intervention,
                 r.Coefficient,
                 rows.Count(x => x.Intervention == r.Intervention),
-                $"{r.Intervention} interventions show a statistically significant coefficient of {r.Coefficient:+0.000;-0.000} on {r.Outcome.Replace("delta_", "").Replace("_", " ")} (p={r.PValue:0.000})"
+                $"{r.Intervention} interventions show a statistically significant effect on {r.Outcome.Replace("delta_", "").Replace("_", " ")} (p={r.PValue:0.000})"
             )).ToList();
 
         var byCategory = rows.GroupBy(r => r.Intervention).Select(g =>
-            new CategoryEffectivenessDto(
+        {
+            var significantCount = g.Count(r => r.Significant);
+            var totalOutcomes = g.Count();
+            var score = totalOutcomes > 0 ? (double)significantCount / totalOutcomes * 100 : 0;
+            return new CategoryEffectivenessDto(
                 g.Key,
-                g.Average(r => r.Coefficient) * 100,
-                g.Count(),
+                score,
+                totalOutcomes,
                 g.OrderByDescending(r => Math.Abs(r.Coefficient)).First().Outcome
-            )).ToList();
+            );
+        }).ToList();
 
         return new InterventionEffectivenessDto(insights, byCategory);
     }

@@ -40,7 +40,9 @@ public class DonorService : IDonorService
                 s.Region, s.Country, s.CreatedAt, s.FirstDonationDate,
                 s.Donations.Where(d => d.Amount.HasValue).Sum(d => d.Amount!.Value),
                 s.Donations.OrderByDescending(d => d.DonationDate).Select(d => (DateTime?)d.DonationDate).FirstOrDefault(),
-                s.Donations.Count))
+                s.Donations.Count,
+                _db.DonorChurnScores.Where(c => c.SupporterId == s.SupporterId).Select(c => (double?)c.ChurnRiskScore).FirstOrDefault(),
+                _db.DonorChurnScores.Where(c => c.SupporterId == s.SupporterId).Select(c => c.RiskTier).FirstOrDefault()))
             .ToListAsync();
 
         return new PagedResult<SupporterDto>(items, totalCount, page, pageSize, totalPages);
@@ -98,7 +100,7 @@ public class DonorService : IDonorService
             entity.SupporterId, entity.SupporterType, entity.DisplayName, entity.OrganizationName,
             entity.FirstName, entity.LastName, entity.Email, entity.Phone, entity.Status,
             entity.AcquisitionChannel, entity.Region, entity.Country, entity.CreatedAt,
-            entity.FirstDonationDate, 0, null, 0);
+            entity.FirstDonationDate, 0, null, 0, null, null);
     }
 
     public async Task<SupporterDto?> UpdateSupporterAsync(int id, UpdateSupporterRequest request)
@@ -121,6 +123,7 @@ public class DonorService : IDonorService
 
         await _db.SaveChangesAsync();
 
+        var churnScore = await _db.DonorChurnScores.FirstOrDefaultAsync(c => c.SupporterId == entity.SupporterId);
         return new SupporterDto(
             entity.SupporterId, entity.SupporterType, entity.DisplayName, entity.OrganizationName,
             entity.FirstName, entity.LastName, entity.Email, entity.Phone, entity.Status,
@@ -128,7 +131,8 @@ public class DonorService : IDonorService
             entity.FirstDonationDate,
             entity.Donations.Where(d => d.Amount.HasValue).Sum(d => d.Amount!.Value),
             entity.Donations.OrderByDescending(d => d.DonationDate).Select(d => (DateTime?)d.DonationDate).FirstOrDefault(),
-            entity.Donations.Count);
+            entity.Donations.Count,
+            churnScore?.ChurnRiskScore, churnScore?.RiskTier);
     }
 
     public async Task<bool> DeleteSupporterAsync(int id)

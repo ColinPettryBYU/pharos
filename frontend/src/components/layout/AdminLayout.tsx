@@ -304,7 +304,7 @@ export function AdminLayout() {
               <Menu className="h-5 w-5" />
             </Button>
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              ← Back to Site
+              ← Back to Home
             </Link>
           </div>
 

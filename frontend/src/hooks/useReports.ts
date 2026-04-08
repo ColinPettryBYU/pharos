@@ -113,7 +113,7 @@ export function useSocialMediaReports(filters: Record<string, unknown> = {}) {
           platform: p.platform ?? "",
           avgEngagement: p.avg_engagement ?? 0,
           totalPosts: p.post_count ?? 0,
-          totalReach: 0,
+          totalReach: p.total_reach ?? 0,
         })),
         postTypePerformance: (raw?.post_type_performance ?? []).map((p: any) => ({
           postType: p.post_type ?? "",

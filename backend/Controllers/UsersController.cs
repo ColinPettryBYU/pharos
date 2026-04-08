@@ -89,14 +89,15 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeactivateUser(string id)
+    public async Task<IActionResult> DeleteUser(string id)
     {
         var user = await _userManager.FindByIdAsync(id);
         if (user == null) return NotFound(new { message = "User not found." });
 
-        await _userManager.SetLockoutEnabledAsync(user, true);
-        await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded)
+            return BadRequest(new { message = "Failed to delete user.", errors = result.Errors.Select(e => e.Description) });
 
-        return Ok(new { message = "User account deactivated." });
+        return Ok(new { message = "User deleted successfully." });
     }
 }

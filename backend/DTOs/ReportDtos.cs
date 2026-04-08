@@ -97,7 +97,7 @@ public record SocialMediaReportDto(
 
 public record ContentTopicPerformanceDto(string Topic, decimal AvgEngagement, int DonationReferrals);
 
-public record ReportPlatformBreakdownDto(string Platform, int PostCount, decimal AvgEngagement, int DonationReferrals);
+public record ReportPlatformBreakdownDto(string Platform, int PostCount, decimal AvgEngagement, int DonationReferrals, long TotalReach);
 
 public record PostTypePerformanceDto(string PostType, int PostCount, decimal AvgEngagement, int DonationReferrals);
 

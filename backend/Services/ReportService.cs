@@ -191,7 +191,8 @@ public class ReportService : IReportService
             .Select(g => new ReportPlatformBreakdownDto(
                 g.Key, g.Count(),
                 g.Where(p => p.EngagementRate.HasValue).Select(p => p.EngagementRate!.Value).DefaultIfEmpty(0).Average(),
-                g.Sum(p => p.DonationReferrals ?? 0)))
+                g.Sum(p => p.DonationReferrals ?? 0),
+                g.Sum(p => p.Reach ?? 0)))
             .OrderByDescending(x => x.PostCount);
 
         var postTypePerformance = posts.GroupBy(p => p.PostType)

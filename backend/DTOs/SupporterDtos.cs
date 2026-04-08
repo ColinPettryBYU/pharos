@@ -17,7 +17,9 @@ public record SupporterDto(
     DateTime? FirstDonationDate,
     decimal TotalDonated,
     DateTime? LastDonationDate,
-    int DonationCount
+    int DonationCount,
+    double? ChurnRisk,
+    string? ChurnRiskTier
 );
 
 public record SupporterDetailDto(

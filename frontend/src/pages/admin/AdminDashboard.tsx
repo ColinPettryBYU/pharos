@@ -200,7 +200,7 @@ export default function AdminDashboard() {
                     <XAxis type="number" tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }} label={{ value: "Count", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                     <YAxis type="category" dataKey="name" width={60} tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} label={{ value: "Safehouse", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                     <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "8px", fontSize: "12px" }} />
-                    <Bar dataKey="capacity" fill="var(--color-muted)" radius={[0, 4, 4, 0]} animationBegin={200} animationDuration={800} />
+                    <Bar dataKey="capacity" fill="var(--color-chart-3)" radius={[0, 4, 4, 0]} animationBegin={200} animationDuration={800} />
                     <Bar dataKey="occupancy" fill="var(--color-primary)" radius={[0, 4, 4, 0]} animationBegin={400} animationDuration={800} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -219,6 +219,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-lg">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="max-h-80 overflow-y-auto">
               {activityFeed.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No recent activity</p>
               ) : (
@@ -242,6 +243,7 @@ export default function AdminDashboard() {
                   })}
                 </motion.div>
               )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -255,6 +257,7 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="max-h-80 overflow-y-auto">
               {riskAlerts.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No active risk alerts</p>
               ) : (
@@ -283,6 +286,7 @@ export default function AdminDashboard() {
                   ))}
                 </motion.div>
               )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>

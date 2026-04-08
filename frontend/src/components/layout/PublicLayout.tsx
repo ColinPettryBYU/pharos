@@ -1,9 +1,9 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
-import { Sun, Moon, Menu, X, Lightbulb } from "lucide-react";
+import { Sun, Moon, Menu, X, Lightbulb, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PageTransition } from "./PageTransition";
@@ -15,10 +15,16 @@ const navLinks = [
 ];
 
 export function PublicLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -65,15 +71,21 @@ export function PublicLayout() {
 
             <div className="hidden md:flex items-center gap-2">
               {user ? (
-                <Link
-                  to={
-                    user.roles?.includes("Admin")
-                      ? "/admin"
-                      : "/donor/dashboard"
-                  }
-                >
-                  <Button size="sm">Dashboard</Button>
-                </Link>
+                <>
+                  <Link
+                    to={
+                      user.roles?.includes("Admin")
+                        ? "/admin"
+                        : "/donor/dashboard"
+                    }
+                  >
+                    <Button size="sm">Dashboard</Button>
+                  </Link>
+                  <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1.5 text-muted-foreground">
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign Out
+                  </Button>
+                </>
               ) : (
                 <>
                   <Link to="/login">
@@ -112,16 +124,22 @@ export function PublicLayout() {
                   ))}
                   <div className="border-t pt-4 space-y-2">
                     {user ? (
-                      <Link
-                        to={
-                          user.roles?.includes("Admin")
-                            ? "/admin"
-                            : "/donor/dashboard"
-                        }
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        <Button className="w-full">Dashboard</Button>
-                      </Link>
+                      <>
+                        <Link
+                          to={
+                            user.roles?.includes("Admin")
+                              ? "/admin"
+                              : "/donor/dashboard"
+                          }
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Button className="w-full">Dashboard</Button>
+                        </Link>
+                        <Button variant="outline" className="w-full gap-1.5" onClick={() => { setMobileOpen(false); handleLogout(); }}>
+                          <LogOut className="h-3.5 w-3.5" />
+                          Sign Out
+                        </Button>
+                      </>
                     ) : (
                       <>
                         <Link

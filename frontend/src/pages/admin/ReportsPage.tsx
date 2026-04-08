@@ -572,7 +572,7 @@ function SafehouseComparisonsTab() {
                         <YAxis tick={axisTick} label={{ value: "Count", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
                         <Tooltip contentStyle={tooltipStyle} />
                         <Legend />
-                        <Bar dataKey="capacity" name="Capacity" fill="var(--color-muted)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />
+                        <Bar dataKey="capacity" name="Capacity" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={800} />
                         <Bar dataKey="occupancy" name="Occupancy" fill="var(--color-primary)" radius={[4, 4, 0, 0]} animationBegin={400} animationDuration={800} />
                       </BarChart>
                     </ResponsiveContainer>
