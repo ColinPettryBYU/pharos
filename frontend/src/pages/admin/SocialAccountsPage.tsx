@@ -123,42 +123,80 @@ const platformConfigs: PlatformConfig[] = [
   },
 ];
 
-const platformCredentialLabels: Record<string, { idLabel: string; secretLabel: string; link: string; linkLabel: string }> = {
+const platformCredentialLabels: Record<
+  string,
+  { idLabel: string; secretLabel: string; link: string; linkLabel: string; steps: string[] }
+> = {
   facebook: {
     idLabel: "Meta App ID",
     secretLabel: "Meta App Secret",
     link: "https://developers.facebook.com/",
     linkLabel: "Meta for Developers",
+    steps: [
+      "Create a Meta Business App",
+      "Add Facebook Login product",
+      "Set redirect URI to your callback URL",
+      "Copy App ID and App Secret",
+    ],
   },
   instagram: {
     idLabel: "Meta App ID",
     secretLabel: "Meta App Secret",
     link: "https://developers.facebook.com/",
     linkLabel: "Meta for Developers",
+    steps: [
+      "Uses the same Meta App as Facebook",
+      "Enable instagram_basic and instagram_content_publish scopes",
+      "Connect an Instagram Business account to your Facebook Page",
+    ],
   },
   linkedin: {
     idLabel: "Client ID",
     secretLabel: "Client Secret",
     link: "https://www.linkedin.com/developers/",
     linkLabel: "LinkedIn Developer Portal",
+    steps: [
+      "Create App at LinkedIn Developer Portal",
+      "Add Community Management API product",
+      "Set redirect URL to your callback URL",
+      "Copy Client ID and Client Secret",
+    ],
   },
   youtube: {
     idLabel: "Google Client ID",
     secretLabel: "Google Client Secret",
     link: "https://console.cloud.google.com/",
     linkLabel: "Google Cloud Console",
+    steps: [
+      "Create a project in Google Cloud Console",
+      "Enable YouTube Data API v3",
+      "Create OAuth 2.0 credentials",
+      "Set authorized redirect URI",
+    ],
   },
   tiktok: {
     idLabel: "Client Key",
     secretLabel: "Client Secret",
     link: "https://developers.tiktok.com/",
     linkLabel: "TikTok for Developers",
+    steps: [
+      "Register at TikTok for Developers",
+      "Apply for Content Posting API access",
+      "Set redirect URI to your callback URL",
+      "Copy Client Key and Client Secret",
+    ],
   },
   twitter: {
     idLabel: "Client ID",
     secretLabel: "Client Secret",
     link: "https://developer.twitter.com/",
     linkLabel: "X Developer Portal",
+    steps: [
+      "Create Project + App at X Developer Portal",
+      "Enable OAuth 2.0 User Authentication",
+      "Set redirect URI to your callback URL",
+      "Select Read and Write permissions",
+    ],
   },
 };
 
@@ -226,6 +264,13 @@ function CredentialForm({
       </button>
       {open && (
         <div className="mt-2 space-y-3 rounded-lg bg-muted/50 p-3">
+          {labels.steps.length > 0 && (
+            <ol className="space-y-1 text-xs text-muted-foreground list-decimal list-inside">
+              {labels.steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          )}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">{labels.idLabel}</label>
             <Input

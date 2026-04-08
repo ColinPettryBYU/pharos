@@ -204,11 +204,11 @@ function SidebarContent({
                     <div key={item.href} className="relative">
                       <div
                         className={cn(
-                          "absolute left-[22px] w-px bg-border",
+                          "absolute left-[18px] w-px bg-muted-foreground/25",
                           isLastChild ? "top-0 h-[20px]" : "top-0 bottom-0"
                         )}
                       />
-                      <div className="absolute left-[22px] top-[20px] h-px w-3 bg-border" />
+                      <div className="absolute left-[18px] top-[20px] h-px w-2.5 bg-muted-foreground/25" />
                       {linkContent}
                     </div>
                   );
