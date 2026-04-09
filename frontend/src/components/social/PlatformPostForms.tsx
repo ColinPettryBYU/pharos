@@ -148,17 +148,22 @@ export function FacebookPostForm({ composePost, onSuccess }: PostFormProps) {
       toast.error("Caption is required");
       return;
     }
-    await composePost.mutateAsync({
-      Platforms: ["Facebook"],
-      PostType: "Campaign",
-      Caption: caption,
-      LinkUrl: linkUrl || undefined,
-      PhotoUrl: photoUrl || undefined,
-      ContentTopic: contentTopic || undefined,
-      CallToActionType: cta || undefined,
-      ScheduledTime: schedule ? scheduledTime : undefined,
-    });
-    toast.success("Post published to Facebook!");
+    try {
+      await composePost.mutateAsync({
+        Platforms: ["Facebook"],
+        PostType: "Campaign",
+        Caption: caption,
+        LinkUrl: linkUrl || undefined,
+        PhotoUrl: photoUrl || undefined,
+        ContentTopic: contentTopic || undefined,
+        CallToActionType: cta || undefined,
+        ScheduledTime: schedule ? scheduledTime : undefined,
+      });
+      toast.success("Post published to Facebook!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to publish to Facebook");
+      return;
+    }
     setCaption("");
     setLinkUrl("");
     setPhotoUrl("");
@@ -263,16 +268,21 @@ export function InstagramPostForm({ composePost, onSuccess }: PostFormProps) {
       toast.error("Media URL is required for Instagram");
       return;
     }
-    await composePost.mutateAsync({
-      Platforms: ["Instagram"],
-      PostType: "Campaign",
-      Caption: caption,
-      MediaUrl: mediaUrl,
-      MediaType: mediaType,
-      AltText: altText || undefined,
-      ContentTopic: contentTopic || undefined,
-    });
-    toast.success("Published to Instagram!");
+    try {
+      await composePost.mutateAsync({
+        Platforms: ["Instagram"],
+        PostType: "Campaign",
+        Caption: caption,
+        MediaUrl: mediaUrl,
+        MediaType: mediaType,
+        AltText: altText || undefined,
+        ContentTopic: contentTopic || undefined,
+      });
+      toast.success("Published to Instagram!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to publish to Instagram");
+      return;
+    }
     setCaption("");
     setMediaUrl("");
     setMediaType("Image");
@@ -377,14 +387,19 @@ export function TwitterPostForm({ composePost, onSuccess }: PostFormProps) {
       toast.error("Tweet exceeds 280 characters");
       return;
     }
-    await composePost.mutateAsync({
-      Platforms: ["Twitter"],
-      PostType: "Campaign",
-      Caption: text,
-      MediaUrl: mediaUrl || undefined,
-      ContentTopic: contentTopic || undefined,
-    });
-    toast.success("Tweet posted!");
+    try {
+      await composePost.mutateAsync({
+        Platforms: ["Twitter"],
+        PostType: "Campaign",
+        Caption: text,
+        MediaUrl: mediaUrl || undefined,
+        ContentTopic: contentTopic || undefined,
+      });
+      toast.success("Tweet posted!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to post tweet");
+      return;
+    }
     setText("");
     setMediaUrl("");
     setContentTopic("");
@@ -463,17 +478,22 @@ export function LinkedInPostForm({ composePost, onSuccess }: PostFormProps) {
       toast.error("Commentary text is required");
       return;
     }
-    await composePost.mutateAsync({
-      Platforms: ["LinkedIn"],
-      PostType: "Campaign",
-      Caption: commentary,
-      MediaCategory: mediaCategory,
-      ArticleUrl: mediaCategory === "Article" ? articleUrl : undefined,
-      ImageUrl: mediaCategory === "Image" ? imageUrl : undefined,
-      ContentTopic: contentTopic || undefined,
-      Visibility: visibility,
-    });
-    toast.success("Posted to LinkedIn!");
+    try {
+      await composePost.mutateAsync({
+        Platforms: ["LinkedIn"],
+        PostType: "Campaign",
+        Caption: commentary,
+        MediaCategory: mediaCategory,
+        ArticleUrl: mediaCategory === "Article" ? articleUrl : undefined,
+        ImageUrl: mediaCategory === "Image" ? imageUrl : undefined,
+        ContentTopic: contentTopic || undefined,
+        Visibility: visibility,
+      });
+      toast.success("Posted to LinkedIn!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to post to LinkedIn");
+      return;
+    }
     setCommentary("");
     setMediaCategory("None");
     setArticleUrl("");
@@ -597,17 +617,22 @@ export function TikTokPostForm({ composePost, onSuccess }: PostFormProps) {
       toast.error("Video URL is required for TikTok");
       return;
     }
-    await composePost.mutateAsync({
-      Platforms: ["TikTok"],
-      PostType: "Campaign",
-      VideoUrl: videoUrl,
-      Caption: caption,
-      PrivacyLevel: privacy,
-      AllowComments: allowComments,
-      AllowDuet: allowDuet,
-      AllowStitch: allowStitch,
-    });
-    toast.success("Video published to TikTok!");
+    try {
+      await composePost.mutateAsync({
+        Platforms: ["TikTok"],
+        PostType: "Campaign",
+        VideoUrl: videoUrl,
+        Caption: caption,
+        PrivacyLevel: privacy,
+        AllowComments: allowComments,
+        AllowDuet: allowDuet,
+        AllowStitch: allowStitch,
+      });
+      toast.success("Video published to TikTok!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to publish to TikTok");
+      return;
+    }
     setVideoUrl("");
     setCaption("");
     setPrivacy("Public");
@@ -736,18 +761,23 @@ export function YouTubePostForm({ composePost, onSuccess }: PostFormProps) {
       toast.error("Video URL is required for YouTube");
       return;
     }
-    await composePost.mutateAsync({
-      Platforms: ["YouTube"],
-      PostType: "Campaign",
-      Title: title,
-      Caption: description,
-      Tags: tags,
-      CategoryId: category,
-      Privacy: privacy,
-      VideoUrl: videoUrl,
-      NotifySubscribers: notifySubs,
-    });
-    toast.success("Video uploaded to YouTube!");
+    try {
+      await composePost.mutateAsync({
+        Platforms: ["YouTube"],
+        PostType: "Campaign",
+        Title: title,
+        Caption: description,
+        Tags: tags,
+        CategoryId: category,
+        Privacy: privacy,
+        VideoUrl: videoUrl,
+        NotifySubscribers: notifySubs,
+      });
+      toast.success("Video uploaded to YouTube!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload to YouTube");
+      return;
+    }
     setTitle("");
     setDescription("");
     setTags("");

@@ -66,9 +66,11 @@ public class SocialMediaController : ControllerBase
     }
 
     [HttpPost("compose")]
-    public async Task<ActionResult<IEnumerable<SocialMediaPostDto>>> Compose([FromBody] ComposePostRequest request)
+    public async Task<ActionResult<ComposeResultDto>> Compose([FromBody] ComposePostRequest request)
     {
         var result = await _service.ComposePostAsync(request);
+        if (result.Posts.Count == 0 && result.Errors?.Count > 0)
+            return BadRequest(new { errors = result.Errors });
         return Ok(result);
     }
 

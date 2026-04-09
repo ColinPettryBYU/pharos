@@ -126,26 +126,50 @@ public class FacebookClient : ISocialPlatformClient
             var pageId = account.PageId ?? account.AccountId;
 
             var caption = BuildCaption(request);
+            var photoUrl = request.PhotoUrl ?? request.MediaUrl ?? request.ImageUrl;
+            var linkUrl = request.LinkUrl ?? request.ArticleUrl;
+
+            if (!string.IsNullOrWhiteSpace(photoUrl))
+            {
+                var photoPayload = new Dictionary<string, string>
+                {
+                    ["caption"] = caption,
+                    ["url"] = photoUrl,
+                    ["access_token"] = token
+                };
+                var response = await _http.PostAsync(
+                    $"{GraphApiBase}/{pageId}/photos",
+                    new FormUrlEncodedContent(photoPayload));
+                var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+                if (result.TryGetProperty("id", out var photoId))
+                    return new PostResult(true, PlatformName, photoId.GetString(),
+                        $"https://www.facebook.com/{photoId.GetString()}");
+                var photoErr = result.TryGetProperty("error", out var pe)
+                    ? pe.GetProperty("message").GetString() : "Photo upload failed";
+                return new PostResult(false, PlatformName, null, Error: photoErr);
+            }
+
             var payload = new Dictionary<string, string>
             {
                 ["message"] = caption,
                 ["access_token"] = token
             };
+            if (!string.IsNullOrWhiteSpace(linkUrl))
+                payload["link"] = linkUrl;
 
-            var response = await _http.PostAsync(
+            var feedResponse = await _http.PostAsync(
                 $"{GraphApiBase}/{pageId}/feed",
                 new FormUrlEncodedContent(payload));
 
-            var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-
-            if (result.TryGetProperty("id", out var idProp))
+            var feedResult = await feedResponse.Content.ReadFromJsonAsync<JsonElement>();
+            if (feedResult.TryGetProperty("id", out var idProp))
             {
                 var postId = idProp.GetString();
                 return new PostResult(true, PlatformName, postId,
                     $"https://www.facebook.com/{postId}");
             }
 
-            var error = result.TryGetProperty("error", out var errProp)
+            var error = feedResult.TryGetProperty("error", out var errProp)
                 ? errProp.GetProperty("message").GetString() : "Unknown error";
             return new PostResult(false, PlatformName, null, Error: error);
         }

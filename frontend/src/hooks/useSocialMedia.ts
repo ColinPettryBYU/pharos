@@ -45,8 +45,16 @@ export function useSocialComments(filters: Record<string, unknown> = {}) {
 export function useComposePost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      api.post("/admin/social-media/compose", data),
+    mutationFn: async (data: Record<string, unknown>) => {
+      const res = await api.post<{ posts?: unknown[]; errors?: string[] }>(
+        "/admin/social-media/compose",
+        data
+      );
+      if (res?.errors && res.errors.length > 0) {
+        throw new Error(res.errors.join("\n"));
+      }
+      return res;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["socialPosts"] }),
   });
 }

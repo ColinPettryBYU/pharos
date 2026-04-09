@@ -87,7 +87,7 @@ public class SocialMediaService : ISocialMediaService
             byPlatform, byTopic, byPostType);
     }
 
-    public async Task<IEnumerable<SocialMediaPostDto>> ComposePostAsync(ComposePostRequest request)
+    public async Task<ComposeResultDto> ComposePostAsync(ComposePostRequest request)
     {
         var connectedAccounts = await _db.SocialMediaAccounts
             .Where(a => a.Status == "Active")
@@ -95,6 +95,7 @@ public class SocialMediaService : ISocialMediaService
 
         var postTime = request.ScheduledTime ?? DateTime.UtcNow;
         var results = new List<SocialMediaPostDto>();
+        var errors = new List<string>();
 
         foreach (var platform in request.Platforms)
         {
@@ -104,26 +105,34 @@ public class SocialMediaService : ISocialMediaService
             string? platformPostId = null;
             string? postUrl = null;
 
-            if (account != null)
+            if (account == null)
             {
-                var client = _clientFactory.GetClient(platform);
-                if (client != null)
-                {
-                    var postResult = request.ScheduledTime.HasValue
-                        ? await client.SchedulePostAsync(account, request)
-                        : await client.PublishPostAsync(account, request);
+                errors.Add($"{platform}: No connected account found. Connect it in Social Accounts settings first.");
+                continue;
+            }
 
-                    if (postResult.Success)
-                    {
-                        platformPostId = postResult.PlatformPostId;
-                        postUrl = postResult.PostUrl;
-                        _logger.LogInformation("Published to {Platform}: {PostId}", platform, platformPostId);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Failed to publish to {Platform}: {Error}", platform, postResult.Error);
-                    }
-                }
+            var client = _clientFactory.GetClient(platform);
+            if (client == null)
+            {
+                errors.Add($"{platform}: Platform not supported.");
+                continue;
+            }
+
+            var postResult = request.ScheduledTime.HasValue
+                ? await client.SchedulePostAsync(account, request)
+                : await client.PublishPostAsync(account, request);
+
+            if (postResult.Success)
+            {
+                platformPostId = postResult.PlatformPostId;
+                postUrl = postResult.PostUrl;
+                _logger.LogInformation("Published to {Platform}: {PostId}", platform, platformPostId);
+            }
+            else
+            {
+                errors.Add($"{platform}: {postResult.Error}");
+                _logger.LogWarning("Failed to publish to {Platform}: {Error}", platform, postResult.Error);
+                continue;
             }
 
             var entity = new SocialMediaPost
@@ -167,7 +176,7 @@ public class SocialMediaService : ISocialMediaService
                 entity.AvgViewDurationSeconds, entity.SubscriberCountAtPost, entity.Forwards));
         }
 
-        return results;
+        return new ComposeResultDto(results, errors.Count > 0 ? errors : null);
     }
 
     public async Task<CommentInboxResponse> GetCommentInboxAsync(string? platform, int page, int pageSize)

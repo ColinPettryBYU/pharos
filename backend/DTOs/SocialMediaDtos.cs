@@ -1,5 +1,10 @@
 namespace Pharos.Api.DTOs;
 
+public record ComposeResultDto(
+    List<SocialMediaPostDto> Posts,
+    List<string>? Errors
+);
+
 public record SocialMediaPostDto(
     int PostId,
     string Platform,
@@ -84,7 +89,25 @@ public record ComposePostRequest(
     string? CampaignName,
     bool IsBoosted,
     decimal? BoostBudgetPhp,
-    DateTime? ScheduledTime
+    DateTime? ScheduledTime,
+    string? MediaUrl,
+    string? PhotoUrl,
+    string? VideoUrl,
+    string? ImageUrl,
+    string? LinkUrl,
+    string? ArticleUrl,
+    string? Title,
+    string? AltText,
+    string? Tags,
+    string? CategoryId,
+    string? Privacy,
+    string? Visibility,
+    string? MediaCategory,
+    string? PrivacyLevel,
+    bool? AllowComments,
+    bool? AllowDuet,
+    bool? AllowStitch,
+    bool? NotifySubscribers
 );
 
 public record CommentReplyRequest(

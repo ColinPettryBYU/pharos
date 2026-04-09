@@ -140,23 +140,29 @@ public class InstagramClient : ISocialPlatformClient
                 return new PostResult(false, PlatformName, null, Error: "No Instagram business account linked");
 
             var caption = BuildCaption(request);
+            var mediaUrl = request.MediaUrl ?? request.PhotoUrl ?? request.ImageUrl;
+            var videoUrl = request.VideoUrl;
 
-            // Step 1: Create media container (text-only posts require an image_url on IG)
+            if (string.IsNullOrWhiteSpace(mediaUrl) && string.IsNullOrWhiteSpace(videoUrl))
+                return new PostResult(false, PlatformName, null, Error: "Instagram requires an image or video URL. Please attach media before publishing.");
+
             var containerParams = new Dictionary<string, string>
             {
                 ["caption"] = caption,
                 ["access_token"] = token
             };
 
-            // Instagram requires media — for text-only, we create a "STORIES" or skip
-            // For now, support image_url if provided or create as CAROUSEL placeholder
-            if (!string.IsNullOrWhiteSpace(request.MediaType) && request.MediaType != "Text")
+            var isVideo = !string.IsNullOrWhiteSpace(videoUrl)
+                || (request.MediaType?.ToUpperInvariant() is "VIDEO" or "REEL" or "REELS");
+
+            if (isVideo)
             {
-                containerParams["media_type"] = request.MediaType!.ToUpper() switch
-                {
-                    "VIDEO" or "REEL" => "REELS",
-                    _ => "IMAGE"
-                };
+                containerParams["media_type"] = "REELS";
+                containerParams["video_url"] = videoUrl ?? mediaUrl!;
+            }
+            else
+            {
+                containerParams["image_url"] = mediaUrl!;
             }
 
             var containerResponse = await _http.PostAsync(
