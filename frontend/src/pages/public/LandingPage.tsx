@@ -85,15 +85,18 @@ function WaveDivider({
 function AnimatedSection({
   children,
   className = "",
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   return (
     <motion.section
       ref={ref}
+      id={id}
       initial={{ opacity: 0, y: 40 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.7, ease: "easeOut" }}
@@ -563,7 +566,7 @@ export default function LandingPage() {
                   style={{
                     background:
                       "linear-gradient(135deg, rgba(90,112,85,0.20) 0%, rgba(245,184,184,0.18) 100%)",
-                    blur: "24px",
+                    filter: "blur(24px)",
                   }}
                 />
                 <div
