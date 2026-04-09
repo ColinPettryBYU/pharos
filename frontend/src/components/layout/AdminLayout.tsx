@@ -116,9 +116,14 @@ function SidebarContent({
       {/* Logo */}
       <Link to="/" className="flex h-16 items-center gap-2.5 px-4 border-b overflow-hidden">
         <img
-          src="/images/pharos-logo.png"
+          src="/images/pharos-logo-black.png"
           alt="Pharos"
-          className="h-8 w-8 shrink-0 object-contain"
+          className="h-9 w-9 shrink-0 object-contain dark:hidden"
+        />
+        <img
+          src="/images/pharos-logo-white.png"
+          alt="Pharos"
+          className="h-9 w-9 shrink-0 object-contain hidden dark:block"
         />
         <AnimatePresence>
           {!collapsed && (
@@ -126,8 +131,8 @@ function SidebarContent({
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: "auto" }}
               exit={{ opacity: 0, width: 0 }}
-              className="text-lg font-bold tracking-tight overflow-hidden whitespace-nowrap"
-              style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}
+              className="text-xl font-bold tracking-tight overflow-hidden whitespace-nowrap text-foreground"
+              style={{ fontFamily: "var(--font-editorial)" }}
             >
               Pharos
             </motion.span>

@@ -15,18 +15,23 @@ const navLinks = [
 ];
 
 function PharosLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const dims = size === "sm" ? "h-7 w-7" : size === "lg" ? "h-12 w-12" : "h-9 w-9";
-  const textSize = size === "sm" ? "text-base" : size === "lg" ? "text-2xl" : "text-lg";
+  const dims = size === "sm" ? "h-8 w-8" : size === "lg" ? "h-12 w-12" : "h-10 w-10";
+  const textSize = size === "sm" ? "text-lg" : size === "lg" ? "text-3xl" : "text-xl";
   return (
     <div className="flex items-center gap-2.5">
       <img
-        src="/images/pharos-logo.png"
+        src="/images/pharos-logo-black.png"
         alt="Pharos"
-        className={`${dims} object-contain`}
+        className={`${dims} object-contain dark:hidden`}
+      />
+      <img
+        src="/images/pharos-logo-white.png"
+        alt="Pharos"
+        className={`${dims} object-contain hidden dark:block`}
       />
       <span
-        className={`${textSize} font-bold tracking-tight`}
-        style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}
+        className={`${textSize} font-bold tracking-tight text-foreground`}
+        style={{ fontFamily: "var(--font-editorial)" }}
       >
         Pharos
       </span>

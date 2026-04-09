@@ -23,8 +23,8 @@ const frequencyOptions: { value: Frequency; label: string; icon: typeof Gift }[]
 ];
 
 export default function DonatePage() {
-  const { user, isDonor } = useAuth();
-  const isLoggedInDonor = !!user && isDonor;
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
 
   const [amount, setAmount] = useState<number | null>(1000);
   const [customAmount, setCustomAmount] = useState("");
@@ -157,7 +157,7 @@ export default function DonatePage() {
             />
             <CardContent className="p-6 sm:p-8">
               <AnimatePresence mode="wait">
-                {!isLoggedInDonor ? (
+                {!isLoggedIn ? (
                   /* ── Not logged in ── */
                   <motion.div
                     key="auth-prompt"
@@ -168,7 +168,7 @@ export default function DonatePage() {
                   >
                     <div
                       className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full"
-                      style={{ background: "var(--pharos-sage)", opacity: 0.15 }}
+                      style={{ background: "color-mix(in srgb, var(--pharos-sage) 18%, transparent)" }}
                     >
                       <LogIn className="h-6 w-6" style={{ color: "var(--pharos-forest)" }} />
                     </div>

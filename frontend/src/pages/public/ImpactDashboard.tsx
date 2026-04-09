@@ -181,10 +181,14 @@ export default function ImpactDashboard() {
           </motion.div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 leading-[0]">
+          <svg viewBox="0 0 1440 80" fill="none" className="block w-full" preserveAspectRatio="none">
+            <path d="M0,40 C360,80 720,10 1080,40 C1260,55 1380,25 1440,40 L1440,80 L0,80 Z" className="fill-background" />
+          </svg>
+        </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         {/* ─── LATEST REPORT ──────────────────────────────────────────────── */}
         {latest && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} className="mb-16">
@@ -461,7 +465,7 @@ export default function ImpactDashboard() {
           <AnimatedSection className="mb-20">
             <SectionHeading sub="Transparency">Monthly Impact Reports</SectionHeading>
             <div className="space-y-3">
-              {snapshotList.map((snapshot, i) => {
+              {snapshotList.slice(0, 5).map((snapshot, i) => {
                 const accents = ["var(--pharos-sky)", "var(--pharos-blush)", "var(--pharos-sage)"];
                 return (
                   <motion.div
@@ -486,13 +490,23 @@ export default function ImpactDashboard() {
                           <h3 className="font-semibold truncate" style={{ color: "var(--pharos-forest)" }}>{snapshot.headline}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{snapshot.summary_text}</p>
                         </div>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
                       </CardContent>
                     </Card>
                   </motion.div>
                 );
               })}
             </div>
+            {snapshotList.length > 5 && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="mt-4 text-center text-sm text-muted-foreground"
+              >
+                and {snapshotList.length - 5} more reports available
+              </motion.p>
+            )}
           </AnimatedSection>
         )}
 
@@ -527,7 +541,7 @@ export default function ImpactDashboard() {
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           />
 
-          <div className="relative p-10 sm:p-16 text-center">
+          <div className="relative p-10 sm:p-14 text-center">
             <motion.img
               src="/images/pharos-logo.png"
               alt="Pharos"
@@ -538,15 +552,20 @@ export default function ImpactDashboard() {
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             />
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-white" style={{ fontFamily: "var(--font-editorial)" }}>
-              Inspired? Become a supporter today.
+              Inspired? Make a difference today.
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-white/60 leading-relaxed">
               Your generosity directly funds the safety, education, and healing of girls who need it most.
             </p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link to="/donate">
+                <Button size="lg" className="w-full sm:w-auto gap-2 shadow-xl font-semibold" style={{ background: "var(--pharos-blush)", color: "var(--pharos-forest)" }}>
+                  Donate Now <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
               <Link to="/register">
-                <Button size="lg" className="gap-2 shadow-xl font-semibold bg-white text-gray-900 hover:bg-gray-100">
-                  Get Started <ArrowRight className="h-4 w-4" />
+                <Button size="lg" variant="outline" className="w-full sm:w-auto backdrop-blur" style={{ borderColor: "rgba(255,255,255,0.35)", color: "#fff", background: "rgba(255,255,255,0.08)" }}>
+                  Become a Supporter
                 </Button>
               </Link>
             </div>

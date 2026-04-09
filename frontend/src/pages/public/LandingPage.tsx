@@ -373,20 +373,21 @@ export default function LandingPage() {
               const isEven = i % 2 === 0;
               return (
                 <motion.div key={story.pillar} initial={{ opacity: 0, x: isEven ? -30 : 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}>
-                  <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-lg transition-shadow">
-                    <CardContent className="p-0">
-                      <div className={`flex flex-col ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}>
-                        {/* Colored accent strip — thin vertical bar + icon, not a big square */}
-                        <div className="relative flex items-center gap-4 px-6 py-5 md:flex-col md:justify-center md:px-5 md:py-8 md:w-24 md:shrink-0">
-                          <div className="absolute inset-0 opacity-20 md:opacity-25" style={{ background: story.panelBg }} />
-                          <div className={`absolute ${isEven ? "left-0 md:left-0 top-0 bottom-0 w-1 md:w-full md:h-1 md:bottom-auto" : "right-0 md:right-0 top-0 bottom-0 w-1 md:w-full md:h-1 md:bottom-auto"}`} style={{ background: story.panelBg }} />
-                          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: story.panelBg }}>
+                  <Card className="border-border/60 shadow-sm hover:shadow-lg transition-shadow">
+                    <CardContent className="p-4 sm:p-5">
+                      <div className={`flex flex-col gap-4 ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}>
+                        {/* Colored pill with icon + label — rounded corners */}
+                        <div
+                          className="flex items-center gap-4 rounded-2xl px-6 py-5 md:flex-col md:justify-center md:px-5 md:py-8 md:w-28 md:shrink-0"
+                          style={{ background: story.panelBg }}
+                        >
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.35)" }}>
                             <Icon className="h-6 w-6" style={{ color: story.panelFg }} />
                           </div>
-                          <span className="relative text-xs font-bold uppercase tracking-widest" style={{ color: story.panelFg }}>{story.pillar}</span>
+                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: story.panelFg }}>{story.pillar}</span>
                         </div>
                         {/* Content */}
-                        <div className="flex flex-col justify-center gap-4 p-6 sm:p-8 flex-1">
+                        <div className="flex flex-col justify-center gap-4 py-1 md:py-2 flex-1 min-w-0">
                           <h3 className="text-xl font-semibold" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>{story.heading}</h3>
                           <blockquote className="border-l-2 pl-4 text-[0.95rem] italic leading-relaxed text-muted-foreground" style={{ borderColor: story.panelBg }}>
                             &ldquo;{story.quote}&rdquo;
@@ -494,7 +495,7 @@ export default function LandingPage() {
                   </Button>
                 </Link>
                 <Link to="/impact">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 hover:border-white/50">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto backdrop-blur" style={{ borderColor: "rgba(255,255,255,0.35)", color: "#fff", background: "rgba(255,255,255,0.08)" }}>
                     View Impact
                   </Button>
                 </Link>
