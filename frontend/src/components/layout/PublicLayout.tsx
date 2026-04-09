@@ -292,11 +292,11 @@ export function PublicLayout() {
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Mail className="h-3.5 w-3.5 text-[var(--pharos-sage)] shrink-0" />
-                    info@pharos.org
+                    contact@pharosrefuge.org
                   </li>
                   <li className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5 text-[var(--pharos-sage)] shrink-0" />
-                    +63 912 345 6789
+                    +63 (2) 8123-4567
                   </li>
                 </ul>
               </div>
