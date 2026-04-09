@@ -39,7 +39,6 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Lightbulb,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -114,17 +113,20 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-4 border-b">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
-          <Lightbulb className="h-5 w-5" />
-        </div>
+      <div className="flex h-16 items-center gap-2.5 px-4 border-b overflow-hidden">
+        <img
+          src="/images/pharos-logo.png"
+          alt="Pharos"
+          className="h-8 w-8 shrink-0 object-contain"
+        />
         <AnimatePresence>
           {!collapsed && (
             <motion.span
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: "auto" }}
               exit={{ opacity: 0, width: 0 }}
-              className="text-lg font-semibold tracking-tight overflow-hidden whitespace-nowrap"
+              className="text-lg font-bold tracking-tight overflow-hidden whitespace-nowrap"
+              style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}
             >
               Pharos
             </motion.span>

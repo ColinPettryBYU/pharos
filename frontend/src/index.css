@@ -26,6 +26,14 @@
   --radius: 0.75rem;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-editorial: "Cormorant Garamond", Georgia, serif;
+
+  /* Pharos brand palette — drawn from the logo and color sheet */
+  --pharos-forest:  #2d4a2a;   /* deep forest green (logo dark) */
+  --pharos-sage:    #5a7055;   /* mid sage green */
+  --pharos-blush:   #f5b8b8;   /* soft rose/blush */
+  --pharos-sky:     #b0c4d8;   /* powder/steel blue */
+  --pharos-cream:   #f5f2ed;   /* warm off-white cream */
 
   /* Warm neutral base — cream-tinted whites */
   --background: oklch(0.985 0.003 80);
@@ -184,6 +192,27 @@
 @keyframes accordion-up {
   from { height: var(--radix-accordion-content-height); }
   to { height: 0; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes beacon-pulse {
+  0%, 100% { opacity: 0.07; transform: scale(1); }
+  50% { opacity: 0.14; transform: scale(1.05); }
+}
+@keyframes float-slow-global {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-22px) rotate(4deg); }
+}
+@keyframes float-medium-global {
+  0%, 100% { transform: translateY(0) rotate(10deg); }
+  50% { transform: translateY(-16px) rotate(17deg); }
+}
+@keyframes float-fast-global {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-12px) rotate(3deg); }
 }
 
 @layer base {
