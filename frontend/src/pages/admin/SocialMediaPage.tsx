@@ -160,7 +160,7 @@ export default function SocialMediaPage() {
   return (
     <div>
       <PageHeader
-        title="Social Media Command Center"
+        title="Social Media"
         description="Manage posts, track analytics, and engage with your audience."
         breadcrumbs={[
           { label: "Dashboard", href: "/admin" },
@@ -423,16 +423,27 @@ export default function SocialMediaPage() {
 
         {/* ── Comments Inbox Tab ───────────────────────────── */}
         <TabsContent value="comments">
+          {activePlatform === "All" ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-1">Select a Platform</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Choose a specific platform from the tabs above to view and reply to comments.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageCircle className="h-4 w-4" />
                 Comments Inbox
-                {activePlatform !== "All" && (
-                  <Badge variant="outline" className="ml-1">
-                    {activePlatform}
-                  </Badge>
-                )}
+                <Badge variant="outline" className="ml-1">
+                  {activePlatform}
+                </Badge>
                 <Badge variant="secondary" className="ml-2">
                   {
                     comments.filter(
@@ -447,9 +458,7 @@ export default function SocialMediaPage() {
             <CardContent>
               {comments.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  {activePlatform !== "All"
-                    ? `No comments from ${activePlatform}`
-                    : "No comments yet"}
+                  No comments from {activePlatform}
                 </p>
               ) : (
                 <motion.div
@@ -534,6 +543,7 @@ export default function SocialMediaPage() {
               )}
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* ── Insights Tab ─────────────────────────────────── */}

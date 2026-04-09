@@ -1,6 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, useInView } from "motion/react";
+import { motion, useInView, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,15 @@ import {
   Sparkles,
   BarChart3,
   Activity,
+  ChevronDown,
 } from "lucide-react";
 import { fmtDate } from "@/lib/utils";
+
+function scrubName(text: string): string {
+  return text
+    .replace(/Lighthouse Sanctuary/gi, "Pharos")
+    .replace(/Lighthouse/gi, "Pharos");
+}
 
 function SectionHeading({ children, sub, center }: { children: React.ReactNode; sub?: string; center?: boolean }) {
   return (
@@ -59,6 +66,97 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
   );
 }
 
+function SnapshotSection({ snapshots }: { snapshots: Array<{ snapshot_id: number; snapshot_date: string; headline: string; summary_text: string; metric_payload_json: string; is_published: boolean }> }) {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const accents = ["var(--pharos-sky)", "var(--pharos-blush)", "var(--pharos-sage)"];
+
+  return (
+    <AnimatedSection className="mb-14">
+      <SectionHeading sub="Updates">Impact Updates</SectionHeading>
+      <div className="space-y-3">
+        {snapshots.slice(0, 5).map((snapshot, i) => {
+          const isOpen = expandedId === snapshot.snapshot_id;
+          let metrics: Array<{ label: string; value: string }> = [];
+          try {
+            const raw = JSON.parse(snapshot.metric_payload_json || "{}");
+            metrics = Object.entries(raw).map(([k, v]) => ({ label: k.replace(/_/g, " "), value: String(v) }));
+          } catch { /* empty */ }
+
+          return (
+            <motion.div
+              key={snapshot.snapshot_id}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+            >
+              <Card
+                className="overflow-hidden border-border/60 hover:shadow-md transition-all duration-300 cursor-pointer"
+                style={{ borderLeft: `3px solid ${accents[i % 3]}` }}
+                onClick={() => setExpandedId(isOpen ? null : snapshot.snapshot_id)}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-5">
+                    <div className="shrink-0 text-center rounded-xl p-3 min-w-[64px] bg-muted/40">
+                      <p className="text-2xl font-bold tabular-nums leading-none" style={{ color: "var(--pharos-forest)", fontFamily: "var(--font-editorial)" }}>
+                        {fmtDate(snapshot.snapshot_date, "dd")}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{fmtDate(snapshot.snapshot_date, "MMM yy")}</p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold truncate" style={{ color: "var(--pharos-forest)" }}>{scrubName(snapshot.headline)}</h3>
+                      {!isOpen && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{scrubName(snapshot.summary_text)}</p>}
+                    </div>
+                    <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                      <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
+                    </motion.div>
+                  </div>
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-4 pl-[84px]">
+                          <p className="text-sm text-muted-foreground leading-relaxed">{scrubName(snapshot.summary_text)}</p>
+                          {metrics.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-3">
+                              {metrics.map((m) => (
+                                <div key={m.label} className="rounded-lg bg-muted/50 px-3 py-2">
+                                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{m.label}</p>
+                                  <p className="text-sm font-semibold" style={{ color: "var(--pharos-forest)" }}>{m.value}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+      {snapshots.length > 5 && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-4 text-center text-sm text-muted-foreground"
+        >
+          and {snapshots.length - 5} more reports available
+        </motion.p>
+      )}
+    </AnimatedSection>
+  );
+}
+
 export default function ImpactDashboard() {
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" });
@@ -81,12 +179,12 @@ export default function ImpactDashboard() {
   const isLoading = snapshotsLoading || summaryLoading;
 
   const impactStats = [
-    { label: "Residents Served", value: summary?.total_residents ?? 0, icon: Users, suffix: "+", accent: "var(--pharos-sky)", description: "Girls receiving care across all safehouses" },
-    { label: "Education Progress", value: summary?.avg_education_progress ?? 0, icon: GraduationCap, suffix: "%", accent: "var(--pharos-sage)", description: "Average academic achievement rate" },
-    { label: "Avg Health Score", value: summary?.avg_health_score ?? 0, icon: HeartPulse, decimal: true, accent: "var(--pharos-blush)", description: "Physical & mental well-being (out of 5)" },
-    { label: "Active Safehouses", value: summary?.total_safehouses ?? 0, icon: Building2, accent: "#f0c96e", description: "Safe homes operating in the Philippines" },
-    { label: "Donations Received", value: summary?.total_donations ?? 0, icon: HandHeart, suffix: "+", accent: "var(--pharos-sky)", description: "Contributions from generous supporters" },
-    { label: "Regions Covered", value: summary?.regions_count ?? 0, icon: Globe, accent: "var(--pharos-sage)", description: "Expanding reach across the Philippines" },
+    { label: "Residents Served", value: summary?.total_residents ?? 0, icon: Users, suffix: "+", accent: "var(--pharos-sky)", description: "Girls receiving care across all safehouses", fmt: "number" as const },
+    { label: "Education Progress", value: summary?.avg_education_progress ?? 0, icon: GraduationCap, suffix: "%", accent: "var(--pharos-sage)", description: "Average academic achievement rate", fmt: "decimal" as const, dp: 1 },
+    { label: "Avg Health Score", value: summary?.avg_health_score ?? 0, icon: HeartPulse, accent: "var(--pharos-blush)", description: "Physical & mental well-being (out of 5)", fmt: "decimal" as const, dp: 2, suffix: "/5" },
+    { label: "Active Safehouses", value: summary?.total_safehouses ?? 0, icon: Building2, accent: "#f0c96e", description: "Safe homes operating in the Philippines", fmt: "number" as const },
+    { label: "Donations Received", value: summary?.total_donations ?? 0, icon: HandHeart, suffix: "", accent: "var(--pharos-sky)", description: "Total contributions from generous supporters", fmt: "currency" as const },
+    { label: "Regions Covered", value: summary?.regions_count ?? 0, icon: Globe, accent: "var(--pharos-sage)", description: "Expanding reach across the Philippines", fmt: "number" as const },
   ];
 
   const regions = [
@@ -218,7 +316,7 @@ export default function ImpactDashboard() {
                           <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
                           <div className="mt-1 flex items-baseline gap-1">
                             <span className="text-3xl font-bold tracking-tight tabular-nums text-foreground">
-                              {statsInView ? <AnimatedNumber value={stat.value} /> : "0"}
+                              {statsInView ? <AnimatedNumber value={stat.value} format={stat.fmt} decimals={"dp" in stat ? (stat as { dp: number }).dp : undefined} /> : "0"}
                             </span>
                             {stat.suffix && (
                               <span className="text-xl font-semibold" style={{ color: stat.accent }}>{stat.suffix}</span>
@@ -247,8 +345,8 @@ export default function ImpactDashboard() {
                   <Badge className="mb-2 text-xs font-bold" style={{ background: "color-mix(in srgb, var(--pharos-sky) 12%, transparent)", color: "var(--pharos-forest)" }}>
                     Latest Update — {fmtDate(latest.snapshot_date, "MMMM yyyy")}
                   </Badge>
-                  <h3 className="text-lg font-semibold" style={{ color: "var(--pharos-forest)" }}>{latest.headline}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">{latest.summary_text}</p>
+                  <h3 className="text-lg font-semibold" style={{ color: "var(--pharos-forest)" }}>{scrubName(latest.headline)}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">{scrubName(latest.summary_text)}</p>
                 </div>
               </CardContent>
             </Card>
@@ -409,6 +507,8 @@ export default function ImpactDashboard() {
                     suffix: "%",
                     accent: "var(--pharos-sage)",
                     bar: true,
+                    fmt: "decimal" as const,
+                    dp: 1,
                   },
                   {
                     label: "Health & Well-being",
@@ -416,6 +516,8 @@ export default function ImpactDashboard() {
                     suffix: " / 5",
                     accent: "var(--pharos-blush)",
                     bar: false,
+                    fmt: "decimal" as const,
+                    dp: 2,
                   },
                   {
                     label: "Residents in Care",
@@ -423,6 +525,8 @@ export default function ImpactDashboard() {
                     suffix: "+",
                     accent: "var(--pharos-sky)",
                     bar: false,
+                    fmt: "number" as const,
+                    dp: 0,
                   },
                 ].map((metric, i) => (
                   <motion.div
@@ -436,7 +540,7 @@ export default function ImpactDashboard() {
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">{metric.label}</p>
                     <div className="flex items-baseline gap-1 mb-3">
                       <span className="text-4xl font-bold tabular-nums" style={{ color: "var(--pharos-forest)", fontFamily: "var(--font-editorial)" }}>
-                        <AnimatedNumber value={metric.value} />
+                        <AnimatedNumber value={metric.value} format={metric.fmt} decimals={metric.dp} />
                       </span>
                       <span className="text-lg font-semibold" style={{ color: metric.accent }}>{metric.suffix}</span>
                     </div>
@@ -461,52 +565,7 @@ export default function ImpactDashboard() {
 
         {/* ─── MONTHLY REPORTS ────────────────────────────────────────────── */}
         {snapshotList.length > 0 && (
-          <AnimatedSection className="mb-14">
-            <SectionHeading sub="Updates">Impact Updates</SectionHeading>
-            <div className="space-y-3">
-              {snapshotList.slice(0, 5).map((snapshot, i) => {
-                const accents = ["var(--pharos-sky)", "var(--pharos-blush)", "var(--pharos-sage)"];
-                return (
-                  <motion.div
-                    key={snapshot.snapshot_id}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-30px" }}
-                    transition={{ duration: 0.4, delay: i * 0.05 }}
-                  >
-                    <Card className="overflow-hidden border-border/60 hover:shadow-md transition-all duration-300" style={{ borderLeft: `3px solid ${accents[i % 3]}` }}>
-                      <CardContent className="p-5 flex items-center gap-5">
-                        <div className="shrink-0 text-center rounded-xl p-3 min-w-[64px] bg-muted/40">
-                          <p
-                            className="text-2xl font-bold tabular-nums leading-none"
-                            style={{ color: "var(--pharos-forest)", fontFamily: "var(--font-editorial)" }}
-                          >
-                            {fmtDate(snapshot.snapshot_date, "dd")}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">{fmtDate(snapshot.snapshot_date, "MMM yy")}</p>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold truncate" style={{ color: "var(--pharos-forest)" }}>{snapshot.headline}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{snapshot.summary_text}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-            {snapshotList.length > 5 && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="mt-4 text-center text-sm text-muted-foreground"
-              >
-                and {snapshotList.length - 5} more reports available
-              </motion.p>
-            )}
-          </AnimatedSection>
+          <SnapshotSection snapshots={snapshotList} />
         )}
 
         {/* ─── CTA ────────────────────────────────────────────────────────── */}

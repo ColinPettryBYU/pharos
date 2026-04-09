@@ -83,7 +83,7 @@ const navGroups: NavGroup[] = [
   {
     title: "Social Media",
     items: [
-      { label: "Command Center", href: "/admin/social", icon: Share2 },
+      { label: "Social Media", href: "/admin/social", icon: Share2 },
       { label: "Social Accounts", href: "/admin/settings/social-accounts", icon: Link2 },
     ],
   },

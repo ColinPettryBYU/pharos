@@ -133,15 +133,19 @@ public class SafehouseService : ISafehouseService
             .Where(d => d.DonationType == "Monetary")
             .SumAsync(d => d.Amount ?? 0m);
 
-        var latestMetrics = await _db.SafehouseMonthlyMetrics
+        var allMetrics = await _db.SafehouseMonthlyMetrics.ToListAsync();
+        var latestMetrics = allMetrics
             .GroupBy(m => m.SafehouseId)
             .Select(g => g.OrderByDescending(m => m.MonthStart).First())
-            .ToListAsync();
+            .ToList();
 
-        var avgEducation = latestMetrics.Any()
-            ? latestMetrics.Average(m => m.AvgEducationProgress ?? 0m) : 0m;
-        var avgHealth = latestMetrics.Any()
-            ? latestMetrics.Average(m => m.AvgHealthScore ?? 0m) : 0m;
+        var metricsWithEd = latestMetrics.Where(m => m.AvgEducationProgress.HasValue && m.AvgEducationProgress > 0).ToList();
+        var metricsWithHealth = latestMetrics.Where(m => m.AvgHealthScore.HasValue && m.AvgHealthScore > 0).ToList();
+
+        var avgEducation = metricsWithEd.Any()
+            ? metricsWithEd.Average(m => m.AvgEducationProgress!.Value) : 0m;
+        var avgHealth = metricsWithHealth.Any()
+            ? metricsWithHealth.Average(m => m.AvgHealthScore!.Value) : 0m;
 
         var regionBreakdown = safehouses
             .GroupBy(s => s.Region)

@@ -17,23 +17,28 @@ interface StatCardProps {
 function AnimatedNumber({
   value,
   format = "number",
+  decimals,
 }: {
   value: number;
-  format?: "currency" | "number" | "percent";
+  format?: "currency" | "number" | "percent" | "decimal";
+  decimals?: number;
 }) {
   const spring = useSpring(0, { stiffness: 100, damping: 30 });
+  const dp = decimals ?? (format === "decimal" ? 1 : 0);
   const display = useTransform(spring, (latest) => {
     switch (format) {
       case "currency":
         return formatCurrency(latest);
       case "percent":
         return formatPercent(latest);
+      case "decimal":
+        return latest.toFixed(dp);
       default:
         return formatNumber(Math.round(latest));
     }
   });
   const [displayValue, setDisplayValue] = useState(
-    format === "currency" ? formatCurrency(0) : format === "percent" ? formatPercent(0) : "0"
+    format === "currency" ? formatCurrency(0) : format === "percent" ? formatPercent(0) : format === "decimal" ? (0).toFixed(dp) : "0"
   );
 
   useEffect(() => {

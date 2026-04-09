@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { Platform } from "@/types";
+import { MediaDropZone } from "./MediaDropZone";
 
 const CONTENT_TOPICS = [
   "Education",
@@ -204,15 +205,12 @@ export function FacebookPostForm({ composePost, onSuccess }: PostFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Photo URL (optional)</Label>
-            <Input
-              type="url"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
-          </div>
+          <MediaDropZone
+            value={photoUrl}
+            onChange={setPhotoUrl}
+            accept="image/*"
+            label="Photo (optional)"
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <TopicSelect value={contentTopic} onChange={setContentTopic} />
@@ -292,22 +290,15 @@ export function InstagramPostForm({ composePost, onSuccess }: PostFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <PlatformNote>
-            Media URL must be publicly accessible. Instagram requires a photo or
-            video with every post.
+            Instagram requires a photo or video with every post. Drop your media below.
           </PlatformNote>
 
-          <div className="space-y-2">
-            <Label>
-              Media URL <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              type="url"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              placeholder="https://example.com/photo.jpg"
-              required
-            />
-          </div>
+          <MediaDropZone
+            value={mediaUrl}
+            onChange={setMediaUrl}
+            label="Media"
+            required
+          />
 
           <div className="space-y-2">
             <Label>Media Type</Label>
@@ -425,15 +416,11 @@ export function TwitterPostForm({ composePost, onSuccess }: PostFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Media URL (optional)</Label>
-            <Input
-              type="url"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
-          </div>
+          <MediaDropZone
+            value={mediaUrl}
+            onChange={setMediaUrl}
+            label="Media (optional)"
+          />
 
           <TopicSelect value={contentTopic} onChange={setContentTopic} />
 
@@ -562,15 +549,12 @@ export function LinkedInPostForm({ composePost, onSuccess }: PostFormProps) {
           )}
 
           {mediaCategory === "Image" && (
-            <div className="space-y-2">
-              <Label>Image URL</Label>
-              <Input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-            </div>
+            <MediaDropZone
+              value={imageUrl}
+              onChange={setImageUrl}
+              accept="image/*"
+              label="Image"
+            />
           )}
 
           <TopicSelect value={contentTopic} onChange={setContentTopic} />
@@ -639,22 +623,16 @@ export function TikTokPostForm({ composePost, onSuccess }: PostFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <PlatformNote>
-            TikTok only supports video content. The video must be MP4/H.264 up
-            to 500MB.
+            TikTok only supports video content (MP4/H.264, up to 100 MB).
           </PlatformNote>
 
-          <div className="space-y-2">
-            <Label>
-              Video URL <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              type="url"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://example.com/video.mp4"
-              required
-            />
-          </div>
+          <MediaDropZone
+            value={videoUrl}
+            onChange={setVideoUrl}
+            accept="video/*"
+            label="Video"
+            required
+          />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -785,21 +763,16 @@ export function YouTubePostForm({ composePost, onSuccess }: PostFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <PlatformNote>
-            Upload a video to your YouTube channel. Video file URL required.
+            Upload a video to your YouTube channel.
           </PlatformNote>
 
-          <div className="space-y-2">
-            <Label>
-              Video URL <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              type="url"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://example.com/video.mp4"
-              required
-            />
-          </div>
+          <MediaDropZone
+            value={videoUrl}
+            onChange={setVideoUrl}
+            accept="video/*"
+            label="Video"
+            required
+          />
 
           <div className="space-y-2">
             <Label>
