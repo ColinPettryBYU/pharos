@@ -75,7 +75,7 @@ export default function ImpactDashboard() {
     summary_text: string;
     metric_payload_json: string;
     is_published: boolean;
-  }> = Array.isArray(snapshots) ? snapshots : (snapshots as Record<string, unknown>)?.data as typeof snapshotList ?? [];
+  }> = Array.isArray(snapshots) ? snapshots : ((snapshots as unknown as Record<string, unknown>)?.data as typeof snapshotList) ?? [];
 
   const latest = snapshotList[0];
   const isLoading = snapshotsLoading || summaryLoading;
