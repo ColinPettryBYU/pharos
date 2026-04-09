@@ -225,58 +225,78 @@ public class InstagramClient : ISocialPlatformClient
 
     public async Task<List<CommentDto>> GetCommentsAsync(SocialMediaAccount account, int maxResults = 50)
     {
-        var cacheKey = $"ig_comments_{account.Id}";
+        return await GetCommentsForPostsAsync(account, null, maxResults);
+    }
+
+    public async Task<List<CommentDto>> GetCommentsForPostsAsync(
+        SocialMediaAccount account, List<string>? platformPostIds, int maxResults = 50)
+    {
+        var cacheKey = $"ig_comments_{account.Id}_{string.Join(",", platformPostIds ?? [])}";
         if (_cache.TryGetValue(cacheKey, out List<CommentDto>? cached) && cached != null)
             return cached;
 
-        try
+        var token = _tokenService.Decrypt(account.EncryptedAccessToken);
+        var comments = new List<CommentDto>();
+
+        var mediaIds = platformPostIds ?? [];
+
+        if (mediaIds.Count == 0)
         {
-            var token = _tokenService.Decrypt(account.EncryptedAccessToken);
             var igUserId = account.AccountId;
+            if (string.IsNullOrEmpty(igUserId))
+                return comments;
 
-            var mediaResponse = await _http.GetFromJsonAsync<JsonElement>(
-                $"{GraphApiBase}/{igUserId}/media?fields=id,caption,timestamp&limit=10&access_token={token}");
-
-            var comments = new List<CommentDto>();
-
-            if (mediaResponse.TryGetProperty("data", out var mediaItems))
+            try
             {
-                foreach (var media in mediaItems.EnumerateArray())
+                var mediaResponse = await _http.GetFromJsonAsync<JsonElement>(
+                    $"{GraphApiBase}/{igUserId}/media?fields=id&limit=5&access_token={token}");
+                if (mediaResponse.TryGetProperty("data", out var items))
+                    mediaIds = items.EnumerateArray()
+                        .Select(m => m.GetProperty("id").GetString()!)
+                        .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch IG media list, falling back to empty");
+                return comments;
+            }
+        }
+
+        foreach (var mediaId in mediaIds)
+        {
+            try
+            {
+                var commentsResponse = await _http.GetFromJsonAsync<JsonElement>(
+                    $"{GraphApiBase}/{mediaId}/comments" +
+                    $"?fields=id,text,username,timestamp&limit=25&access_token={token}");
+
+                if (commentsResponse.TryGetProperty("data", out var commentData))
                 {
-                    var mediaId = media.GetProperty("id").GetString();
-                    var commentsResponse = await _http.GetFromJsonAsync<JsonElement>(
-                        $"{GraphApiBase}/{mediaId}/comments" +
-                        $"?fields=id,text,username,timestamp&limit=10&access_token={token}");
-
-                    if (commentsResponse.TryGetProperty("data", out var commentData))
+                    foreach (var c in commentData.EnumerateArray())
                     {
-                        foreach (var c in commentData.EnumerateArray())
-                        {
-                            comments.Add(new CommentDto(
-                                CommentId: c.GetProperty("id").GetString()!,
-                                Platform: PlatformName,
-                                PostId: mediaId,
-                                CommenterName: c.TryGetProperty("username", out var un) ? un.GetString()! : "Unknown",
-                                CommentText: c.GetProperty("text").GetString()!,
-                                CreatedAt: c.TryGetProperty("timestamp", out var ts)
-                                    ? DateTime.Parse(ts.GetString()!) : DateTime.UtcNow,
-                                IsRead: false
-                            ));
-                        }
+                        comments.Add(new CommentDto(
+                            CommentId: c.GetProperty("id").GetString()!,
+                            Platform: PlatformName,
+                            PostId: mediaId,
+                            CommenterName: c.TryGetProperty("username", out var un) ? un.GetString()! : "Unknown",
+                            CommentText: c.GetProperty("text").GetString()!,
+                            CreatedAt: c.TryGetProperty("timestamp", out var ts)
+                                ? DateTime.Parse(ts.GetString()!) : DateTime.UtcNow,
+                            IsRead: false
+                        ));
                     }
-
-                    if (comments.Count >= maxResults) break;
                 }
             }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch comments for media {MediaId}, skipping", mediaId);
+            }
 
-            _cache.Set(cacheKey, comments, TimeSpan.FromMinutes(CommentCacheMinutes));
-            return comments;
+            if (comments.Count >= maxResults) break;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Instagram comment fetch failed");
-            return [];
-        }
+
+        _cache.Set(cacheKey, comments, TimeSpan.FromMinutes(CommentCacheMinutes));
+        return comments;
     }
 
     public async Task<bool> ReplyToCommentAsync(SocialMediaAccount account, string commentId, string message)

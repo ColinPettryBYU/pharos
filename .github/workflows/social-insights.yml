@@ -2,7 +2,7 @@ name: Social Media Insights — Nightly Refresh
 
 on:
   schedule:
-    - cron: '30 2 * * *'    # 2:30am UTC nightly (after ML pipeline)
+    - cron: '30 2 * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,10 +11,21 @@ jobs:
 
     steps:
       - name: Refresh Instagram Post Insights
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          INSIGHTS_API_KEY: ${{ secrets.INSIGHTS_API_KEY }}
         run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::error::BACKEND_URL secret is not set"
+            exit 1
+          fi
+          if [ -z "$INSIGHTS_API_KEY" ]; then
+            echo "::error::INSIGHTS_API_KEY secret is not set"
+            exit 1
+          fi
           response=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${{ secrets.BACKEND_URL }}/api/admin/social-media/refresh-insights" \
-            -H "X-Api-Key: ${{ secrets.INSIGHTS_API_KEY }}" \
+            -X POST "${BACKEND_URL}/api/admin/social-media/refresh-insights" \
+            -H "X-Api-Key: ${INSIGHTS_API_KEY}" \
             -H "Content-Type: application/json")
           echo "Response code: $response"
           if [ "$response" != "200" ]; then

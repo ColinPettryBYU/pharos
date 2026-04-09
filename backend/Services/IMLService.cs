@@ -8,4 +8,6 @@ public interface IMLService
     Task<ReintegrationReadinessDto?> GetReintegrationReadinessAsync(int residentId);
     Task<SocialMediaRecommendationDto> GetSocialMediaRecommendationsAsync();
     Task<InterventionEffectivenessDto> GetInterventionEffectivenessAsync();
+    Task<ResidentRiskPredictionDto?> GetResidentRiskAsync(int residentId);
+    Task<IEnumerable<ResidentRiskPredictionDto>> GetAllResidentRisksAsync();
 }

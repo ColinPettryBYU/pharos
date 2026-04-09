@@ -64,3 +64,18 @@ public record CategoryEffectivenessDto(
     int PlanCount,
     string MostEffectiveService
 );
+
+public record ResidentRiskPredictionDto(
+    int ResidentId,
+    string? InternalCode,
+    double RiskScore,
+    bool RiskFlag,
+    string RiskLevel,
+    List<RiskFactorDto> TopFactors,
+    DateTime LastUpdated
+);
+
+public record RiskFactorDto(
+    string Feature,
+    string Direction
+);

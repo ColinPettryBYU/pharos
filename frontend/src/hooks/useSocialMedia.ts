@@ -23,6 +23,7 @@ export function useSocialPosts(filters: SocialPostFilters = {}) {
         "/admin/social-media/posts",
         filters as Record<string, unknown>
       ),
+    placeholderData: (prev) => prev,
   });
 }
 

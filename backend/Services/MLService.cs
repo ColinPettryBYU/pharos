@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Pharos.Api.Data;
 using Pharos.Api.DTOs;
@@ -137,5 +138,57 @@ public class MLService : IMLService
         }).ToList();
 
         return new InterventionEffectivenessDto(insights, byCategory);
+    }
+
+    public async Task<ResidentRiskPredictionDto?> GetResidentRiskAsync(int residentId)
+    {
+        var score = await _db.ResidentElevatedRiskScores
+            .FirstOrDefaultAsync(r => r.ResidentId == residentId);
+        if (score == null) return null;
+
+        var resident = await _db.Residents.FindAsync(residentId);
+
+        return MapRiskScore(score, resident?.InternalCode);
+    }
+
+    public async Task<IEnumerable<ResidentRiskPredictionDto>> GetAllResidentRisksAsync()
+    {
+        var scores = await _db.ResidentElevatedRiskScores
+            .Join(_db.Residents,
+                  s => s.ResidentId,
+                  r => r.ResidentId,
+                  (s, r) => new { Score = s, Code = r.InternalCode })
+            .ToListAsync();
+
+        return scores.Select(x => MapRiskScore(x.Score, x.Code));
+    }
+
+    private static ResidentRiskPredictionDto MapRiskScore(
+        Models.ResidentElevatedRiskScore score, string? internalCode)
+    {
+        var factors = new List<RiskFactorDto>();
+        if (!string.IsNullOrWhiteSpace(score.TopFactors))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(score.TopFactors);
+                if (parsed != null)
+                    factors = parsed.Select(d => new RiskFactorDto(
+                        d.GetValueOrDefault("feature", ""),
+                        d.GetValueOrDefault("direction", "")
+                    )).ToList();
+            }
+            catch { }
+        }
+
+        return new ResidentRiskPredictionDto(
+            score.ResidentId,
+            internalCode,
+            score.RiskScore,
+            score.RiskScore >= 0.35,
+            score.RiskTier,
+            factors,
+            score.ComputedAt
+        );
     }
 }

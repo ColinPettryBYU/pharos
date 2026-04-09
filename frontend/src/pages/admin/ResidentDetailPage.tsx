@@ -20,13 +20,13 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import {
   useResident, useResidentRecordings, useResidentVisitations,
   useResidentEducation, useResidentHealth, useResidentInterventions,
-  useResidentIncidents, useUpdateResident,
+  useResidentIncidents, useUpdateResident, useResidentRisk,
 } from "@/hooks/useResidents";
 import { fmtDate } from "@/lib/utils";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { User, MapPin, Calendar, GraduationCap, AlertTriangle, Target, Pencil } from "lucide-react";
+import { User, MapPin, Calendar, GraduationCap, AlertTriangle, Target, Pencil, ShieldAlert, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const editResidentSchema = z.object({
@@ -63,6 +63,7 @@ export default function ResidentDetailPage() {
   const { data: plansRaw } = useResidentInterventions(numId);
   const { data: incidentsRaw } = useResidentIncidents(numId);
 
+  const { data: riskPrediction } = useResidentRisk(numId);
   const updateResident = useUpdateResident();
   const [editOpen, setEditOpen] = useState(false);
 
@@ -197,6 +198,68 @@ export default function ResidentDetailPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {riskPrediction && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Card className={cn(
+            "mb-6 border-l-4",
+            riskPrediction.risk_score >= 0.6 ? "border-l-destructive" :
+            riskPrediction.risk_score >= 0.35 ? "border-l-warning" : "border-l-success"
+          )}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-lg",
+                  riskPrediction.risk_score >= 0.6 ? "bg-destructive/10 text-destructive" :
+                  riskPrediction.risk_score >= 0.35 ? "bg-warning/10 text-warning" : "bg-success/10 text-success"
+                )}>
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Elevated Risk Score</span>
+                    <Badge variant={
+                      riskPrediction.risk_score >= 0.6 ? "destructive" :
+                      riskPrediction.risk_score >= 0.35 ? "outline" : "secondary"
+                    }>
+                      {riskPrediction.risk_level}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                    <span className="font-mono text-base font-bold text-foreground">
+                      {(riskPrediction.risk_score * 100).toFixed(0)}%
+                    </span>
+                    {riskPrediction.top_factors?.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        {riskPrediction.top_factors[0].direction === "increases_risk"
+                          ? <TrendingUp className="h-3 w-3 text-destructive" />
+                          : <TrendingDown className="h-3 w-3 text-success" />}
+                        {riskPrediction.top_factors[0].feature.replace(/_/g, " ")}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Updated {fmtDate(riskPrediction.last_updated)}
+                    </span>
+                  </div>
+                </div>
+                {riskPrediction.top_factors?.length > 1 && (
+                  <div className="hidden md:flex gap-2">
+                    {riskPrediction.top_factors.slice(1, 3).map((f, i) => (
+                      <Badge key={i} variant="outline" className="text-xs">
+                        {f.direction === "increases_risk"
+                          ? <TrendingUp className="h-3 w-3 mr-1 text-destructive" />
+                          : <TrendingDown className="h-3 w-3 mr-1 text-success" />}
+                        {f.feature.replace(/_/g, " ")}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })} className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1">

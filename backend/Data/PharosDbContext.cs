@@ -36,6 +36,7 @@ public class PharosDbContext : DbContext
     public DbSet<ResidentReadinessScore> ResidentReadinessScores => Set<ResidentReadinessScore>();
     public DbSet<InterventionEffectivenessRow> InterventionEffectiveness => Set<InterventionEffectivenessRow>();
     public DbSet<MlSocialMediaRecommendation> MlSocialMediaRecommendations => Set<MlSocialMediaRecommendation>();
+    public DbSet<ResidentElevatedRiskScore> ResidentElevatedRiskScores => Set<ResidentElevatedRiskScore>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -581,6 +582,19 @@ public class PharosDbContext : DbContext
             entity.Property(e => e.IncludeResidentStory).HasColumnName("include_resident_story");
             entity.Property(e => e.IncludeCallToAction).HasColumnName("include_call_to_action");
             entity.Property(e => e.PredictedDonations).HasColumnName("predicted_donations");
+            entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
+        });
+
+        // ── ResidentElevatedRiskScore (ML) ──
+        modelBuilder.Entity<ResidentElevatedRiskScore>(entity =>
+        {
+            entity.ToTable("resident_elevated_risk_scores");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ResidentId).HasColumnName("resident_id");
+            entity.Property(e => e.RiskScore).HasColumnName("risk_score");
+            entity.Property(e => e.RiskTier).HasColumnName("risk_tier").HasMaxLength(50);
+            entity.Property(e => e.TopFactors).HasColumnName("top_factors").HasMaxLength(2000);
             entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
         });
 

@@ -188,13 +188,35 @@ public class SocialMediaService : ISocialMediaService
         if (!string.IsNullOrWhiteSpace(platform))
             accounts = accounts.Where(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase)).ToList();
 
+        var recentPosts = await _db.SocialMediaPosts
+            .Where(p => p.PlatformPostId != null
+                && (!string.IsNullOrWhiteSpace(platform)
+                    ? p.Platform.ToLower() == platform!.ToLower()
+                    : true))
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(5)
+            .ToListAsync();
+
+        var postIdsByPlatform = recentPosts
+            .GroupBy(p => p.Platform, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(p => p.PlatformPostId!).ToList(),
+                StringComparer.OrdinalIgnoreCase);
+
         var allComments = new List<CommentInboxDto>();
         var fetchTasks = new List<Task<List<CommentDto>>>();
 
         foreach (var account in accounts)
         {
             var client = _clientFactory.GetClient(account.Platform);
-            if (client != null)
+            if (client == null) continue;
+
+            if (client is InstagramClient igClient
+                && postIdsByPlatform.TryGetValue(account.Platform, out var igPostIds)
+                && igPostIds.Count > 0)
+            {
+                fetchTasks.Add(igClient.GetCommentsForPostsAsync(account, igPostIds));
+            }
+            else
             {
                 fetchTasks.Add(client.GetCommentsAsync(account));
             }

@@ -83,6 +83,25 @@ export function useResidentSummary(id: number) {
   });
 }
 
+export interface ResidentRiskPrediction {
+  resident_id: number;
+  internal_code?: string;
+  risk_score: number;
+  risk_flag: boolean;
+  risk_level: string;
+  top_factors: { feature: string; direction: string }[];
+  last_updated: string;
+}
+
+export function useResidentRisk(id: number) {
+  return useQuery({
+    queryKey: ["residentRisk", id],
+    queryFn: () => api.get<ResidentRiskPrediction>(`/ml/resident-risk/${id}`),
+    enabled: !!id,
+    retry: false,
+  });
+}
+
 export function useCreateResident() {
   const qc = useQueryClient();
   return useMutation({

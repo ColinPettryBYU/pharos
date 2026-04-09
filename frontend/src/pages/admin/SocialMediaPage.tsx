@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -470,42 +470,51 @@ export default function SocialMediaPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {pagedPosts.map((post) => (
-                          <TableRow key={post.post_id}>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">
-                                {post.platform}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {post.post_type}
-                            </TableCell>
-                            <TableCell
-                              className="text-sm text-muted-foreground max-w-[260px] truncate"
-                              title={post.caption ?? ""}
+                        <AnimatePresence mode="popLayout">
+                          {pagedPosts.map((post, idx) => (
+                            <motion.tr
+                              key={post.post_id}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2, delay: idx * 0.02 }}
+                              className="border-b transition-colors hover:bg-muted/50"
                             >
-                              {truncate(post.caption, 60)}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {post.content_topic}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatSafe(post.created_at, "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm font-medium">
-                              {(post.engagement_rate * 100).toFixed(1)}%
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm">
-                              {post.reach?.toLocaleString() ?? "—"}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm">
-                              {post.likes?.toLocaleString() ?? "—"}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums text-sm">
-                              {post.comments?.toLocaleString() ?? "—"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">
+                                  {post.platform}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {post.post_type}
+                              </TableCell>
+                              <TableCell
+                                className="text-sm text-muted-foreground max-w-[260px] truncate"
+                                title={post.caption ?? ""}
+                              >
+                                {truncate(post.caption, 60)}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {post.content_topic}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {formatSafe(post.created_at, "MMM d, yyyy")}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums text-sm font-medium">
+                                {(post.engagement_rate * 100).toFixed(1)}%
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums text-sm">
+                                {post.reach?.toLocaleString() ?? "—"}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums text-sm">
+                                {post.likes?.toLocaleString() ?? "—"}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums text-sm">
+                                {post.comments?.toLocaleString() ?? "—"}
+                              </TableCell>
+                            </motion.tr>
+                          ))}
+                        </AnimatePresence>
                       </TableBody>
                     </Table>
                   </div>

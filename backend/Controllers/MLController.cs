@@ -66,6 +66,27 @@ public class MLController : ControllerBase
     }
 
     /// <summary>
+    /// Returns elevated risk prediction for a specific resident.
+    /// </summary>
+    [HttpGet("resident-risk/{residentId}")]
+    public async Task<ActionResult<ResidentRiskPredictionDto>> GetResidentRisk(int residentId)
+    {
+        var result = await _mlService.GetResidentRiskAsync(residentId);
+        if (result == null) return NotFound(new { message = "No risk prediction found for this resident." });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns elevated risk predictions for all residents.
+    /// </summary>
+    [HttpGet("resident-risk")]
+    public async Task<ActionResult<IEnumerable<ResidentRiskPredictionDto>>> GetAllResidentRisks()
+    {
+        var result = await _mlService.GetAllResidentRisksAsync();
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Returns reintegration readiness scores for all residents at once.
     /// Used by the admin dashboard to show top at-risk residents.
     /// </summary>
