@@ -214,11 +214,13 @@ function ChartBlockRenderer({ block }: { block: ChatBlock }) {
     }
   })();
 
+  const isPie = block.chart_type === "pie";
+
   return (
     <div className="space-y-2">
       {block.title && <p className="text-sm font-semibold">{block.title}</p>}
-      <div className="rounded-xl border bg-card/50 p-3">
-        <ResponsiveContainer width="100%" height={220}>
+      <div className="rounded-xl border bg-card/50 p-3" style={isPie ? { paddingTop: 16 } : undefined}>
+        <ResponsiveContainer width="100%" height={isPie ? 260 : 220}>
           {inner}
         </ResponsiveContainer>
       </div>
@@ -263,7 +265,25 @@ function groupStatBlocks(blocks: ChatBlock[]): (ChatBlock | ChatBlock[])[] {
   return grouped;
 }
 
+const THINKING_PHRASES = [
+  "Thinking",
+  "Querying database",
+  "Pulling data",
+  "Analyzing records",
+  "Crunching numbers",
+  "Building response",
+];
+
 function ThinkingIndicator() {
+  const [phraseIdx, setPhraseIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIdx((prev) => (prev + 1) % THINKING_PHRASES.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -272,23 +292,42 @@ function ThinkingIndicator() {
       className="flex items-start gap-3"
     >
       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-        <Sparkles className="h-4 w-4 text-primary" />
+        <motion.div
+          animate={{ rotate: [0, 360] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+        </motion.div>
       </div>
       <div className="rounded-2xl rounded-tl-sm bg-card border px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-1.5">
-          {[0, 1, 2].map((i) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="h-1.5 w-1.5 rounded-full bg-primary/60"
+                animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  delay: i * 0.15,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+          <AnimatePresence mode="wait">
             <motion.span
-              key={i}
-              className="h-2 w-2 rounded-full bg-muted-foreground/40"
-              animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.1, 0.85] }}
-              transition={{
-                duration: 1.2,
-                repeat: Infinity,
-                delay: i * 0.2,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
+              key={phraseIdx}
+              initial={{ opacity: 0, y: 4, filter: "blur(4px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: -4, filter: "blur(4px)" }}
+              transition={{ duration: 0.3 }}
+              className="text-xs font-medium text-muted-foreground"
+            >
+              {THINKING_PHRASES[phraseIdx]}
+            </motion.span>
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>
@@ -620,86 +659,74 @@ export default function ChatPage() {
           ref={scrollRef}
           className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6"
         >
-          <AnimatePresence mode="wait">
-            {isLoadingMessages && activeConversationId ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full"
-              >
-                <div className="flex items-center gap-1.5">
-                  {[0, 1, 2].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40"
-                      animate={{
-                        opacity: [0.3, 1, 0.3],
-                        scale: [0.85, 1.1, 0.85],
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        repeat: Infinity,
-                        delay: i * 0.2,
-                        ease: "easeInOut",
-                      }}
-                    />
+          {isLoadingMessages && activeConversationId ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="flex items-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <motion.span
+                    key={i}
+                    className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40"
+                    animate={{
+                      opacity: [0.3, 1, 0.3],
+                      scale: [0.85, 1.1, 0.85],
+                    }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : !hasMessages ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center h-full"
+            >
+              <div className="max-w-lg w-full text-center space-y-6">
+                <div className="flex items-center justify-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                    <Sparkles className="h-8 w-8 text-primary" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-semibold tracking-tight">
+                    Pharos AI Assistant
+                  </h1>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    I can help you understand your organization's data.
+                    Try asking:
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {SUGGESTED_QUESTIONS.map((q) => (
+                    <motion.button
+                      key={q}
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => sendMessage(q)}
+                      className="rounded-full border bg-card px-4 py-2 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50 cursor-pointer"
+                    >
+                      {q}
+                    </motion.button>
                   ))}
                 </div>
-              </motion.div>
-            ) : !hasMessages ? (
-              <motion.div
-                key="welcome"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col items-center justify-center h-full"
-              >
-                <div className="max-w-lg w-full text-center space-y-6">
-                  <div className="flex items-center justify-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                      <Sparkles className="h-8 w-8 text-primary" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                      Pharos AI Assistant
-                    </h1>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      I can help you understand your organization's data.
-                      Try asking:
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {SUGGESTED_QUESTIONS.map((q) => (
-                      <motion.button
-                        key={q}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => sendMessage(q)}
-                        className="rounded-full border bg-card px-4 py-2 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50 cursor-pointer"
-                      >
-                        {q}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="conversation"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="max-w-3xl mx-auto space-y-6"
-              >
+              </div>
+            </motion.div>
+          ) : (
+            <div className="max-w-3xl mx-auto space-y-6">
+              <AnimatePresence initial={false}>
                 {messages.map((msg) => (
                   <motion.div
                     key={msg.id}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
+                    transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+                    layout
                     className={cn(
                       "flex items-start gap-3",
                       msg.role === "user" && "justify-end"
@@ -750,12 +777,12 @@ export default function ChatPage() {
                   </motion.div>
                 ))}
 
-                <AnimatePresence>
-                  {mutation.isPending && <ThinkingIndicator />}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {mutation.isPending && (
+                  <ThinkingIndicator key="thinking" />
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
 
         {/* Sticky input bar */}
