@@ -272,7 +272,7 @@ export function AdminLayout() {
         initial={false}
         animate={{ width: collapsed ? 72 : 256 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="hidden md:flex flex-col bg-sidebar shrink-0"
+        className="hidden md:flex flex-col bg-sidebar border-r border-border/60 shrink-0"
       >
         <SidebarContent
           collapsed={collapsed}
@@ -295,7 +295,7 @@ export function AdminLayout() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top header */}
-        <header className="flex h-16 items-center justify-between border-b bg-background px-4 sm:px-6 shrink-0">
+        <header className="flex h-16 items-center justify-between border-b border-border/60 bg-background px-4 sm:px-6 shrink-0">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

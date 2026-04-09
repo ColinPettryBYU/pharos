@@ -86,6 +86,13 @@
 }
 
 .dark {
+  /* Pharos palette — lighter/brighter for dark backgrounds */
+  --pharos-forest:  #8fb88c;
+  --pharos-sage:    #7da67a;
+  --pharos-blush:   #e8a5a2;
+  --pharos-sky:     #92b3cc;
+  --pharos-cream:   oklch(0.185 0.005 250);
+
   /* Dark charcoal base — NO blue tint */
   --background: oklch(0.145 0.004 250);
   --foreground: oklch(0.93 0.004 80);

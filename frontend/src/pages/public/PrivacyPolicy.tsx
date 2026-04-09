@@ -3,7 +3,13 @@ import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function PrivacyPolicy() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="relative mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Background decoration */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-[400px] w-[400px] rounded-full blur-[120px]" style={{ background: "rgba(176,196,216,0.10)" }} />
+        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full blur-3xl" style={{ background: "rgba(245,184,184,0.08)" }} />
+      </div>
+      <div className="relative">
       <PageHeader title="Privacy Policy" description="Last updated: April 6, 2026" />
 
       <motion.div
@@ -13,7 +19,7 @@ export default function PrivacyPolicy() {
         className="prose prose-sm sm:prose dark:prose-invert max-w-none"
       >
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>1. Introduction</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Pharos ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy
             explains how we collect, use, disclose, and safeguard your information when you visit our
@@ -23,7 +29,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">2. Information We Collect</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>2. Information We Collect</h2>
           <h3 className="text-lg font-medium mt-4 mb-2">Personal Information</h3>
           <p className="text-sm leading-relaxed text-muted-foreground">When you create an account, donate, or contact us, we may collect:</p>
           <ul className="text-sm text-muted-foreground space-y-1 mt-2 list-disc pl-5">
@@ -46,7 +52,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">3. How We Use Your Information</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>3. How We Use Your Information</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">We use collected information to:</p>
           <ul className="text-sm text-muted-foreground space-y-1 mt-2 list-disc pl-5">
             <li>Process donations and provide tax receipts</li>
@@ -59,7 +65,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">4. Cookies and Tracking</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>4. Cookies and Tracking</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">We use the following types of cookies:</p>
           <ul className="text-sm text-muted-foreground space-y-1 mt-2 list-disc pl-5">
             <li><strong>Essential cookies:</strong> Required for authentication and basic site functionality. These cannot be disabled.</li>
@@ -73,7 +79,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">5. Third-Party Services</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>5. Third-Party Services</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">We may use the following third-party services:</p>
           <ul className="text-sm text-muted-foreground space-y-1 mt-2 list-disc pl-5">
             <li><strong>Google OAuth:</strong> For account authentication. Google's privacy policy applies to data processed by Google.</li>
@@ -83,7 +89,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">6. Data Security</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>6. Data Security</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             We implement appropriate security measures to protect your information:
           </p>
@@ -99,7 +105,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">7. Data Retention</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>7. Data Retention</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             We retain personal data only as long as necessary for the purposes described in this policy.
             Donation records are retained as required by tax regulations. You may request deletion of your
@@ -108,7 +114,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">8. Your Rights</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>8. Your Rights</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">You have the right to:</p>
           <ul className="text-sm text-muted-foreground space-y-1 mt-2 list-disc pl-5">
             <li><strong>Access:</strong> Request a copy of all personal data we hold about you</li>
@@ -122,7 +128,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">9. Children's Privacy</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>9. Children's Privacy</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Our public website does not knowingly collect personal data from children under 13.
             All resident data in our case management system is protected under strict access controls
@@ -132,7 +138,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">10. Changes to This Policy</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>10. Changes to This Policy</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             We may update this Privacy Policy from time to time. We will notify you of any material
             changes by posting the new policy on this page and updating the "Last updated" date.
@@ -140,7 +146,7 @@ export default function PrivacyPolicy() {
         </section>
 
         <section className="mb-8">
-          <h2 className="text-xl font-semibold mb-3">11. Contact Us</h2>
+          <h2 className="text-xl font-semibold mb-3" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>11. Contact Us</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
             If you have questions about this Privacy Policy or wish to exercise your rights, contact us at:
           </p>
@@ -151,6 +157,7 @@ export default function PrivacyPolicy() {
           </div>
         </section>
       </motion.div>
+      </div>
     </div>
   );
 }

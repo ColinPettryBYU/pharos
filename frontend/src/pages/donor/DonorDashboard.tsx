@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,7 @@ export default function DonorDashboard() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>
           Thank you, {user?.display_name || profile?.display_name || "Valued Supporter"}.
         </h1>
         <p className="mt-1 text-lg text-muted-foreground">Here's the impact of your generosity.</p>
@@ -68,7 +69,7 @@ export default function DonorDashboard() {
       {pieData.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Where Your Money Went</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>Where Your Money Went</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -85,10 +86,12 @@ export default function DonorDashboard() {
       )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-8">
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-border/60 overflow-hidden" style={{ borderLeft: "3px solid var(--pharos-blush)" }}>
           <CardContent className="p-6 text-center">
-            <Heart className="mx-auto h-10 w-10 text-primary mb-3" />
-            <h3 className="text-xl font-semibold mb-2">Your Impact</h3>
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: "color-mix(in srgb, var(--pharos-blush) 20%, transparent)" }}>
+              <Heart className="h-6 w-6" style={{ color: "var(--pharos-blush)" }} />
+            </div>
+            <h3 className="text-xl font-semibold mb-2" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>Your Impact</h3>
             <p className="text-muted-foreground max-w-lg mx-auto">
               Your contributions have supported {impact?.safehousesReached ?? 0} safehouses,
               helping provide education, healthcare, and counseling services to girls across the Philippines.
@@ -103,16 +106,19 @@ export default function DonorDashboard() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-        <Card className="text-center">
+        <Card className="text-center border-border/60 overflow-hidden">
+          <div className="h-1 w-full" style={{ background: "linear-gradient(to right, var(--pharos-sky), var(--pharos-blush), var(--pharos-sky))" }} />
           <CardContent className="p-8">
-            <Gift className="mx-auto h-10 w-10 text-primary mb-3" />
-            <h3 className="text-xl font-semibold">Continue Making a Difference</h3>
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: "color-mix(in srgb, var(--pharos-sky) 20%, transparent)" }}>
+              <Gift className="h-6 w-6" style={{ color: "var(--pharos-sky)" }} />
+            </div>
+            <h3 className="text-xl font-semibold" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>Continue Making a Difference</h3>
             <p className="text-muted-foreground mt-1 mb-4">Every donation goes directly to supporting girls in our safehouses.</p>
-            <a href="https://www.lighthousesanctuary.org/donate" target="_blank" rel="noopener noreferrer">
-              <Button size="lg" className="gap-2">
-                <Heart className="h-4 w-4" />Give Again
+            <Link to="/impact">
+              <Button size="lg" className="gap-2 font-semibold" style={{ background: "var(--pharos-forest)", color: "white" }}>
+                <Heart className="h-4 w-4" />View Our Impact
               </Button>
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </motion.div>
