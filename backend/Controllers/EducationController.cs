@@ -15,7 +15,7 @@ public class EducationController : ControllerBase
     public EducationController(IResidentService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<EducationRecordDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,

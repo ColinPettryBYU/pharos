@@ -21,7 +21,6 @@ interface AuthContextType {
   ) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
-  isStaff: boolean;
   isDonor: boolean;
 }
 
@@ -83,8 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isAdmin = user?.roles?.includes("Admin") ?? false;
-  const isStaff =
-    (user?.roles?.includes("Staff") ?? false) || isAdmin;
   const isDonor = user?.roles?.includes("Donor") ?? false;
 
   return (
@@ -97,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         isAdmin,
-        isStaff,
         isDonor,
       }}
     >

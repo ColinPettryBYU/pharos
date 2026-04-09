@@ -86,7 +86,8 @@ public class AuthController : ControllerBase
             });
         }
 
-        // Auto-login after registration
+        await _userManager.AddToRoleAsync(user, "Donor");
+
         await _signInManager.SignInAsync(user, isPersistent: true);
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -171,6 +172,7 @@ public class AuthController : ControllerBase
         var createResult = await _userManager.CreateAsync(user);
         if (createResult.Succeeded)
         {
+            await _userManager.AddToRoleAsync(user, "Donor");
             await _userManager.AddLoginAsync(user, info);
             await _signInManager.SignInAsync(user, isPersistent: true);
             return Redirect($"{frontendUrl}/admin");

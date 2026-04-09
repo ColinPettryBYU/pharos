@@ -11,8 +11,8 @@ import {
   Scale,
   Sparkles,
   ArrowRight,
-  HandHeart,
   Users,
+  UserCheck,
   Building2,
   Globe,
   ChevronRight,
@@ -128,7 +128,7 @@ export default function LandingPage() {
   const impactStats = [
     { label: "Girls Served", value: summary?.total_residents ?? 0, icon: Users, suffix: "+", accent: "var(--pharos-sky)" },
     { label: "Safehouses", value: summary?.total_safehouses ?? 0, icon: Building2, accent: "var(--pharos-sage)" },
-    { label: "Donations Received", value: summary?.total_donations ?? 0, icon: HandHeart, suffix: "+", accent: "var(--pharos-blush)" },
+    { label: "Girls Reintegrated", value: summary?.reintegrated_girls_count ?? 0, icon: UserCheck, suffix: "+", accent: "var(--pharos-blush)" },
     { label: "Regions Covered", value: summary?.regions_count ?? 0, icon: Globe, accent: "#f0c96e" },
   ];
 

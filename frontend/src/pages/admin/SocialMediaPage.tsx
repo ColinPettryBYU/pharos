@@ -5,7 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import { StatCard } from "@/components/shared/StatCard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformPostRouter } from "@/components/social/PlatformPostForms";
@@ -41,10 +50,11 @@ import {
   Heart,
   TrendingUp,
   DollarSign,
+  Send,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 import { toast } from "sonner";
-import type { Platform } from "@/types";
+import type { Platform, SocialMediaPost } from "@/types";
 
 const platforms: {
   value: Platform | "All";
@@ -72,10 +82,19 @@ function formatSafe(
   fallback = "—"
 ): string {
   if (value == null || value.trim() === "") return fallback;
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(value.trim())
-    ? parseISO(value.trim())
-    : new Date(value.trim());
-  return isValid(d) ? format(d, dateFormat) : fallback;
+  try {
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(value.trim())
+      ? parseISO(value.trim())
+      : new Date(value.trim());
+    return isValid(d) ? format(d, dateFormat) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function truncate(text: string | null | undefined, max: number): string {
+  if (!text) return "—";
+  return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
 export default function SocialMediaPage() {
@@ -83,6 +102,7 @@ export default function SocialMediaPage() {
     "All"
   );
   const [activeTab, setActiveTab] = useState("analytics");
+  const [actionTab, setActionTab] = useState("compose");
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
 
   const platformFilter =
@@ -96,7 +116,7 @@ export default function SocialMediaPage() {
   const composePost = useComposePost();
   const replyToComment = useReplyToComment();
 
-  const posts = Array.isArray(postsData)
+  const posts: SocialMediaPost[] = Array.isArray(postsData)
     ? postsData
     : (postsData?.data ?? []);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -157,6 +177,11 @@ export default function SocialMediaPage() {
     }));
   })();
 
+  const unreadCount = comments.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (c: any) => !c.is_read
+  ).length;
+
   return (
     <div>
       <PageHeader
@@ -184,12 +209,12 @@ export default function SocialMediaPage() {
         ))}
       </div>
 
+      {/* ── Section 1: Analytics / Data ─────────────────── */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="compose">Create Post</TabsTrigger>
-          <TabsTrigger value="comments">Comments Inbox</TabsTrigger>
-          <TabsTrigger value="recommendations">Insights</TabsTrigger>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
+          <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
         {/* ── Analytics Tab ─────────────────────────────────── */}
@@ -372,182 +397,96 @@ export default function SocialMediaPage() {
           )}
         </TabsContent>
 
-        {/* ── Create Post Tab (Platform-Specific) ──────────── */}
-        <TabsContent value="compose">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <PlatformPostRouter
-                platform={activePlatform}
-                composePost={composePost}
-              />
-            </div>
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    AI Recommendations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm">
-                  <div className="rounded-lg bg-primary/5 p-3">
-                    <p className="font-medium text-primary">Best Time to Post</p>
-                    <p className="text-muted-foreground">
-                      {mlRecs?.best_post_time
-                        ? `${mlRecs.best_post_time.day} ${mlRecs.best_post_time.hour}:00 — higher engagement`
-                        : "Loading recommendations…"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-success/5 p-3">
-                    <p className="font-medium text-success">
-                      Recommended Content
-                    </p>
-                    <p className="text-muted-foreground">
-                      {mlRecs?.recommended_content_type
-                        ? `${mlRecs.recommended_content_type} posts drive more donations`
-                        : "Loading recommendations…"}
-                    </p>
-                  </div>
-                  {mlRecs?.campaign_insights?.map(
-                    (insight: string, i: number) => (
-                      <div key={i} className="rounded-lg bg-accent/5 p-3">
-                        <p className="text-muted-foreground">{insight}</p>
-                      </div>
-                    )
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ── Comments Inbox Tab ───────────────────────────── */}
-        <TabsContent value="comments">
-          {activePlatform === "All" ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="rounded-full bg-muted p-4 mb-4">
-                  <MessageCircle className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold mb-1">Select a Platform</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Choose a specific platform from the tabs above to view and reply to comments.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
+        {/* ── Posts Data Table Tab ──────────────────────────── */}
+        <TabsContent value="posts">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" />
-                Comments Inbox
-                <Badge variant="outline" className="ml-1">
-                  {activePlatform}
-                </Badge>
-                <Badge variant="secondary" className="ml-2">
-                  {
-                    comments.filter(
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      (c: any) => !c.is_read
-                    ).length
-                  }{" "}
-                  unread
-                </Badge>
+              <CardTitle className="text-lg">
+                All Posts
+                {activePlatform !== "All" && (
+                  <Badge variant="outline" className="ml-2 font-normal">
+                    {activePlatform}
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {comments.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No comments from {activePlatform}
+              {postsLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 rounded-md" />
+                  ))}
+                </div>
+              ) : posts.length === 0 ? (
+                <p className="text-center text-muted-foreground py-12">
+                  No posts found
+                  {activePlatform !== "All"
+                    ? ` for ${activePlatform}`
+                    : ""}
                 </p>
               ) : (
-                <motion.div
-                  variants={stagger}
-                  initial="hidden"
-                  animate="show"
-                  className="space-y-3"
-                >
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {comments.map((comment: any) => {
-                    const PlatformIcon =
-                      platforms.find((p) => p.value === comment.platform)
-                        ?.icon || MessageCircle;
-                    return (
-                      <motion.div
-                        key={comment.comment_id}
-                        variants={item}
-                        className={cn(
-                          "flex gap-3 rounded-lg border p-4 transition-colors",
-                          !comment.is_read && "bg-primary/5 border-primary/20"
-                        )}
-                      >
-                        <PlatformIcon className="h-4 w-4 mt-1 shrink-0 text-muted-foreground" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">
-                              {comment.commenter_name}
-                            </span>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b bg-muted/40">
+                        <TableHead>Platform</TableHead>
+                        <TableHead>Post Type</TableHead>
+                        <TableHead className="min-w-[200px]">Caption</TableHead>
+                        <TableHead>Topic</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Eng. Rate</TableHead>
+                        <TableHead className="text-right">Reach</TableHead>
+                        <TableHead className="text-right">Likes</TableHead>
+                        <TableHead className="text-right">Comments</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {posts.map((post) => (
+                        <TableRow key={post.post_id}>
+                          <TableCell>
                             <Badge variant="outline" className="text-xs">
-                              {comment.platform}
+                              {post.platform}
                             </Badge>
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              {formatSafe(comment.timestamp, "MMM d, h:mm a")}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {comment.comment_text}
-                          </p>
-                          <div className="mt-2 flex gap-2">
-                            <Input
-                              placeholder="Reply..."
-                              className="h-8 text-sm"
-                              value={replyTexts[comment.comment_id] || ""}
-                              onChange={(e) =>
-                                setReplyTexts((prev) => ({
-                                  ...prev,
-                                  [comment.comment_id]: e.target.value,
-                                }))
-                              }
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={replyToComment.isPending}
-                              onClick={async () => {
-                                const text = replyTexts[comment.comment_id];
-                                if (!text) return;
-                                try {
-                                  await replyToComment.mutateAsync({
-                                    commentId: comment.comment_id,
-                                    reply: text,
-                                    platform: comment.platform,
-                                  });
-                                  toast.success("Reply sent!");
-                                  setReplyTexts((prev) => ({
-                                    ...prev,
-                                    [comment.comment_id]: "",
-                                  }));
-                                } catch {
-                                  /* handled */
-                                }
-                              }}
-                            >
-                              Reply
-                            </Button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {post.post_type}
+                          </TableCell>
+                          <TableCell
+                            className="text-sm text-muted-foreground max-w-[260px] truncate"
+                            title={post.caption}
+                          >
+                            {truncate(post.caption, 60)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {post.content_topic}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatSafe(post.created_at, "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-sm font-medium">
+                            {(post.engagement_rate * 100).toFixed(1)}%
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-sm">
+                            {post.reach?.toLocaleString() ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-sm">
+                            {post.likes?.toLocaleString() ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-sm">
+                            {post.comments?.toLocaleString() ?? "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
-          )}
         </TabsContent>
 
         {/* ── Insights Tab ─────────────────────────────────── */}
-        <TabsContent value="recommendations">
+        <TabsContent value="insights">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardContent className="p-6">
@@ -596,6 +535,224 @@ export default function SocialMediaPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* ── Section 2: Operational Tools ────────────────── */}
+      <Separator className="my-8" />
+
+      <div className="space-y-6">
+        <div>
+          <h2 className="font-heading text-xl font-semibold tracking-tight">
+            Tools
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create posts and manage comments
+          </p>
+        </div>
+
+        <Tabs value={actionTab} onValueChange={setActionTab} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="compose">Create Post</TabsTrigger>
+            <TabsTrigger value="comments" className="gap-1.5">
+              Comments Inbox
+              {unreadCount > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1 h-5 min-w-5 px-1.5 text-xs"
+                >
+                  {unreadCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ── Create Post Tab ────────────────────────────── */}
+          <TabsContent value="compose">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <PlatformPostRouter
+                  platform={activePlatform}
+                  composePost={composePost}
+                />
+              </div>
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      AI Recommendations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm">
+                    <div className="rounded-lg bg-primary/5 p-3">
+                      <p className="font-medium text-primary">Best Time to Post</p>
+                      <p className="text-muted-foreground">
+                        {mlRecs?.best_post_time
+                          ? `${mlRecs.best_post_time.day} ${mlRecs.best_post_time.hour}:00 — higher engagement`
+                          : "Loading recommendations…"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-success/5 p-3">
+                      <p className="font-medium text-success">
+                        Recommended Content
+                      </p>
+                      <p className="text-muted-foreground">
+                        {mlRecs?.recommended_content_type
+                          ? `${mlRecs.recommended_content_type} posts drive more donations`
+                          : "Loading recommendations…"}
+                      </p>
+                    </div>
+                    {mlRecs?.campaign_insights?.map(
+                      (insight: string, i: number) => (
+                        <div key={i} className="rounded-lg bg-accent/5 p-3">
+                          <p className="text-muted-foreground">{insight}</p>
+                        </div>
+                      )
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* ── Comments Inbox Tab ─────────────────────────── */}
+          <TabsContent value="comments">
+            {activePlatform === "All" ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="rounded-full bg-muted p-4 mb-4">
+                    <MessageCircle className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-1">
+                    Select a Platform
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Choose a specific platform from the tabs above to view and
+                    reply to comments.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">Comments Inbox</CardTitle>
+                    <Badge variant="outline">{activePlatform}</Badge>
+                    {unreadCount > 0 && (
+                      <Badge variant="secondary">
+                        {unreadCount} unread
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {comments.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      No comments from {activePlatform}
+                    </p>
+                  ) : (
+                    <motion.div
+                      variants={stagger}
+                      initial="hidden"
+                      animate="show"
+                      className="space-y-3"
+                    >
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {comments.map((comment: any) => (
+                        <motion.div
+                          key={comment.comment_id}
+                          variants={item}
+                          className={cn(
+                            "rounded-lg border p-4 transition-colors",
+                            !comment.is_read && "bg-primary/5 border-primary/20"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <span className="font-semibold text-sm leading-none">
+                                {comment.commenter_name}
+                              </span>
+                              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                                {comment.comment_text}
+                              </p>
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0 pt-0.5">
+                              {formatSafe(comment.timestamp, "MMM d, h:mm a")}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 flex gap-2">
+                            <Input
+                              placeholder="Write a reply…"
+                              className="h-8 text-sm"
+                              value={replyTexts[comment.comment_id] || ""}
+                              onChange={(e) =>
+                                setReplyTexts((prev) => ({
+                                  ...prev,
+                                  [comment.comment_id]: e.target.value,
+                                }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  const text = replyTexts[comment.comment_id];
+                                  if (!text) return;
+                                  replyToComment
+                                    .mutateAsync({
+                                      commentId: comment.comment_id,
+                                      reply: text,
+                                      platform: comment.platform,
+                                    })
+                                    .then(() => {
+                                      toast.success("Reply sent!");
+                                      setReplyTexts((prev) => ({
+                                        ...prev,
+                                        [comment.comment_id]: "",
+                                      }));
+                                    })
+                                    .catch(() => {});
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5"
+                              disabled={
+                                replyToComment.isPending ||
+                                !replyTexts[comment.comment_id]
+                              }
+                              onClick={async () => {
+                                const text = replyTexts[comment.comment_id];
+                                if (!text) return;
+                                try {
+                                  await replyToComment.mutateAsync({
+                                    commentId: comment.comment_id,
+                                    reply: text,
+                                    platform: comment.platform,
+                                  });
+                                  toast.success("Reply sent!");
+                                  setReplyTexts((prev) => ({
+                                    ...prev,
+                                    [comment.comment_id]: "",
+                                  }));
+                                } catch {
+                                  /* handled */
+                                }
+                              }}
+                            >
+                              <Send className="h-3.5 w-3.5" />
+                              Reply
+                            </Button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

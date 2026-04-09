@@ -109,7 +109,7 @@ export default function LoginPage() {
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="email" type="email" placeholder="admin@pharos.org" className="pl-9" {...register("email")} />
+                    <Input id="email" type="email" placeholder="you@example.com" className="pl-9" {...register("email")} />
                   </div>
                   {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
                 </div>

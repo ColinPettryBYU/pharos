@@ -618,6 +618,8 @@ export interface RiskAlert {
   riskLevel: RiskLevel;
   recommendedAction: string;
   link: string;
+  caseCategory?: string;
+  safehouseName?: string;
 }
 
 // --- Reports ---

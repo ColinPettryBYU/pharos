@@ -12,7 +12,7 @@ namespace Pharos.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/chat")]
-[Authorize(Roles = "Admin,Staff")]
+[Authorize(Roles = "Admin")]
 public class ChatController : ControllerBase
 {
     private readonly IChatService _service;

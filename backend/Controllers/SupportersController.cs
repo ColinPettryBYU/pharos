@@ -15,7 +15,7 @@ public class SupportersController : ControllerBase
     public SupportersController(IDonorService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<SupporterDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,
@@ -28,7 +28,7 @@ public class SupportersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SupporterDetailDto>> GetById(int id)
     {
         var result = await _service.GetSupporterByIdAsync(id);

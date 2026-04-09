@@ -156,6 +156,9 @@ public class SafehouseService : ISafehouseService
             .GroupBy(s => s.Region)
             .ToDictionary(g => g.Key, g => g.Count());
 
+        var reintegratedGirlsCount = await _db.Residents
+            .CountAsync(r => r.ReintegrationStatus == "Completed");
+
         return new PublicAggregateSummaryDto(
             safehouses.Count,
             totalResidents,
@@ -163,7 +166,8 @@ public class SafehouseService : ISafehouseService
             regionBreakdown.Count,
             avgEducation,
             avgHealth,
-            regionBreakdown
+            regionBreakdown,
+            reintegratedGirlsCount
         );
     }
 }

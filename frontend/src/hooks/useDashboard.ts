@@ -58,9 +58,11 @@ export function useDashboard() {
         type: mapAlertType(a.alert_type ?? ""),
         name: a.name ?? "",
         riskScore: a.risk_score ?? 0,
-        riskLevel: scoreToRiskLevel(a.risk_score ?? 0),
+        riskLevel: (a.risk_level as RiskLevel) || scoreToRiskLevel(a.risk_score ?? 0),
         recommendedAction: a.recommended_action ?? "",
         link: alertLink(a.alert_type ?? "", a.related_id ?? 0),
+        caseCategory: a.case_category ?? undefined,
+        safehouseName: a.safehouse_name ?? undefined,
       }));
 
       return { stats, activityFeed, riskAlerts };

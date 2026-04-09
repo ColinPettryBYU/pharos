@@ -5,7 +5,7 @@ namespace Pharos.Api.Data;
 
 /// <summary>
 /// Seeds the required Identity accounts and roles per grading requirements.
-/// Creates 3 roles (Admin, Staff, Donor) and 3 accounts:
+/// Creates 2 roles (Admin, Donor) and 3 accounts:
 ///   1. admin@pharos.org      - Admin, no MFA
 ///   2. donor@pharos.org      - Donor, no MFA, linked to supporter_id
 ///   3. admin-mfa@pharos.org  - Admin, TOTP MFA enabled
@@ -19,7 +19,7 @@ public static class IdentitySeeder
         ILogger logger)
     {
         // Create roles
-        string[] roles = { "Admin", "Staff", "Donor" };
+        string[] roles = { "Admin", "Donor" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))

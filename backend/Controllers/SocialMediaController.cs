@@ -41,7 +41,7 @@ public class SocialMediaController : ControllerBase
     }
 
     [HttpGet("posts")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<SocialMediaPostDto>>> GetPosts(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,
@@ -55,7 +55,7 @@ public class SocialMediaController : ControllerBase
     }
 
     [HttpGet("analytics")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SocialMediaAnalyticsDto>> GetAnalytics(
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
@@ -77,7 +77,7 @@ public class SocialMediaController : ControllerBase
     // ── Comments Inbox ──
 
     [HttpGet("comments/inbox")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CommentInboxResponse>> GetCommentInbox(
         [FromQuery] string? platform = null,
         [FromQuery] int page = 1,
@@ -112,7 +112,7 @@ public class SocialMediaController : ControllerBase
     // ── Account Management ──
 
     [HttpGet("accounts/status")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetPlatformStatus()
     {
         var statuses = await _credentialService.GetCredentialStatusAsync();
@@ -138,7 +138,7 @@ public class SocialMediaController : ControllerBase
     }
 
     [HttpGet("accounts")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<ConnectedAccountDto>>> GetAccounts()
     {
         var accounts = await _db.SocialMediaAccounts

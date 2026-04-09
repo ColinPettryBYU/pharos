@@ -15,7 +15,7 @@ public class ReportsController : ControllerBase
     public ReportsController(IReportService service) => _service = service;
 
     [HttpGet("donations")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<DonationReportDto>> GetDonationReport(
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null)
@@ -25,7 +25,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("outcomes")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<OutcomesReportDto>> GetOutcomesReport()
     {
         var result = await _service.GetOutcomesReportAsync();
@@ -33,7 +33,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("safehouses")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SafehouseReportResponseDto>> GetSafehouseReport()
     {
         var result = await _service.GetSafehouseReportAsync();
@@ -41,7 +41,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("social-media")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SocialMediaReportDto>> GetSocialMediaReport(
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null)

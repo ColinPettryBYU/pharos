@@ -37,5 +37,8 @@ public record RiskAlertDto(
     int RelatedId,
     string Name,
     double RiskScore,
-    string RecommendedAction
+    string RiskLevel,
+    string RecommendedAction,
+    string? CaseCategory = null,
+    string? SafehouseName = null
 );

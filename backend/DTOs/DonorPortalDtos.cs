@@ -57,6 +57,10 @@ public record InviteUserRequest(
     int? LinkedSupporterId
 );
 
+public record ResetPasswordRequest(
+    string NewPassword
+);
+
 public record DonorDonateRequest(
     decimal Amount,
     bool IsRecurring,

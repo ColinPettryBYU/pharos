@@ -15,7 +15,7 @@ public class HealthController : ControllerBase
     public HealthController(IResidentService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<HealthRecordDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,

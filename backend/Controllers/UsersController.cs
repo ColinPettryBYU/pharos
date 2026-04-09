@@ -88,6 +88,23 @@ public class UsersController : ControllerBase
             user.LinkedSupporterId, false, false));
     }
 
+    [HttpPost("{id}/reset-password")]
+    public async Task<IActionResult> ResetPassword(string id, [FromBody] ResetPasswordRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound(new { message = "User not found." });
+
+        var removeResult = await _userManager.RemovePasswordAsync(user);
+        if (!removeResult.Succeeded)
+            return BadRequest(new { message = "Failed to remove existing password.", errors = removeResult.Errors.Select(e => e.Description) });
+
+        var addResult = await _userManager.AddPasswordAsync(user, request.NewPassword);
+        if (!addResult.Succeeded)
+            return BadRequest(new { message = "Failed to set new password.", errors = addResult.Errors.Select(e => e.Description) });
+
+        return Ok(new { message = "Password reset successfully." });
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(string id)
     {

@@ -18,10 +18,20 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { useUsers, useInviteUser, useUpdateUserRole, useDeleteUser } from "@/hooks/useUsers";
-import { Plus, Shield, Trash2 } from "lucide-react";
+import { useUsers, useInviteUser, useUpdateUserRole, useDeleteUser, useResetPassword } from "@/hooks/useUsers";
+import { Plus, Shield, Trash2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import type { User } from "@/types";
+
+const resetSchema = z.object({
+  newPassword: z.string().min(14, "Minimum 14 characters"),
+  confirmPassword: z.string().min(1, "Please confirm the password"),
+}).refine((d) => d.newPassword === d.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type ResetForm = z.infer<typeof resetSchema>;
 
 const inviteSchema = z.object({
   Email: z.string().email("Valid email required"),
@@ -43,11 +53,32 @@ export default function UserManagementPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ id: string; email: string } | null>(null);
 
   const { data: users, isLoading, error, refetch } = useUsers();
   const inviteUser = useInviteUser();
   const updateRole = useUpdateUserRole();
   const deleteUserMut = useDeleteUser();
+  const resetPassword = useResetPassword();
+
+  const resetForm = useForm<ResetForm>({
+    resolver: zodResolver(resetSchema) as never,
+    defaultValues: { newPassword: "", confirmPassword: "" },
+  });
+
+  const onResetSubmit = resetForm.handleSubmit(async (values) => {
+    if (!resetTarget) return;
+    try {
+      await resetPassword.mutateAsync({ userId: resetTarget.id, newPassword: values.newPassword });
+      toast.success(`Password reset for ${resetTarget.email}`);
+      resetForm.reset();
+      setResetOpen(false);
+      setResetTarget(null);
+    } catch {
+      toast.error("Failed to reset password");
+    }
+  });
 
   const userList: any[] = Array.isArray(users) ? users : (users as any)?.data ?? [];
 
@@ -117,10 +148,10 @@ export default function UserManagementPage() {
                     ))}
                   </div>
                   <Select
-                    defaultValue={user.roles?.[0] ?? "Staff"}
+                    defaultValue={user.roles?.[0] ?? "Donor"}
                     onValueChange={async (value) => {
                       try {
-                        await updateRole.mutateAsync({ userId: user.id, roles: [value ?? "Staff"] });
+                        await updateRole.mutateAsync({ userId: user.id, roles: [value ?? "Donor"] });
                         toast.success("Role updated");
                       } catch { /* handled by api client */ }
                     }}
@@ -128,10 +159,18 @@ export default function UserManagementPage() {
                     <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="Staff">Staff</SelectItem>
                       <SelectItem value="Donor">Donor</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Reset password"
+                    onClick={() => { setResetTarget({ id: user.id, email: user.email }); resetForm.reset(); setResetOpen(true); }}
+                  >
+                    <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -167,7 +206,6 @@ export default function UserManagementPage() {
                 <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Staff">Staff</SelectItem>
                   <SelectItem value="Donor">Donor</SelectItem>
                 </SelectContent>
               </Select>
@@ -180,6 +218,36 @@ export default function UserManagementPage() {
             )}
             <Button type="submit" className="w-full" disabled={inviteUser.isPending}>
               {inviteUser.isPending ? "Inviting..." : "Invite User"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resetOpen} onOpenChange={(open) => { setResetOpen(open); if (!open) setResetTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for <span className="font-medium">{resetTarget?.email}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={onResetSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>New Password</Label>
+              <Input type="password" {...resetForm.register("newPassword")} placeholder="Minimum 14 characters" />
+              {resetForm.formState.errors.newPassword && (
+                <p className="text-xs text-destructive">{resetForm.formState.errors.newPassword.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Confirm Password</Label>
+              <Input type="password" {...resetForm.register("confirmPassword")} placeholder="Re-enter password" />
+              {resetForm.formState.errors.confirmPassword && (
+                <p className="text-xs text-destructive">{resetForm.formState.errors.confirmPassword.message}</p>
+              )}
+            </div>
+            <Button type="submit" className="w-full" disabled={resetPassword.isPending}>
+              {resetPassword.isPending ? "Resetting..." : "Reset Password"}
             </Button>
           </form>
         </DialogContent>

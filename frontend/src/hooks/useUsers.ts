@@ -34,3 +34,10 @@ export function useDeleteUser() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
   });
 }
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
+      api.post(`/admin/users/${userId}/reset-password`, { newPassword }),
+  });
+}

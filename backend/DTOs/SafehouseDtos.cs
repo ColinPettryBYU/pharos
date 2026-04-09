@@ -52,7 +52,8 @@ public record PublicAggregateSummaryDto(
     int RegionsCount,
     decimal AvgEducationProgress,
     decimal AvgHealthScore,
-    Dictionary<string, int> RegionBreakdown
+    Dictionary<string, int> RegionBreakdown,
+    int ReintegratedGirlsCount
 );
 
 public record CreateSafehouseRequest(

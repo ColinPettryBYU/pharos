@@ -4,10 +4,10 @@ import { SkeletonPage } from "@/components/shared/SkeletonPage";
 import type { ReactNode } from "react";
 
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { user, isAdmin, isStaff, isLoading } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
   if (isLoading) return <SkeletonPage />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!isAdmin && !isStaff) return <Navigate to="/" replace />;
+  if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 

@@ -15,7 +15,7 @@ public class SafehousesController : ControllerBase
     public SafehousesController(ISafehouseService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<SafehouseDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,
@@ -27,7 +27,7 @@ public class SafehousesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<SafehouseDetailDto>> GetById(int id)
     {
         var result = await _service.GetByIdAsync(id);

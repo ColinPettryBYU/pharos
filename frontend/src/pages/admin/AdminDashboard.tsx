@@ -258,19 +258,20 @@ export default function AdminDashboard() {
                       <Link to={alert.link}>
                         <motion.div whileHover={{ scale: 1.01 }} className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-medium">{alert.name}</span>
                               <Badge variant="outline" className="text-xs">
                                 {alert.type === "resident" ? "Resident" : "Donor"}
                               </Badge>
-                              <RiskBadge level={alert.riskLevel} />
                             </div>
+                            {(alert.caseCategory || alert.safehouseName) && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {[alert.caseCategory, alert.safehouseName].filter(Boolean).join(" · ")}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground mt-0.5">{alert.recommendedAction}</p>
                           </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-lg font-bold tabular-nums">{alert.riskScore}</p>
-                            <p className="text-xs text-muted-foreground">risk score</p>
-                          </div>
+                          <RiskBadge level={alert.riskLevel} className="shrink-0" />
                         </motion.div>
                       </Link>
                     </motion.div>

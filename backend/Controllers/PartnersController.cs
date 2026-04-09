@@ -15,7 +15,7 @@ public class PartnersController : ControllerBase
     public PartnersController(IPartnerService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<PartnerDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,

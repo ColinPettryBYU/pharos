@@ -185,29 +185,41 @@ public class DashboardService : IDashboardService
     {
         var alerts = new List<RiskAlertDto>();
 
-        var churnRisks = await _ml.GetDonorChurnRisksAsync();
-        foreach (var donor in churnRisks.Where(d => d.RiskLevel == "High").Take(5))
-        {
-            alerts.Add(new RiskAlertDto(
-                "DonorChurn", donor.SupporterId, donor.DisplayName,
-                donor.ChurnRiskScore, "Send personalized outreach email"));
-        }
-
-        var activeResidents = await _db.Residents
-            .Where(r => r.CaseStatus == "Active")
-            .Select(r => r.ResidentId)
+        var highRiskResidents = await _db.Residents
+            .Include(r => r.Safehouse)
+            .Where(r => r.CaseStatus == "Active"
+                        && (r.CurrentRiskLevel == "High" || r.CurrentRiskLevel == "Critical"))
+            .OrderByDescending(r => r.CurrentRiskLevel == "Critical" ? 1 : 0)
+            .ThenBy(r => r.ResidentId)
             .ToListAsync();
 
-        foreach (var residentId in activeResidents.Take(10))
+        foreach (var r in highRiskResidents)
         {
-            var readiness = await _ml.GetReintegrationReadinessAsync(residentId);
-            if (readiness != null && readiness.ReadinessScore < 0.3)
+            var score = r.CurrentRiskLevel == "Critical" ? 0.9 : 0.7;
+            var action = r.CurrentRiskLevel == "Critical"
+                ? "Immediate case conference required"
+                : "Schedule case review within 48 hours";
+
+            alerts.Add(new RiskAlertDto(
+                "ResidentRisk", r.ResidentId, r.InternalCode,
+                score, r.CurrentRiskLevel!,
+                action, r.CaseCategory, r.Safehouse?.Name));
+        }
+
+        try
+        {
+            var churnRisks = await _ml.GetDonorChurnRisksAsync();
+            foreach (var donor in churnRisks.Where(d => d.RiskLevel == "High").Take(5))
             {
                 alerts.Add(new RiskAlertDto(
-                    "ResidentAtRisk", readiness.ResidentId, readiness.InternalCode,
-                    1.0 - readiness.ReadinessScore,
-                    readiness.Recommendations.FirstOrDefault() ?? "Review case plan"));
+                    "DonorChurn", donor.SupporterId, donor.DisplayName,
+                    donor.ChurnRiskScore, "High",
+                    "Send personalized outreach email"));
             }
+        }
+        catch
+        {
+            // ML tables may not exist yet — resident risk alerts still show
         }
 
         return alerts.OrderByDescending(a => a.RiskScore);

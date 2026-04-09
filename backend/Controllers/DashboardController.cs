@@ -7,7 +7,7 @@ namespace Pharos.Api.Controllers;
 
 [ApiController]
 [Route("api/admin/dashboard")]
-[Authorize(Roles = "Admin,Staff")]
+[Authorize(Roles = "Admin")]
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _service;

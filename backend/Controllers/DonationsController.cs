@@ -15,7 +15,7 @@ public class DonationsController : ControllerBase
     public DonationsController(IDonorService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<DonationDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,
@@ -29,7 +29,7 @@ public class DonationsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<DonationDetailDto>> GetById(int id)
     {
         var result = await _service.GetDonationByIdAsync(id);
@@ -71,7 +71,7 @@ public class DonationAllocationsController : ControllerBase
     public DonationAllocationsController(IDonorService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<DonationAllocationDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,

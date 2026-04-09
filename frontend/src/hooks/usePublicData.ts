@@ -10,6 +10,7 @@ interface SafehouseSummary {
   avg_education_progress: number;
   avg_health_score: number;
   region_breakdown?: Record<string, number>;
+  reintegrated_girls_count: number;
 }
 
 export function usePublicSafehouses() {

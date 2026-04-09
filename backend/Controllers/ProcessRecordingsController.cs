@@ -15,7 +15,7 @@ public class ProcessRecordingsController : ControllerBase
     public ProcessRecordingsController(IResidentService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<ProcessRecordingDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,
@@ -28,7 +28,7 @@ public class ProcessRecordingsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProcessRecordingDto>> GetById(int id)
     {
         var result = await _service.GetProcessRecordingByIdAsync(id);

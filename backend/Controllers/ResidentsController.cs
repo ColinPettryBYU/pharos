@@ -15,7 +15,7 @@ public class ResidentsController : ControllerBase
     public ResidentsController(IResidentService service) => _service = service;
 
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<ResidentDto>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 500,
@@ -29,7 +29,7 @@ public class ResidentsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ResidentDetailDto>> GetById(int id)
     {
         var result = await _service.GetByIdAsync(id);
@@ -38,7 +38,7 @@ public class ResidentsController : ControllerBase
     }
 
     [HttpGet("{id}/summary")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ResidentSummaryDto>> GetSummary(int id)
     {
         var result = await _service.GetSummaryAsync(id);
@@ -72,7 +72,7 @@ public class ResidentsController : ControllerBase
     // ── Nested Process Recordings for a specific resident ──
 
     [HttpGet("{id}/process-recordings")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<ProcessRecordingDto>>> GetResidentProcessRecordings(
         int id,
         [FromQuery] int page = 1,
@@ -83,7 +83,7 @@ public class ResidentsController : ControllerBase
     }
 
     [HttpGet("{id}/home-visitations")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<PagedResult<HomeVisitationDto>>> GetResidentHomeVisitations(
         int id,
         [FromQuery] int page = 1,
