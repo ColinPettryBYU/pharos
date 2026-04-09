@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
+  BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
+import {
   useSendMessage,
   useConversations,
   useConversationMessages,
@@ -64,11 +68,11 @@ function TextBlockRenderer({ block }: { block: ChatBlock }) {
 
 function StatBlockRenderer({ block }: { block: ChatBlock }) {
   return (
-    <div className="rounded-xl border bg-muted/30 p-4 flex flex-col gap-1">
+    <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 flex flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
         {block.label}
       </span>
-      <span className="text-3xl font-bold tabular-nums tracking-tight">
+      <span className="text-3xl font-bold tabular-nums tracking-tight text-primary">
         {block.value}
       </span>
       {block.trend && (
@@ -143,6 +147,85 @@ function ListBlockRenderer({ block }: { block: ChatBlock }) {
   );
 }
 
+const CHART_COLORS = [
+  "var(--color-primary)", "var(--color-chart-2)", "var(--color-chart-3)",
+  "var(--color-chart-4)", "var(--color-chart-5)", "var(--color-accent)",
+];
+
+function ChartBlockRenderer({ block }: { block: ChatBlock }) {
+  const data = block.data ?? [];
+  const xKey = block.x_key ?? "name";
+  const yKeys = block.y_keys ?? Object.keys(data[0] ?? {}).filter(k => k !== xKey);
+  const colors = block.colors ?? CHART_COLORS;
+
+  if (data.length === 0) return null;
+
+  const inner = (() => {
+    switch (block.chart_type) {
+      case "line":
+        return (
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            {yKeys.map((key, i) => (
+              <Line key={key} type="monotone" dataKey={key} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} />
+            ))}
+          </LineChart>
+        );
+      case "area":
+        return (
+          <AreaChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            {yKeys.map((key, i) => (
+              <Area key={key} type="monotone" dataKey={key} stroke={colors[i % colors.length]} fill={colors[i % colors.length]} fillOpacity={0.15} />
+            ))}
+          </AreaChart>
+        );
+      case "pie":
+        return (
+          <PieChart>
+            <Pie data={data} dataKey={yKeys[0] ?? "value"} nameKey={xKey} cx="50%" cy="50%" outerRadius={80} label={(e) => e[xKey]}>
+              {data.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
+            </Pie>
+            <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+          </PieChart>
+        );
+      default:
+        return (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            {yKeys.map((key, i) => (
+              <Bar key={key} dataKey={key} fill={colors[i % colors.length]} radius={[4, 4, 0, 0]} />
+            ))}
+          </BarChart>
+        );
+    }
+  })();
+
+  return (
+    <div className="space-y-2">
+      {block.title && <p className="text-sm font-semibold">{block.title}</p>}
+      <div className="rounded-xl border bg-card/50 p-3">
+        <ResponsiveContainer width="100%" height={220}>
+          {inner}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 function BlockRenderer({ block, index }: { block: ChatBlock; index: number }) {
   return (
     <motion.div
@@ -154,6 +237,7 @@ function BlockRenderer({ block, index }: { block: ChatBlock; index: number }) {
       {block.type === "stat" && <StatBlockRenderer block={block} />}
       {block.type === "table" && <TableBlockRenderer block={block} />}
       {block.type === "list" && <ListBlockRenderer block={block} />}
+      {block.type === "chart" && <ChartBlockRenderer block={block} />}
     </motion.div>
   );
 }

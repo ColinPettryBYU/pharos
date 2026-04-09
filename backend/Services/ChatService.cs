@@ -159,12 +159,26 @@ You MUST respond with a JSON array of blocks. Each block has a ""type"" field. S
 - {{ ""type"": ""stat"", ""label"": ""Metric Name"", ""value"": ""42"", ""trend"": ""up"" or ""down"" or null, ""icon"": null }}
 - {{ ""type"": ""table"", ""title"": ""Table Title"", ""headers"": [""Col1"", ""Col2""], ""rows"": [[""val1"", ""val2""]] }}
 - {{ ""type"": ""list"", ""title"": ""List Title"", ""items"": [""Item 1"", ""Item 2""] }}
+- {{ ""type"": ""chart"", ""chart_type"": ""bar"", ""title"": ""Chart Title"", ""x_key"": ""name"", ""y_keys"": [""value""], ""data"": [{{ ""name"": ""A"", ""value"": 10 }}] }}
+
+CHART BLOCK DETAILS:
+chart_type can be ""bar"", ""line"", ""area"", or ""pie"".
+data is an array of objects. x_key is the field used for labels/x-axis. y_keys are the numeric fields to plot.
+Use charts when showing trends over time (line/area), comparisons between categories (bar), or proportional breakdowns (pie).
+Examples of when to use charts:
+- Donation trends over months → line or area chart
+- Safehouse occupancy comparison → bar chart
+- Donation type breakdown → pie chart
+- Engagement over time → line chart
+- Risk level distribution → bar or pie chart
+- Education progress by safehouse → bar chart
 
 GUIDELINES:
 - Use stat blocks for key numbers (counts, totals, averages)
 - Use table blocks for comparisons or lists of entities
 - Use text blocks for explanations and insights
 - Use list blocks for action items or bullet points
+- Use chart blocks when visualizing trends, comparisons, or distributions
 - All currency values are in Philippine Pesos (₱)
 - Keep responses concise and actionable
 - Be empathetic — this data represents real children's lives
@@ -263,6 +277,35 @@ CRITICAL OUTPUT RULE: Your ENTIRE response must be ONLY the raw JSON array. Do N
                                     .Select(i => i.GetString() ?? "").ToList();
                                 blocks.Add(new ListBlock(
                                     elem.GetProperty("title").GetString() ?? "", items));
+                                break;
+                            case "chart":
+                                var chartType = elem.TryGetProperty("chart_type", out var ct) ? ct.GetString() ?? "bar" : "bar";
+                                var chartTitle = elem.TryGetProperty("title", out var ctTitle) && ctTitle.ValueKind != JsonValueKind.Null ? ctTitle.GetString() : null;
+                                var xKey = elem.TryGetProperty("x_key", out var xk) ? xk.GetString() : "name";
+                                var yKeys = elem.TryGetProperty("y_keys", out var yk) && yk.ValueKind == JsonValueKind.Array
+                                    ? yk.EnumerateArray().Select(y => y.GetString() ?? "").ToList() : null;
+                                var chartColors = elem.TryGetProperty("colors", out var cc) && cc.ValueKind == JsonValueKind.Array
+                                    ? cc.EnumerateArray().Select(c => c.GetString() ?? "").ToList() : null;
+                                var chartData = new List<Dictionary<string, object>>();
+                                if (elem.TryGetProperty("data", out var dataArr) && dataArr.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var dataItem in dataArr.EnumerateArray())
+                                    {
+                                        var dict = new Dictionary<string, object>();
+                                        foreach (var prop in dataItem.EnumerateObject())
+                                        {
+                                            dict[prop.Name] = prop.Value.ValueKind switch
+                                            {
+                                                JsonValueKind.Number => prop.Value.GetDouble(),
+                                                JsonValueKind.True => true,
+                                                JsonValueKind.False => false,
+                                                _ => prop.Value.GetString() ?? ""
+                                            };
+                                        }
+                                        chartData.Add(dict);
+                                    }
+                                }
+                                blocks.Add(new ChartBlock(chartType, chartTitle, xKey, yKeys, chartData, chartColors));
                                 break;
                         }
                     }

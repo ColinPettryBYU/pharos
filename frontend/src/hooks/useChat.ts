@@ -13,7 +13,7 @@ interface ChatRequest {
 }
 
 interface ChatBlock {
-  type: "text" | "stat" | "table" | "list";
+  type: "text" | "stat" | "table" | "list" | "chart";
   content?: string;
   label?: string;
   value?: string;
@@ -23,6 +23,11 @@ interface ChatBlock {
   headers?: string[];
   rows?: string[][];
   items?: string[];
+  chart_type?: "bar" | "line" | "area" | "pie";
+  data?: Record<string, unknown>[];
+  x_key?: string;
+  y_keys?: string[];
+  colors?: string[];
 }
 
 interface ChatResponse {

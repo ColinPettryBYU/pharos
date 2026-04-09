@@ -188,7 +188,7 @@ export default function LandingPage() {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4 }} className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link to="/impact">
-                <Button size="lg" className="w-full gap-2 sm:w-auto shadow-lg font-semibold" style={{ background: "var(--pharos-blush)", color: "var(--pharos-forest)" }}>
+                <Button size="lg" className="w-full gap-2 sm:w-auto shadow-lg font-semibold" style={{ background: "var(--pharos-blush)", color: "#2d4a2a" }}>
                   See Our Impact
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -301,7 +301,7 @@ export default function LandingPage() {
                 <motion.div initial={{ opacity: 0, scale: 0.8 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 0.4, type: "spring", stiffness: 200 }} className="absolute -bottom-5 -left-5 rounded-2xl p-4 shadow-xl border border-border/60 backdrop-blur-sm bg-card/95">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "var(--pharos-blush)" }}>
-                      <Heart className="h-5 w-5" style={{ color: "var(--pharos-forest)" }} />
+                      <Heart className="h-5 w-5" style={{ color: "#2d4a2a" }} />
                     </div>
                     <div>
                       <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--pharos-forest)" }}>{summary?.total_residents ?? "60"}+</p>
@@ -403,7 +403,7 @@ export default function LandingPage() {
                   {/* Step circle — blush/sky alternating */}
                   <div className="relative z-10 flex h-20 w-20 shrink-0 items-center justify-center rounded-full shadow-lg" style={{ background: i === 1 ? "var(--pharos-blush)" : "var(--pharos-sky)" }}>
                     <div className="absolute -inset-3 rounded-full border-2" style={{ borderColor: i === 1 ? "rgba(245,184,184,0.25)" : "rgba(176,196,216,0.25)", animation: `beacon-pulse 3s ease-in-out infinite ${i * 0.5}s` }} />
-                    <span className="text-2xl font-bold" style={{ fontFamily: "var(--font-editorial)", color: i === 1 ? "var(--pharos-forest)" : "var(--pharos-forest)" }}>{step.num}</span>
+                    <span className="text-2xl font-bold" style={{ fontFamily: "var(--font-editorial)", color: "#2d4a2a" }}>{step.num}</span>
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold" style={{ color: "var(--pharos-forest)" }}>{step.title}</h3>

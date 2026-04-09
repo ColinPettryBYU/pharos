@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/auth";
-import { api, formatCurrency } from "@/lib/api";
+import { formatCurrency } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,26 +47,18 @@ export default function DonatePage() {
     setAmount(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (effectiveAmount <= 0) {
       toast.error("Please enter a valid donation amount.");
       return;
     }
     setIsSubmitting(true);
-    try {
-      await api.post("/donor/donate", {
-        amount: effectiveAmount,
-        isRecurring: frequency !== "one-time",
-        notes: message || null,
-      });
+    setTimeout(() => {
       setDonated(true);
-      toast.success("Thank you for your generous donation!");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
       setIsSubmitting(false);
-    }
+      toast.success("Thank you for your generous donation!");
+    }, 800);
   };
 
   return (

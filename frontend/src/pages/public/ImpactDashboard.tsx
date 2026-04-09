@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion, useInView, AnimatePresence } from "motion/react";
+import { motion, useInView } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   Sparkles,
   BarChart3,
   Activity,
-  ChevronDown,
 } from "lucide-react";
 import { fmtDate } from "@/lib/utils";
 
@@ -67,15 +66,13 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 }
 
 function SnapshotSection({ snapshots }: { snapshots: Array<{ snapshot_id: number; snapshot_date: string; headline: string; summary_text: string; metric_payload_json: string; is_published: boolean }> }) {
-  const [expandedId, setExpandedId] = useState<number | null>(null);
   const accents = ["var(--pharos-sky)", "var(--pharos-blush)", "var(--pharos-sage)"];
 
   return (
     <AnimatedSection className="mb-14">
       <SectionHeading sub="Updates">Impact Updates</SectionHeading>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {snapshots.slice(0, 5).map((snapshot, i) => {
-          const isOpen = expandedId === snapshot.snapshot_id;
           let metrics: Array<{ label: string; value: string }> = [];
           try {
             const raw = JSON.parse(snapshot.metric_payload_json || "{}");
@@ -91,12 +88,11 @@ function SnapshotSection({ snapshots }: { snapshots: Array<{ snapshot_id: number
               transition={{ duration: 0.4, delay: i * 0.05 }}
             >
               <Card
-                className="overflow-hidden border-border/60 hover:shadow-md transition-all duration-300 cursor-pointer"
+                className="overflow-hidden border-border/60 hover:shadow-md transition-all duration-300"
                 style={{ borderLeft: `3px solid ${accents[i % 3]}` }}
-                onClick={() => setExpandedId(isOpen ? null : snapshot.snapshot_id)}
               >
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-5">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-5">
                     <div className="shrink-0 text-center rounded-xl p-3 min-w-[64px] bg-muted/40">
                       <p className="text-2xl font-bold tabular-nums leading-none" style={{ color: "var(--pharos-forest)", fontFamily: "var(--font-editorial)" }}>
                         {fmtDate(snapshot.snapshot_date, "dd")}
@@ -104,38 +100,20 @@ function SnapshotSection({ snapshots }: { snapshots: Array<{ snapshot_id: number
                       <p className="text-xs text-muted-foreground mt-1">{fmtDate(snapshot.snapshot_date, "MMM yy")}</p>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold truncate" style={{ color: "var(--pharos-forest)" }}>{scrubName(snapshot.headline)}</h3>
-                      {!isOpen && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{scrubName(snapshot.summary_text)}</p>}
-                    </div>
-                    <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25 }}>
-                      <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
-                    </motion.div>
-                  </div>
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pt-4 pl-[84px]">
-                          <p className="text-sm text-muted-foreground leading-relaxed">{scrubName(snapshot.summary_text)}</p>
-                          {metrics.length > 0 && (
-                            <div className="mt-4 flex flex-wrap gap-3">
-                              {metrics.map((m) => (
-                                <div key={m.label} className="rounded-lg bg-muted/50 px-3 py-2">
-                                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{m.label}</p>
-                                  <p className="text-sm font-semibold" style={{ color: "var(--pharos-forest)" }}>{m.value}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                      <h3 className="text-base font-semibold" style={{ color: "var(--pharos-forest)" }}>{scrubName(snapshot.headline)}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed mt-1.5">{scrubName(snapshot.summary_text)}</p>
+                      {metrics.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {metrics.map((m) => (
+                            <span key={m.label} className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs">
+                              <span className="font-semibold" style={{ color: accents[i % 3] }}>{m.value}</span>
+                              <span className="text-muted-foreground">{m.label}</span>
+                            </span>
+                          ))}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -158,8 +136,6 @@ function SnapshotSection({ snapshots }: { snapshots: Array<{ snapshot_id: number
 }
 
 export default function ImpactDashboard() {
-  const statsRef = useRef(null);
-  const statsInView = useInView(statsRef, { once: true, margin: "-50px" });
   const regionsRef = useRef(null);
   const regionsInView = useInView(regionsRef, { once: true, margin: "-50px" });
 
@@ -292,14 +268,15 @@ export default function ImpactDashboard() {
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
           </div>
         ) : (
-          <div ref={statsRef} className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-14">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-14">
             {impactStats.map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, y: 24 }}
-                  animate={statsInView ? { opacity: 1, y: 0 } : {}}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-30px" }}
                   transition={{ duration: 0.5, delay: i * 0.08 }}
                 >
                   <Card className="h-full overflow-hidden border-border/60 shadow-sm hover:shadow-lg transition-all duration-300 group">
@@ -316,7 +293,7 @@ export default function ImpactDashboard() {
                           <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
                           <div className="mt-1 flex items-baseline gap-1">
                             <span className="text-3xl font-bold tracking-tight tabular-nums text-foreground">
-                              {statsInView ? <AnimatedNumber value={stat.value} format={stat.fmt} decimals={"dp" in stat ? (stat as { dp: number }).dp : undefined} /> : "0"}
+                              <AnimatedNumber value={stat.value} format={stat.fmt} decimals={"dp" in stat ? (stat as { dp: number }).dp : undefined} />
                             </span>
                             {stat.suffix && (
                               <span className="text-xl font-semibold" style={{ color: stat.accent }}>{stat.suffix}</span>
@@ -617,7 +594,7 @@ export default function ImpactDashboard() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link to="/donate">
-                <Button size="lg" className="w-full sm:w-auto gap-2 shadow-xl font-semibold" style={{ background: "var(--pharos-blush)", color: "var(--pharos-forest)" }}>
+                <Button size="lg" className="w-full sm:w-auto gap-2 shadow-xl font-semibold" style={{ background: "var(--pharos-blush)", color: "#2d4a2a" }}>
                   Donate Now <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
