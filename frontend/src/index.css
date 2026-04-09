@@ -201,6 +201,11 @@
   to { height: 0; }
 }
 
+::selection {
+  background: rgba(176, 196, 216, 0.35);
+  color: inherit;
+}
+
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }

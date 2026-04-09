@@ -20,41 +20,6 @@ import {
 
 // ─── Decorative Components ────────────────────────────────────────────────────
 
-/** Soft conic-gradient light beam — looks like a lighthouse beacon */
-function LightBeam({ className = "", from = "0% 50%" }: { className?: string; from?: string }) {
-  return (
-    <div
-      className={`absolute pointer-events-none ${className}`}
-      style={{
-        background: `conic-gradient(
-          from 155deg at ${from},
-          transparent 0deg,
-          rgba(245,184,184,0.13) 8deg,
-          transparent 18deg,
-          rgba(176,196,216,0.10) 28deg,
-          transparent 40deg,
-          rgba(245,184,184,0.09) 52deg,
-          transparent 64deg,
-          rgba(176,196,216,0.07) 76deg,
-          transparent 90deg,
-          rgba(245,184,184,0.06) 105deg,
-          transparent 120deg
-        )`,
-      }}
-    />
-  );
-}
-
-function WaveDivider({ fill = "var(--pharos-cream)", flip = false }: { fill?: string; flip?: boolean }) {
-  return (
-    <div className={`relative w-full leading-[0] ${flip ? "rotate-180" : ""}`}>
-      <svg viewBox="0 0 1440 80" fill="none" className="block w-full" preserveAspectRatio="none">
-        <path d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,20 1440,40 L1440,80 L0,80 Z" fill={fill} />
-      </svg>
-    </div>
-  );
-}
-
 function AnimatedSection({ children, className = "", id }: { children: React.ReactNode; className?: string; id?: string }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -179,8 +144,9 @@ export default function LandingPage() {
         <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, rgba(20,20,18,0.92) 0%, rgba(30,35,28,0.78) 40%, rgba(40,42,38,0.40) 70%, transparent 100%)" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(20,20,18,0.55) 0%, transparent 45%)" }} />
 
-        {/* Soft lighthouse-beam light rays from right — conic gradient */}
-        <LightBeam className="top-0 right-0 h-full w-[65%]" from="0% 40%" />
+        {/* Soft light overlays */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 75% 35%, rgba(245,184,184,0.14) 0%, transparent 50%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 60% 70%, rgba(176,196,216,0.10) 0%, transparent 45%)" }} />
 
         {/* Colored ambient blobs */}
         <div className="pointer-events-none absolute top-[15%] right-[20%] h-[450px] w-[450px] rounded-full blur-[130px]" style={{ background: "rgba(176,196,216,0.22)" }} />
@@ -197,7 +163,7 @@ export default function LandingPage() {
           <div className="max-w-2xl">
             {/* Eyebrow */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="flex items-center gap-3 mb-6">
-              <img src="/images/pharos-logo.png" alt="Pharos" className="h-10 w-10 object-contain drop-shadow-lg" />
+              <img src="/images/pharos-logo-white.png" alt="Pharos" className="h-10 w-10 object-contain drop-shadow-lg" />
               <span className="text-sm font-medium tracking-widest uppercase" style={{ color: "var(--pharos-blush)" }}>
                 Pharos Foundation · Philippines
               </span>
@@ -378,7 +344,7 @@ export default function LandingPage() {
                       <div className={`flex flex-col gap-4 ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}>
                         {/* Colored pill with icon + label — rounded corners */}
                         <div
-                          className="flex items-center gap-4 rounded-2xl px-6 py-5 md:flex-col md:justify-center md:px-5 md:py-8 md:w-28 md:shrink-0"
+                          className="flex items-center gap-4 rounded-2xl px-6 py-5 md:flex-col md:justify-center md:px-6 md:py-8 md:w-36 md:shrink-0"
                           style={{ background: story.panelBg }}
                         >
                           <div className="flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: "rgba(255,255,255,0.35)" }}>
@@ -484,7 +450,7 @@ export default function LandingPage() {
 
           <div ref={ctaRef} className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={ctaInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: "easeOut" }} className="mx-auto max-w-2xl text-center">
-              <motion.img src="/images/pharos-logo.png" alt="Pharos" className="mx-auto h-16 w-16 object-contain mb-6 drop-shadow-xl" initial={{ opacity: 0, scale: 0.8 }} animate={ctaInView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: 0.2, type: "spring", stiffness: 200 }} />
+              <motion.img src="/images/pharos-logo-white.png" alt="Pharos" className="mx-auto h-16 w-16 object-contain mb-6 drop-shadow-xl" initial={{ opacity: 0, scale: 0.8 }} animate={ctaInView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: 0.2, type: "spring", stiffness: 200 }} />
               <h2 className="text-4xl font-bold tracking-tight sm:text-5xl text-white" style={{ fontFamily: "var(--font-editorial)" }}>Join Our Mission</h2>
               <p className="mx-auto mt-4 max-w-xl text-lg text-white/65">Every contribution brings us closer to a world where every girl is safe, healed, and empowered.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">

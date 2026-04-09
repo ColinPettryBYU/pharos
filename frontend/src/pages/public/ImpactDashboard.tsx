@@ -90,9 +90,9 @@ export default function ImpactDashboard() {
   ];
 
   const regions = [
-    { name: "Luzon", emoji: "🌿", accent: "var(--pharos-sky)", bgTint: "rgba(176,196,216,0.12)" },
-    { name: "Visayas", emoji: "🌊", accent: "var(--pharos-blush)", bgTint: "rgba(245,184,184,0.10)" },
-    { name: "Mindanao", emoji: "🏝️", accent: "var(--pharos-sage)", bgTint: "rgba(176,196,216,0.08)" },
+    { name: "Luzon", accent: "var(--pharos-sky)" },
+    { name: "Visayas", accent: "var(--pharos-blush)" },
+    { name: "Mindanao", accent: "var(--pharos-sage)" },
   ];
 
   const programHighlights = [
@@ -151,11 +151,8 @@ export default function ImpactDashboard() {
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <img src="/images/pharos-logo.png" alt="Pharos" className="h-12 w-12 object-contain drop-shadow-xl" />
-              <Badge className="text-sm border-white/25 text-white/85" style={{ background: "rgba(255,255,255,0.10)" }}>
-                Transparency Report
-              </Badge>
+            <div className="flex items-center justify-center mb-6">
+              <img src="/images/pharos-logo-white.png" alt="Pharos" className="h-12 w-12 object-contain drop-shadow-xl" />
             </div>
             <h1
               className="leading-[1.08] text-white drop-shadow"
@@ -189,35 +186,15 @@ export default function ImpactDashboard() {
       </section>
 
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* ─── LATEST REPORT ──────────────────────────────────────────────── */}
-        {latest && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }} className="mb-16">
-            <Card className="overflow-hidden border-border/60 shadow-md" style={{ borderLeft: "4px solid var(--pharos-sky)" }}>
-              <CardContent className="p-6 sm:p-8 flex items-start gap-5">
-                <div className="rounded-xl p-3 shrink-0" style={{ background: "color-mix(in srgb, var(--pharos-sky) 18%, transparent)" }}>
-                  <Calendar className="h-5 w-5" style={{ color: "var(--pharos-sky)" }} />
-                </div>
-                <div>
-                  <Badge className="mb-2 text-xs font-bold" style={{ background: "color-mix(in srgb, var(--pharos-sky) 12%, transparent)", color: "var(--pharos-forest)" }}>
-                    Latest Report — {fmtDate(latest.snapshot_date, "MMMM yyyy")}
-                  </Badge>
-                  <h3 className="text-lg font-semibold" style={{ color: "var(--pharos-forest)" }}>{latest.headline}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">{latest.summary_text}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
         {/* ─── KEY METRICS ────────────────────────────────────────────────── */}
         <SectionHeading sub="By the Numbers" center>Key Metrics</SectionHeading>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-20">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-14">
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}
           </div>
         ) : (
-          <div ref={statsRef} className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-20">
+          <div ref={statsRef} className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-14">
             {impactStats.map((stat, i) => {
               const Icon = stat.icon;
               return (
@@ -258,8 +235,28 @@ export default function ImpactDashboard() {
           </div>
         )}
 
+        {/* ─── LATEST REPORT ──────────────────────────────────────────────── */}
+        {latest && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-14">
+            <Card className="overflow-hidden border-border/60 shadow-md" style={{ borderLeft: "4px solid var(--pharos-sky)" }}>
+              <CardContent className="p-6 sm:p-8 flex items-start gap-5">
+                <div className="rounded-xl p-3 shrink-0" style={{ background: "color-mix(in srgb, var(--pharos-sky) 18%, transparent)" }}>
+                  <Calendar className="h-5 w-5" style={{ color: "var(--pharos-sky)" }} />
+                </div>
+                <div>
+                  <Badge className="mb-2 text-xs font-bold" style={{ background: "color-mix(in srgb, var(--pharos-sky) 12%, transparent)", color: "var(--pharos-forest)" }}>
+                    Latest Update — {fmtDate(latest.snapshot_date, "MMMM yyyy")}
+                  </Badge>
+                  <h3 className="text-lg font-semibold" style={{ color: "var(--pharos-forest)" }}>{latest.headline}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-2xl">{latest.summary_text}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
         {/* ─── REGIONAL PRESENCE ──────────────────────────────────────────── */}
-        <AnimatedSection className="relative mb-20 overflow-hidden">
+        <AnimatedSection className="relative mb-14 overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 80% 30%, rgba(176,196,216,0.08) 0%, transparent 50%)" }} />
 
           <motion.div
@@ -309,7 +306,9 @@ export default function ImpactDashboard() {
                     <Card className="h-full border-border/60 overflow-hidden group hover:shadow-md transition-all duration-300">
                       <div className="h-1 w-full" style={{ background: region.accent }} />
                       <CardContent className="p-6 text-center">
-                        <div className="text-3xl mb-3">{region.emoji}</div>
+                        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `color-mix(in srgb, ${region.accent} 18%, transparent)` }}>
+                          <MapPin className="h-5 w-5" style={{ color: region.accent }} />
+                        </div>
                         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">{region.name}</h3>
                         <p
                           className="text-4xl font-bold tabular-nums mb-1"
@@ -328,7 +327,7 @@ export default function ImpactDashboard() {
         </AnimatedSection>
 
         {/* ─── PROGRAM HIGHLIGHTS ─────────────────────────────────────────── */}
-        <AnimatedSection className="relative mb-20 overflow-hidden">
+        <AnimatedSection className="relative mb-14 overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 60%, rgba(245,184,184,0.08) 0%, transparent 45%)" }} />
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 85% 20%, rgba(176,196,216,0.06) 0%, transparent 40%)" }} />
 
@@ -379,7 +378,7 @@ export default function ImpactDashboard() {
         </AnimatedSection>
 
         {/* ─── OUTCOME HIGHLIGHTS ─────────────────────────────────────────── */}
-        <AnimatedSection className="relative mb-20">
+        <AnimatedSection className="relative mb-14">
           <div className="relative rounded-2xl overflow-hidden border border-border/60 shadow-sm" style={{ background: "var(--pharos-cream)" }}>
             <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 70% 20%, rgba(176,196,216,0.12) 0%, transparent 50%)" }} />
 
@@ -462,8 +461,8 @@ export default function ImpactDashboard() {
 
         {/* ─── MONTHLY REPORTS ────────────────────────────────────────────── */}
         {snapshotList.length > 0 && (
-          <AnimatedSection className="mb-20">
-            <SectionHeading sub="Transparency">Monthly Impact Reports</SectionHeading>
+          <AnimatedSection className="mb-14">
+            <SectionHeading sub="Updates">Impact Updates</SectionHeading>
             <div className="space-y-3">
               {snapshotList.slice(0, 5).map((snapshot, i) => {
                 const accents = ["var(--pharos-sky)", "var(--pharos-blush)", "var(--pharos-sage)"];
@@ -543,7 +542,7 @@ export default function ImpactDashboard() {
 
           <div className="relative p-10 sm:p-14 text-center">
             <motion.img
-              src="/images/pharos-logo.png"
+              src="/images/pharos-logo-white.png"
               alt="Pharos"
               className="mx-auto h-14 w-14 object-contain mb-6 drop-shadow-xl"
               initial={{ opacity: 0, scale: 0.8 }}

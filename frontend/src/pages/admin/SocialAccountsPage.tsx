@@ -278,17 +278,23 @@ function CredentialForm({
               placeholder={labels.idLabel}
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               className="h-8 text-sm"
             />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">{labels.secretLabel}</label>
             <Input
-              type="password"
+              type="text"
               placeholder={labels.secretLabel}
               value={clientSecret}
               onChange={(e) => setClientSecret(e.target.value)}
-              className="h-8 text-sm"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              className="h-8 text-sm font-mono"
             />
           </div>
           <div className="flex items-center justify-between pt-1">

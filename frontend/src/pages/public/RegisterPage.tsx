@@ -71,7 +71,8 @@ export default function RegisterPage() {
 
           <CardHeader className="text-center pb-2">
             <div className="mx-auto mb-4">
-              <img src="/images/pharos-logo.png" alt="Pharos" className="h-14 w-14 object-contain mx-auto" />
+              <img src="/images/pharos-logo-black.png" alt="Pharos" className="h-14 w-14 object-contain mx-auto dark:hidden" />
+              <img src="/images/pharos-logo-white.png" alt="Pharos" className="h-14 w-14 object-contain mx-auto hidden dark:block" />
             </div>
             <CardTitle className="text-2xl font-bold" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>
               Create account
