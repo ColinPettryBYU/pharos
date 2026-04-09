@@ -232,7 +232,7 @@ public class InstagramClient : ISocialPlatformClient
         SocialMediaAccount account, List<string>? platformPostIds, int maxResults = 50)
     {
         var cacheKey = $"ig_comments_{account.Id}_{string.Join(",", platformPostIds ?? [])}";
-        if (_cache.TryGetValue(cacheKey, out List<CommentDto>? cached) && cached != null)
+        if (_cache.TryGetValue(cacheKey, out List<CommentDto>? cached) && cached != null && cached.Count > 0)
             return cached;
 
         var token = _tokenService.Decrypt(account.EncryptedAccessToken);
@@ -252,7 +252,9 @@ public class InstagramClient : ISocialPlatformClient
                     $"{GraphApiBase}/{igUserId}/media?fields=id&limit=5&access_token={token}");
                 if (mediaResponse.TryGetProperty("data", out var items))
                     mediaIds = items.EnumerateArray()
-                        .Select(m => m.GetProperty("id").GetString()!)
+                        .Select(m => m.TryGetProperty("id", out var idEl) ? idEl.GetString()! : null)
+                        .Where(id => id != null)
+                        .Select(id => id!)
                         .ToList();
             }
             catch (Exception ex)
@@ -261,6 +263,9 @@ public class InstagramClient : ISocialPlatformClient
                 return comments;
             }
         }
+
+        _logger.LogInformation("Fetching comments for {Count} media IDs: {Ids}",
+            mediaIds.Count, string.Join(", ", mediaIds));
 
         foreach (var mediaId in mediaIds)
         {
@@ -274,18 +279,23 @@ public class InstagramClient : ISocialPlatformClient
                 {
                     foreach (var c in commentData.EnumerateArray())
                     {
+                        if (!c.TryGetProperty("id", out var idProp)) continue;
+                        var commentText = c.TryGetProperty("text", out var txtProp)
+                            ? txtProp.GetString() ?? "" : "";
+
                         comments.Add(new CommentDto(
-                            CommentId: c.GetProperty("id").GetString()!,
+                            CommentId: idProp.GetString()!,
                             Platform: PlatformName,
                             PostId: mediaId,
                             CommenterName: c.TryGetProperty("username", out var un) ? un.GetString()! : "Unknown",
-                            CommentText: c.GetProperty("text").GetString()!,
+                            CommentText: commentText,
                             CreatedAt: c.TryGetProperty("timestamp", out var ts)
                                 ? DateTime.Parse(ts.GetString()!) : DateTime.UtcNow,
                             IsRead: false
                         ));
                     }
                 }
+                _logger.LogInformation("Fetched {Count} comments for media {MediaId}", comments.Count, mediaId);
             }
             catch (Exception ex)
             {
@@ -295,7 +305,9 @@ public class InstagramClient : ISocialPlatformClient
             if (comments.Count >= maxResults) break;
         }
 
-        _cache.Set(cacheKey, comments, TimeSpan.FromMinutes(CommentCacheMinutes));
+        if (comments.Count > 0)
+            _cache.Set(cacheKey, comments, TimeSpan.FromMinutes(CommentCacheMinutes));
+
         return comments;
     }
 

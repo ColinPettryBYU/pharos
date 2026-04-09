@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -233,7 +233,7 @@ export default function SocialMediaPage() {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
-          <Separator orientation="vertical" className="mx-2 h-5" />
+          <div className="mx-3 h-6 w-px bg-border" style={{ opacity: 0.6 }} />
           <TabsTrigger value="compose">Create Post</TabsTrigger>
           <TabsTrigger value="comments" className="gap-1.5">
             Comments Inbox

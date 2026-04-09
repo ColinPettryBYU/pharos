@@ -12,9 +12,9 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 }
 
 export function DonorRoute({ children }: { children: ReactNode }) {
-  const { user, isDonor, isLoading } = useAuth();
+  const { user, isDonor, isAdmin, isLoading } = useAuth();
   if (isLoading) return <SkeletonPage />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!isDonor) return <Navigate to="/" replace />;
+  if (!isDonor && !isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
