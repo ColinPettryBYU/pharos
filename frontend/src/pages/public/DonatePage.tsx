@@ -218,12 +218,12 @@ export default function DonatePage() {
                       Your donation of <strong>{formatCurrency(effectiveAmount)}</strong> has been recorded.
                     </p>
                     <p className="text-sm text-muted-foreground mb-6">
-                      You can view your full donation history in your donor dashboard.
+                      Thank you for your generosity. Every contribution makes a difference.
                     </p>
                     <div className="flex gap-3 justify-center">
-                      <Link to="/donor/dashboard">
+                      <Link to="/">
                         <Button style={{ background: "var(--pharos-forest)", color: "white" }}>
-                          View Dashboard
+                          Back to Home
                         </Button>
                       </Link>
                       <Button

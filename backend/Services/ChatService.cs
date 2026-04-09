@@ -42,7 +42,7 @@ public class ChatService : IChatService
             generationConfig = new
             {
                 temperature = 0.7,
-                maxOutputTokens = 4096,
+                maxOutputTokens = 8192,
             },
             systemInstruction = new
             {
@@ -50,7 +50,7 @@ public class ChatService : IChatService
             }
         };
 
-        var model = "gemini-2.5-flash";
+        var model = "gemini-2.5-pro";
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
         try
@@ -80,76 +80,165 @@ public class ChatService : IChatService
         }
     }
 
-    private async Task<string> BuildDatabaseContextAsync(string message)
+    private async Task<string> BuildDatabaseContextAsync(string _message)
     {
         var sb = new StringBuilder();
-        var lower = message.ToLowerInvariant();
+        var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
 
-        var residentCount = await _db.Residents.CountAsync();
-        var activeResidents = await _db.Residents.CountAsync(r => r.CaseStatus == "Active");
-        var safehouseCount = await _db.Safehouses.CountAsync();
-        var donationCount = await _db.Donations.CountAsync();
-        var totalDonations = await _db.Donations.SumAsync(d => d.Amount ?? d.EstimatedValue ?? 0);
-        var supporterCount = await _db.Supporters.CountAsync();
-        var postCount = await _db.SocialMediaPosts.CountAsync();
+        // ── Safehouses (small table, always include all) ──
+        var safehouses = await _db.Safehouses.ToListAsync();
+        sb.AppendLine($"SAFEHOUSES ({safehouses.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(safehouses.Select(s => new { s.SafehouseId, s.Name, s.Region, s.City, s.Province, s.Status, s.CapacityGirls, s.CurrentOccupancy }), opts));
 
-        sb.AppendLine($"SUMMARY: {residentCount} total residents ({activeResidents} active), {safehouseCount} safehouses, {donationCount} donations (₱{totalDonations:N0} total), {supporterCount} supporters, {postCount} social media posts.");
+        // ── Residents (all — 60 rows) ──
+        var residents = await _db.Residents.ToListAsync();
+        sb.AppendLine($"\nRESIDENTS ({residents.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(residents.Select(r => new {
+            r.ResidentId, r.SafehouseId, r.CaseStatus, r.CaseCategory, r.CurrentRiskLevel,
+            r.InitialRiskLevel, r.ReintegrationStatus, r.ReintegrationType, r.PresentAge,
+            r.Sex, r.DateOfAdmission, r.DateClosed, r.LengthOfStay,
+            r.SubCatTrafficked, r.SubCatSexualAbuse, r.SubCatPhysicalAbuse, r.SubCatOrphaned,
+            r.IsPwd, r.HasSpecialNeeds, r.AssignedSocialWorker
+        }), opts));
 
-        if (ContainsAny(lower, "resident", "caseload", "girl", "case", "reintegration", "safehouse"))
+        // ── Supporters (all — 60 rows) ──
+        var supporters = await _db.Supporters.ToListAsync();
+        sb.AppendLine($"\nSUPPORTERS ({supporters.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(supporters.Select(s => new {
+            s.SupporterId, s.SupporterType, s.DisplayName, s.OrganizationName,
+            s.RelationshipType, s.Region, s.Country, s.Status, s.AcquisitionChannel, s.FirstDonationDate
+        }), opts));
+
+        // ── Donations (all — 420 rows) ──
+        var donations = await _db.Donations.ToListAsync();
+        sb.AppendLine($"\nDONATIONS ({donations.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(donations.Select(d => new {
+            d.DonationId, d.SupporterId, d.DonationType, d.DonationDate, d.IsRecurring,
+            d.CampaignName, d.ChannelSource, d.Amount, d.EstimatedValue, d.ImpactUnit, d.ReferralPostId
+        }), opts));
+
+        // ── Donation Allocations (all — 521 rows) ──
+        var allocations = await _db.DonationAllocations.ToListAsync();
+        sb.AppendLine($"\nDONATION_ALLOCATIONS ({allocations.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(allocations.Select(a => new {
+            a.AllocationId, a.DonationId, a.SafehouseId, a.ProgramArea, a.AmountAllocated
+        }), opts));
+
+        // ── Process Recordings (aggregated by resident — 2800+ rows is too much raw) ──
+        var recAgg = await _db.ProcessRecordings
+            .GroupBy(r => r.ResidentId)
+            .Select(g => new {
+                ResidentId = g.Key,
+                SessionCount = g.Count(),
+                AvgDuration = g.Average(r => (double)r.SessionDurationMinutes),
+                MostRecentSession = g.Max(r => r.SessionDate),
+                IndividualSessions = g.Count(r => r.SessionType == "Individual"),
+                GroupSessions = g.Count(r => r.SessionType == "Group"),
+            }).ToListAsync();
+        sb.AppendLine($"\nPROCESS_RECORDINGS (aggregated by resident, {recAgg.Count} groups):");
+        sb.AppendLine(JsonSerializer.Serialize(recAgg, opts));
+
+        // ── Home Visitations (aggregated by resident — 1300+ rows) ──
+        var visitAgg = await _db.HomeVisitations
+            .GroupBy(v => v.ResidentId)
+            .Select(g => new {
+                ResidentId = g.Key,
+                VisitCount = g.Count(),
+                MostRecentVisit = g.Max(v => v.VisitDate),
+                FavorableOutcomes = g.Count(v => v.VisitOutcome == "Favorable"),
+                UnfavorableOutcomes = g.Count(v => v.VisitOutcome == "Unfavorable"),
+            }).ToListAsync();
+        sb.AppendLine($"\nHOME_VISITATIONS (aggregated by resident, {visitAgg.Count} groups):");
+        sb.AppendLine(JsonSerializer.Serialize(visitAgg, opts));
+
+        // ── Education Records (all — 534 rows) ──
+        var eduRecords = await _db.EducationRecords.ToListAsync();
+        sb.AppendLine($"\nEDUCATION_RECORDS ({eduRecords.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(eduRecords.Select(e => new {
+            e.EducationRecordId, e.ResidentId, e.RecordDate, e.EducationLevel,
+            e.EnrollmentStatus, e.AttendanceRate, e.ProgressPercent, e.CompletionStatus
+        }), opts));
+
+        // ── Health/Wellbeing Records (all — 534 rows) ──
+        var healthRecords = await _db.HealthWellbeingRecords.ToListAsync();
+        sb.AppendLine($"\nHEALTH_WELLBEING_RECORDS ({healthRecords.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(healthRecords.Select(h => new {
+            h.HealthRecordId, h.ResidentId, h.RecordDate, h.GeneralHealthScore,
+            h.NutritionScore, h.SleepQualityScore, h.EnergyLevelScore, h.Bmi,
+            h.MedicalCheckupDone, h.DentalCheckupDone, h.PsychologicalCheckupDone
+        }), opts));
+
+        // ── Intervention Plans (all — 180 rows) ──
+        var plans = await _db.InterventionPlans.ToListAsync();
+        sb.AppendLine($"\nINTERVENTION_PLANS ({plans.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(plans.Select(p => new {
+            p.PlanId, p.ResidentId, p.PlanCategory, p.PlanDescription,
+            p.ServicesProvided, p.Status, p.TargetDate, p.CaseConferenceDate
+        }), opts));
+
+        // ── Incident Reports (all — 100 rows) ──
+        var incidents = await _db.IncidentReports.ToListAsync();
+        sb.AppendLine($"\nINCIDENT_REPORTS ({incidents.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(incidents.Select(i => new {
+            i.IncidentId, i.ResidentId, i.SafehouseId, i.IncidentDate, i.IncidentType,
+            i.Severity, i.Resolved, i.FollowUpRequired
+        }), opts));
+
+        // ── Social Media Posts (all — 812 rows, key fields only) ──
+        var posts = await _db.SocialMediaPosts.ToListAsync();
+        sb.AppendLine($"\nSOCIAL_MEDIA_POSTS ({posts.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(posts.Select(p => new {
+            p.PostId, p.Platform, p.CreatedAt, p.PostType, p.MediaType,
+            p.ContentTopic, p.SentimentTone, p.CampaignName, p.IsBoosted,
+            p.Impressions, p.Reach, p.Likes, p.Comments, p.Shares, p.EngagementRate,
+            p.DonationReferrals, p.EstimatedDonationValuePhp
+        }), opts));
+
+        // ── Partners (all — 30 rows) ──
+        var partners = await _db.Partners.ToListAsync();
+        sb.AppendLine($"\nPARTNERS ({partners.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(partners.Select(p => new {
+            p.PartnerId, p.PartnerName, p.PartnerType, p.RoleType, p.Region, p.Status
+        }), opts));
+
+        // ── Safehouse Monthly Metrics (all — 450 rows) ──
+        var metrics = await _db.SafehouseMonthlyMetrics.ToListAsync();
+        sb.AppendLine($"\nSAFEHOUSE_MONTHLY_METRICS ({metrics.Count} rows):");
+        sb.AppendLine(JsonSerializer.Serialize(metrics.Select(m => new {
+            m.MetricId, m.SafehouseId, m.MonthStart, m.ActiveResidents,
+            m.AvgEducationProgress, m.AvgHealthScore, m.ProcessRecordingCount,
+            m.HomeVisitationCount, m.IncidentCount
+        }), opts));
+
+        // ── ML Predictions ──
+        var churnScores = await _db.DonorChurnScores.ToListAsync();
+        if (churnScores.Count > 0)
         {
-            var residents = await _db.Residents
-                .Select(r => new { r.ResidentId, r.CaseStatus, r.CaseCategory, r.CurrentRiskLevel, r.ReintegrationStatus, r.SafehouseId, r.PresentAge })
-                .Take(100).ToListAsync();
-            sb.AppendLine($"RESIDENTS (sample): {JsonSerializer.Serialize(residents)}");
+            sb.AppendLine($"\nDONOR_CHURN_SCORES ({churnScores.Count} rows):");
+            sb.AppendLine(JsonSerializer.Serialize(churnScores.Select(c => new {
+                c.SupporterId, c.ChurnRiskScore, c.RiskTier
+            }), opts));
         }
 
-        if (ContainsAny(lower, "donor", "donation", "supporter", "contribut", "campaign", "fundrais"))
+        var readiness = await _db.ResidentReadinessScores.ToListAsync();
+        if (readiness.Count > 0)
         {
-            var topDonors = await _db.Donations
-                .Include(d => d.Supporter)
-                .GroupBy(d => d.Supporter!.DisplayName)
-                .Select(g => new { Donor = g.Key, Total = g.Sum(d => d.Amount ?? d.EstimatedValue ?? 0), Count = g.Count() })
-                .OrderByDescending(x => x.Total)
-                .Take(10).ToListAsync();
-            sb.AppendLine($"TOP DONORS: {JsonSerializer.Serialize(topDonors)}");
-        }
-
-        if (ContainsAny(lower, "social", "post", "engagement", "platform", "facebook", "instagram", "tiktok"))
-        {
-            var platformStats = await _db.SocialMediaPosts
-                .GroupBy(p => p.Platform)
-                .Select(g => new { Platform = g.Key, Posts = g.Count(), AvgEngagement = g.Average(p => (double)(p.EngagementRate ?? 0)) })
-                .ToListAsync();
-            sb.AppendLine($"SOCIAL MEDIA BY PLATFORM: {JsonSerializer.Serialize(platformStats)}");
-        }
-
-        if (ContainsAny(lower, "health", "wellbeing", "education", "progress"))
-        {
-            var avgHealth = await _db.HealthWellbeingRecords.AverageAsync(h => (double)h.GeneralHealthScore);
-            var avgEdu = await _db.EducationRecords.AverageAsync(e => (double)(e.ProgressPercent ?? 0));
-            sb.AppendLine($"HEALTH avg score: {avgHealth:F1}/5.0, EDUCATION avg progress: {avgEdu:F1}%");
-        }
-
-        if (ContainsAny(lower, "incident", "safety", "behavior"))
-        {
-            var incidents = await _db.IncidentReports
-                .GroupBy(i => i.IncidentType)
-                .Select(g => new { Type = g.Key, Count = g.Count() })
-                .ToListAsync();
-            sb.AppendLine($"INCIDENTS BY TYPE: {JsonSerializer.Serialize(incidents)}");
+            sb.AppendLine($"\nRESIDENT_READINESS_SCORES ({readiness.Count} rows):");
+            sb.AppendLine(JsonSerializer.Serialize(readiness.Select(r => new {
+                r.ResidentId, r.ReadinessScore, r.ReadinessTier
+            }), opts));
         }
 
         return sb.ToString();
     }
 
-    private static bool ContainsAny(string text, params string[] keywords)
-        => keywords.Any(k => text.Contains(k));
-
     private static string BuildSystemPrompt(string dbContext)
     {
-        return $@"You are Pharos AI, an assistant for a nonprofit organization that operates safe homes for girls who are survivors of abuse and trafficking in the Philippines.
+        return $@"You are Pharos AI, an intelligent assistant for Pharos — a nonprofit organization that operates safe homes for girls who are survivors of abuse and trafficking in the Philippines.
 
-You have access to the organization's database. Here is the current data:
+You have FULL ACCESS to the organization's live database. Below is the complete data from every table. Use it to answer any question with real numbers — do not estimate or guess. If the user asks about specific residents, donors, safehouses, incidents, donations, social media posts, health records, education records, intervention plans, home visitations, or ML predictions, you have the data right here. Cross-reference tables when needed (e.g., join donations to supporters by supporter_id, join residents to safehouses by safehouse_id, etc.).
+
+DATABASE CONTENTS:
 
 {dbContext}
 
