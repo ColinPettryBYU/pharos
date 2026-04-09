@@ -149,7 +149,8 @@ export function FacebookPostForm({ composePost, onSuccess }: PostFormProps) {
       return;
     }
     await composePost.mutateAsync({
-      Platform: "Facebook",
+      Platforms: ["Facebook"],
+      PostType: "Campaign",
       Caption: caption,
       LinkUrl: linkUrl || undefined,
       PhotoUrl: photoUrl || undefined,
@@ -263,7 +264,8 @@ export function InstagramPostForm({ composePost, onSuccess }: PostFormProps) {
       return;
     }
     await composePost.mutateAsync({
-      Platform: "Instagram",
+      Platforms: ["Instagram"],
+      PostType: "Campaign",
       Caption: caption,
       MediaUrl: mediaUrl,
       MediaType: mediaType,
@@ -376,7 +378,8 @@ export function TwitterPostForm({ composePost, onSuccess }: PostFormProps) {
       return;
     }
     await composePost.mutateAsync({
-      Platform: "Twitter",
+      Platforms: ["Twitter"],
+      PostType: "Campaign",
       Caption: text,
       MediaUrl: mediaUrl || undefined,
       ContentTopic: contentTopic || undefined,
@@ -461,7 +464,8 @@ export function LinkedInPostForm({ composePost, onSuccess }: PostFormProps) {
       return;
     }
     await composePost.mutateAsync({
-      Platform: "LinkedIn",
+      Platforms: ["LinkedIn"],
+      PostType: "Campaign",
       Caption: commentary,
       MediaCategory: mediaCategory,
       ArticleUrl: mediaCategory === "Article" ? articleUrl : undefined,
@@ -594,7 +598,8 @@ export function TikTokPostForm({ composePost, onSuccess }: PostFormProps) {
       return;
     }
     await composePost.mutateAsync({
-      Platform: "TikTok",
+      Platforms: ["TikTok"],
+      PostType: "Campaign",
       VideoUrl: videoUrl,
       Caption: caption,
       PrivacyLevel: privacy,
@@ -732,7 +737,8 @@ export function YouTubePostForm({ composePost, onSuccess }: PostFormProps) {
       return;
     }
     await composePost.mutateAsync({
-      Platform: "YouTube",
+      Platforms: ["YouTube"],
+      PostType: "Campaign",
       Title: title,
       Caption: description,
       Tags: tags,
