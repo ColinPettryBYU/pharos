@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
     {
         return _config["FrontendUrl"]
             ?? _config.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault()
-            ?? "http://localhost:5173";
+            ?? "https://pharos-snowy.vercel.app";
     }
 
     [HttpPost("login")]

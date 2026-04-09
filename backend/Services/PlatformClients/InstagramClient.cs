@@ -49,7 +49,7 @@ public class InstagramClient : ISocialPlatformClient
     {
         var appId = ResolveAppId();
         var scopes = "instagram_basic,instagram_content_publish,instagram_manage_comments," +
-                     "instagram_manage_insights,pages_read_engagement";
+                     "instagram_manage_insights,pages_read_engagement,pages_show_list,business_management";
 
         return $"https://www.facebook.com/v25.0/dialog/oauth" +
                $"?client_id={appId}" +
@@ -89,6 +89,7 @@ public class InstagramClient : ISocialPlatformClient
 
             string? igAccountId = null;
             string? accountName = null;
+            string? pageName = null;
             string? pageId = null;
             string? pageToken = null;
 
@@ -98,26 +99,33 @@ public class InstagramClient : ISocialPlatformClient
                 {
                     pageId = page.GetProperty("id").GetString();
                     pageToken = page.GetProperty("access_token").GetString();
+                    if (page.TryGetProperty("name", out var pn))
+                        pageName = pn.GetString();
 
                     var igResponse = await _http.GetFromJsonAsync<JsonElement>(
-                        $"{GraphApiBase}/{pageId}?fields=instagram_business_account&access_token={pageToken}");
+                        $"{GraphApiBase}/{pageId}?fields=instagram_business_account,name&access_token={pageToken}");
 
                     if (igResponse.TryGetProperty("instagram_business_account", out var igBiz))
                     {
                         igAccountId = igBiz.GetProperty("id").GetString();
                         var igInfo = await _http.GetFromJsonAsync<JsonElement>(
-                            $"{GraphApiBase}/{igAccountId}?fields=username&access_token={pageToken}");
+                            $"{GraphApiBase}/{igAccountId}?fields=username,name&access_token={pageToken}");
                         accountName = igInfo.TryGetProperty("username", out var un) ? un.GetString() : null;
+                        accountName ??= igInfo.TryGetProperty("name", out var nm) ? nm.GetString() : null;
                         break;
                     }
                 }
             }
 
+            var displayName = accountName != null
+                ? $"@{accountName}"
+                : pageName ?? "Instagram Account";
+
             return new OAuthTokenResult(
                 AccessToken: pageToken ?? longToken,
                 RefreshToken: longToken,
                 ExpiresAt: DateTime.UtcNow.AddDays(60),
-                AccountName: accountName != null ? $"@{accountName}" : "Instagram Account",
+                AccountName: displayName,
                 AccountId: igAccountId,
                 PageId: pageId
             );

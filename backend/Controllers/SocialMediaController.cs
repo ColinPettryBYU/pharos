@@ -180,7 +180,7 @@ public class SocialMediaController : ControllerBase
         [FromQuery] string? state = null,
         [FromQuery] string? error = null)
     {
-        var frontendUrl = _config["SocialMedia:FrontendUrl"] ?? "http://localhost:5173";
+        var frontendUrl = _config["SocialMedia:FrontendUrl"] ?? "https://pharos-snowy.vercel.app";
 
         if (!string.IsNullOrWhiteSpace(error))
         {

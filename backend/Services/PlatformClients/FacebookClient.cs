@@ -49,6 +49,7 @@ public class FacebookClient : ISocialPlatformClient
     {
         var appId = ResolveAppId();
         var scopes = "pages_manage_posts,pages_read_engagement,pages_manage_metadata," +
+                     "pages_show_list,business_management," +
                      "instagram_basic,instagram_content_publish,instagram_manage_comments," +
                      "instagram_manage_insights";
 

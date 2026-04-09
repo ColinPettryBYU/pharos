@@ -302,7 +302,9 @@ export function InstagramPostForm({ composePost, onSuccess }: PostFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <PlatformNote>
-            Instagram requires a photo or video with every post. Drop your media below.
+            Instagram requires a photo or video. Images must have an aspect ratio
+            between 4:5 (portrait) and 1.91:1 (landscape). Square (1:1) works best.
+            Minimum 320px wide, maximum 1440px.
           </PlatformNote>
 
           <MediaDropZone
