@@ -36,8 +36,8 @@ public class UploadController : ControllerBase
         if (!AllowedContentTypes.Contains(file.ContentType))
             return BadRequest(new { message = $"File type '{file.ContentType}' is not supported. Use JPEG, PNG, GIF, WebP, MP4, MOV, or WebM." });
 
-        var supabaseUrl = _config["Supabase__Url"];
-        var supabaseKey = _config["Supabase__ServiceKey"];
+        var supabaseUrl = _config["Supabase:Url"];
+        var supabaseKey = _config["Supabase:ServiceKey"];
 
         if (string.IsNullOrEmpty(supabaseUrl) || string.IsNullOrEmpty(supabaseKey))
             return StatusCode(500, new { message = "Supabase storage is not configured." });
