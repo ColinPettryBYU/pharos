@@ -554,8 +554,8 @@ export default function SocialMediaPage() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Predicted engagement rate:{" "}
-                    {mlRecs?.predicted_engagement_rate
-                      ? `${mlRecs.predicted_engagement_rate}%`
+                    {mlRecs?.predicted_engagement_rate != null
+                      ? `${(mlRecs.predicted_engagement_rate * 100).toFixed(2)}%`
                       : "—"}
                   </p>
                 </div>

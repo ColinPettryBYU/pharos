@@ -36,6 +36,7 @@ public record SocialMediaRecommendationDto(
     string RecommendedDayOfWeek,
     string? RecommendedMediaType,
     bool ShouldBoost,
+    double PredictedEngagementRate,
     IEnumerable<PostInsightDto> Insights
 );
 

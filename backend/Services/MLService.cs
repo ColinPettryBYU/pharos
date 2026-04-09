@@ -67,14 +67,21 @@ public class MLService : IMLService
             .OrderByDescending(r => r.ComputedAt)
             .FirstOrDefaultAsync();
 
+        var avgEngagement = await _db.SocialMediaPosts
+            .Where(p => p.EngagementRate.HasValue)
+            .Select(p => p.EngagementRate!.Value)
+            .ToListAsync();
+        var predictedRate = avgEngagement.Any() ? (double)avgEngagement.Average() : 0;
+
         if (rec == null)
             return new SocialMediaRecommendationDto("Facebook", "ImpactStory", "DonorImpact",
-                10, "Tuesday", null, false, new List<PostInsightDto>());
+                10, "Tuesday", null, false, predictedRate, new List<PostInsightDto>());
 
         return new SocialMediaRecommendationDto(
             rec.Platform, rec.PostType, "DonorImpact",
             rec.RecommendedHour, rec.RecommendedDay, "Photo",
             true,
+            predictedRate,
             new List<PostInsightDto>
             {
                 new("ResidentStory", rec.IncludeResidentStory
@@ -97,13 +104,24 @@ public class MLService : IMLService
                 new List<InterventionInsightDto>(),
                 new List<CategoryEffectivenessDto>());
 
-        var insights = rows.Where(r => r.Significant).Select(r =>
+        var significantInsights = rows.Where(r => r.Significant).Select(r =>
             new InterventionInsightDto(
                 r.Intervention,
                 r.Coefficient,
                 rows.Count(x => x.Intervention == r.Intervention),
                 $"{r.Intervention} interventions show a statistically significant effect on {r.Outcome.Replace("delta_", "").Replace("_", " ")} (p={r.PValue:0.000})"
             )).ToList();
+
+        var allCategories = rows.Select(r => r.Intervention).Distinct().ToList();
+        var categoriesWithInsights = significantInsights.Select(i => i.InterventionType).Distinct().ToHashSet();
+        var fallbackInsights = allCategories
+            .Where(c => !categoriesWithInsights.Contains(c))
+            .Select(c => new InterventionInsightDto(
+                c, 0, rows.Count(x => x.Intervention == c),
+                $"No statistically significant effects detected for {c} interventions in current data."
+            )).ToList();
+
+        var insights = significantInsights.Concat(fallbackInsights).ToList();
 
         var byCategory = rows.GroupBy(r => r.Intervention).Select(g =>
         {

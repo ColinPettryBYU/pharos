@@ -3,13 +3,13 @@ import { api } from "@/lib/api";
 import type { PublicImpactSnapshot } from "@/types";
 
 interface SafehouseSummary {
-  totalSafehouses: number;
-  totalResidents: number;
-  totalDonations: number;
-  regionsCount: number;
-  avgEducationProgress: number;
-  avgHealthScore: number;
-  regionBreakdown?: Record<string, number>;
+  total_safehouses: number;
+  total_residents: number;
+  total_donations: number;
+  regions_count: number;
+  avg_education_progress: number;
+  avg_health_score: number;
+  region_breakdown?: Record<string, number>;
 }
 
 export function usePublicSafehouses() {

@@ -9,5 +9,5 @@ public interface ISafehouseService
     Task<SafehouseDto> CreateAsync(CreateSafehouseRequest request);
     Task<SafehouseDto?> UpdateAsync(int id, UpdateSafehouseRequest request);
     Task<bool> DeleteAsync(int id);
-    Task<IEnumerable<SafehouseSummaryDto>> GetPublicSummaryAsync();
+    Task<PublicAggregateSummaryDto> GetPublicSummaryAsync();
 }

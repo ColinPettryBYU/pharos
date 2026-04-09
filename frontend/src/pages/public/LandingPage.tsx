@@ -226,24 +226,24 @@ export default function LandingPage() {
   const impactStats = [
     {
       label: "Girls Served",
-      value: summary?.totalResidents ?? 0,
+      value: summary?.total_residents ?? 0,
       icon: Users,
       suffix: "+",
     },
     {
       label: "Safehouses",
-      value: summary?.totalSafehouses ?? 0,
+      value: summary?.total_safehouses ?? 0,
       icon: Building2,
     },
     {
       label: "Donations Received",
-      value: summary?.totalDonations ?? 0,
+      value: summary?.total_donations ?? 0,
       icon: HandHeart,
       suffix: "+",
     },
     {
       label: "Regions Covered",
-      value: summary?.regionsCount ?? 0,
+      value: summary?.regions_count ?? 0,
       icon: Globe,
     },
   ];

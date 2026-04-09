@@ -35,7 +35,7 @@ public class PublicController : ControllerBase
     }
 
     [HttpGet("safehouses/summary")]
-    public async Task<ActionResult<IEnumerable<SafehouseSummaryDto>>> GetSafehouseSummary()
+    public async Task<ActionResult<PublicAggregateSummaryDto>> GetSafehouseSummary()
     {
         var result = await _safehouseService.GetPublicSummaryAsync();
         return Ok(result);

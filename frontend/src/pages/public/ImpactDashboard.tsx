@@ -38,10 +38,10 @@ export default function ImpactDashboard() {
   const isLoading = snapshotsLoading || summaryLoading;
 
   const impactStats = [
-    { label: "Residents Served", value: summary?.totalResidents ?? 0, icon: Users, suffix: "+", color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Education Progress", value: summary?.avgEducationProgress ?? 0, icon: GraduationCap, suffix: "%", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "Avg Health Score", value: summary?.avgHealthScore ?? 0, icon: HeartPulse, color: "text-rose-500", bg: "bg-rose-500/10" },
-    { label: "Active Safehouses", value: summary?.totalSafehouses ?? 0, icon: Building2, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Residents Served", value: summary?.total_residents ?? 0, icon: Users, suffix: "+", color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Education Progress", value: summary?.avg_education_progress ?? 0, icon: GraduationCap, suffix: "%", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Avg Health Score", value: summary?.avg_health_score ?? 0, icon: HeartPulse, color: "text-rose-500", bg: "bg-rose-500/10" },
+    { label: "Active Safehouses", value: summary?.total_safehouses ?? 0, icon: Building2, color: "text-amber-500", bg: "bg-amber-500/10" },
   ];
 
   return (
@@ -144,7 +144,7 @@ export default function ImpactDashboard() {
                     {["Luzon", "Visayas", "Mindanao"].map((region) => (
                       <div key={region} className="text-center p-5 rounded-xl bg-muted/50">
                         <h3 className="text-sm font-semibold text-muted-foreground">{region}</h3>
-                        <p className="mt-1 text-3xl font-bold text-primary tabular-nums">{summary?.regionBreakdown?.[region] ?? "—"}</p>
+                        <p className="mt-1 text-3xl font-bold text-primary tabular-nums">{summary?.region_breakdown?.[region] ?? "—"}</p>
                         <p className="text-xs text-muted-foreground">Safehouses</p>
                       </div>
                     ))}

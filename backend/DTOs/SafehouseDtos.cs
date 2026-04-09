@@ -45,6 +45,16 @@ public record SafehouseSummaryDto(
     string Status
 );
 
+public record PublicAggregateSummaryDto(
+    int TotalSafehouses,
+    int TotalResidents,
+    decimal TotalDonations,
+    int RegionsCount,
+    decimal AvgEducationProgress,
+    decimal AvgHealthScore,
+    Dictionary<string, int> RegionBreakdown
+);
+
 public record CreateSafehouseRequest(
     string SafehouseCode,
     string Name,

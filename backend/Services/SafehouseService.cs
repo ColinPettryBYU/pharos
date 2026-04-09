@@ -125,13 +125,36 @@ public class SafehouseService : ISafehouseService
         return true;
     }
 
-    public async Task<IEnumerable<SafehouseSummaryDto>> GetPublicSummaryAsync()
+    public async Task<PublicAggregateSummaryDto> GetPublicSummaryAsync()
     {
-        return await _db.Safehouses
-            .Where(s => s.Status == "Active")
-            .Select(s => new SafehouseSummaryDto(
-                s.SafehouseId, s.Name, s.Region, s.City,
-                s.CapacityGirls, s.CurrentOccupancy, s.Status))
+        var safehouses = await _db.Safehouses.Where(s => s.Status == "Active").ToListAsync();
+        var totalResidents = await _db.Residents.CountAsync(r => r.CaseStatus == "Active");
+        var totalDonations = await _db.Donations
+            .Where(d => d.DonationType == "Monetary")
+            .SumAsync(d => d.Amount ?? 0m);
+
+        var latestMetrics = await _db.SafehouseMonthlyMetrics
+            .GroupBy(m => m.SafehouseId)
+            .Select(g => g.OrderByDescending(m => m.MonthStart).First())
             .ToListAsync();
+
+        var avgEducation = latestMetrics.Any()
+            ? latestMetrics.Average(m => m.AvgEducationProgress ?? 0m) : 0m;
+        var avgHealth = latestMetrics.Any()
+            ? latestMetrics.Average(m => m.AvgHealthScore ?? 0m) : 0m;
+
+        var regionBreakdown = safehouses
+            .GroupBy(s => s.Region)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        return new PublicAggregateSummaryDto(
+            safehouses.Count,
+            totalResidents,
+            totalDonations,
+            regionBreakdown.Count,
+            avgEducation,
+            avgHealth,
+            regionBreakdown
+        );
     }
 }
