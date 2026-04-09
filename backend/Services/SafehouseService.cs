@@ -129,23 +129,28 @@ public class SafehouseService : ISafehouseService
     {
         var safehouses = await _db.Safehouses.Where(s => s.Status == "Active").ToListAsync();
         var totalResidents = await _db.Residents.CountAsync(r => r.CaseStatus == "Active");
-        var totalDonations = await _db.Donations
-            .Where(d => d.DonationType == "Monetary")
-            .SumAsync(d => d.Amount ?? 0m);
 
-        var allMetrics = await _db.SafehouseMonthlyMetrics.ToListAsync();
-        var latestMetrics = allMetrics
-            .GroupBy(m => m.SafehouseId)
-            .Select(g => g.OrderByDescending(m => m.MonthStart).First())
-            .ToList();
+        var allDonations = await _db.Donations
+            .Where(d => d.Amount.HasValue || d.EstimatedValue.HasValue)
+            .ToListAsync();
+        var totalDonations = allDonations.Sum(d => d.Amount ?? d.EstimatedValue ?? 0m);
 
-        var metricsWithEd = latestMetrics.Where(m => m.AvgEducationProgress.HasValue && m.AvgEducationProgress > 0).ToList();
-        var metricsWithHealth = latestMetrics.Where(m => m.AvgHealthScore.HasValue && m.AvgHealthScore > 0).ToList();
+        var activeResidentIds = await _db.Residents
+            .Where(r => r.CaseStatus == "Active")
+            .Select(r => r.ResidentId)
+            .ToListAsync();
 
-        var avgEducation = metricsWithEd.Any()
-            ? metricsWithEd.Average(m => m.AvgEducationProgress!.Value) : 0m;
-        var avgHealth = metricsWithHealth.Any()
-            ? metricsWithHealth.Average(m => m.AvgHealthScore!.Value) : 0m;
+        var edRecords = await _db.EducationRecords
+            .Where(e => activeResidentIds.Contains(e.ResidentId) && e.ProgressPercent.HasValue && e.ProgressPercent > 0)
+            .ToListAsync();
+        var avgEducation = edRecords.Any()
+            ? Math.Round(edRecords.Average(e => e.ProgressPercent!.Value), 1) : 0m;
+
+        var healthRecords = await _db.HealthWellbeingRecords
+            .Where(h => activeResidentIds.Contains(h.ResidentId) && h.GeneralHealthScore > 0)
+            .ToListAsync();
+        var avgHealth = healthRecords.Any()
+            ? Math.Round(healthRecords.Average(h => h.GeneralHealthScore), 2) : 0m;
 
         var regionBreakdown = safehouses
             .GroupBy(s => s.Region)
