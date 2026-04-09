@@ -12,7 +12,7 @@ import type { User, AuthResponse } from "@/types";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   loginWithGoogle: () => Promise<void>;
   register: (
     email: string,
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const data = await api.post<AuthResponse>("/auth/login", {
       email,
       password,
@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("MFA_REQUIRED");
     }
     setUser(data.user);
+    return data.user;
   };
 
   const loginWithGoogle = async () => {

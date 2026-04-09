@@ -8,7 +8,7 @@ namespace Pharos.Api.Services.PlatformClients;
 
 public class InstagramClient : ISocialPlatformClient
 {
-    private const string GraphApiBase = "https://graph.facebook.com/v25.0";
+    private const string GraphApiBase = "https://graph.facebook.com/v21.0";
     // Rate limit: 200 calls/user/hour — same as Facebook (Meta Graph API)
     private const int CommentCacheMinutes = 5;
 
@@ -51,7 +51,7 @@ public class InstagramClient : ISocialPlatformClient
         var scopes = "instagram_basic,instagram_content_publish,instagram_manage_comments," +
                      "instagram_manage_insights,pages_read_engagement,pages_show_list,business_management";
 
-        return $"https://www.facebook.com/v25.0/dialog/oauth" +
+        return $"https://www.facebook.com/v21.0/dialog/oauth" +
                $"?client_id={appId}" +
                $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
                $"&scope={Uri.EscapeDataString(scopes)}" +

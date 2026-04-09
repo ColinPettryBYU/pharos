@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PageTransition } from "./PageTransition";
 
 const navLinks = [
-  { label: "Mission", href: "/#mission" },
+  { label: "Home", href: "/#mission" },
   { label: "Impact", href: "/impact" },
   { label: "Donate", href: "/donate" },
 ];

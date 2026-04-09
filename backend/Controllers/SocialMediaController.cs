@@ -98,18 +98,25 @@ public class SocialMediaController : ControllerBase
             .Take(100)
             .ToListAsync();
 
+        // Skip CSV-seeded fake IDs (they start with "ig_"); only real API-published posts have numeric IDs
+        var realPosts = postsToUpdate.Where(p =>
+            !string.IsNullOrEmpty(p.PlatformPostId) && !p.PlatformPostId.StartsWith("ig_")).ToList();
+
+        _logger.LogInformation("Found {Total} Instagram posts, {Real} with real platform IDs",
+            postsToUpdate.Count, realPosts.Count);
+
         var updated = 0;
         foreach (var account in accounts)
         {
             var token = _tokenService.Decrypt(account.EncryptedAccessToken);
 
-            foreach (var post in postsToUpdate)
+            foreach (var post in realPosts)
             {
                 try
                 {
                     using var http = new HttpClient();
-                    var url = $"https://graph.facebook.com/v25.0/{post.PlatformPostId}" +
-                              $"?fields=like_count,comments_count,insights.metric(impressions,reach,saved,shares)" +
+                    var url = $"https://graph.facebook.com/v21.0/{post.PlatformPostId}" +
+                              $"?fields=like_count,comments_count,insights.metric(views,reach,saved,shares)" +
                               $"&access_token={token}";
                     var response = await http.GetFromJsonAsync<System.Text.Json.JsonElement>(url);
 
@@ -131,7 +138,7 @@ public class SocialMediaController : ControllerBase
                                 var intVal = v.GetInt32();
                                 switch (name)
                                 {
-                                    case "impressions": post.Impressions = intVal; break;
+                                    case "views": post.Impressions = intVal; break;
                                     case "reach": post.Reach = intVal; break;
                                     case "saved": post.Saves = intVal; break;
                                     case "shares": post.Shares = intVal; break;
@@ -142,7 +149,7 @@ public class SocialMediaController : ControllerBase
 
                     var totalInteractions = (post.Likes ?? 0) + (post.Comments ?? 0) + (post.Shares ?? 0) + (post.Saves ?? 0);
                     if (post.Reach > 0)
-                        post.EngagementRate = Math.Round((decimal)totalInteractions / post.Reach.Value * 100, 2);
+                        post.EngagementRate = Math.Round((decimal)totalInteractions / post.Reach.Value, 4);
 
                     updated++;
                 }

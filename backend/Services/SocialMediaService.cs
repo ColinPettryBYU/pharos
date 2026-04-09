@@ -194,10 +194,19 @@ public class SocialMediaService : ISocialMediaService
                     ? p.Platform.ToLower() == platform!.ToLower()
                     : true))
             .OrderByDescending(p => p.CreatedAt)
-            .Take(5)
+            .Take(50)
             .ToListAsync();
 
-        var postIdsByPlatform = recentPosts
+        // Skip CSV-seeded fake IDs; only use real API-published posts with numeric IDs
+        var realPosts = recentPosts
+            .Where(p => !string.IsNullOrEmpty(p.PlatformPostId) && !p.PlatformPostId.StartsWith("ig_"))
+            .Take(5)
+            .ToList();
+
+        _logger.LogInformation("Comment inbox: {Total} recent posts, {Real} with real platform IDs",
+            recentPosts.Count, realPosts.Count);
+
+        var postIdsByPlatform = realPosts
             .GroupBy(p => p.Platform, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Select(p => p.PlatformPostId!).ToList(),
                 StringComparer.OrdinalIgnoreCase);

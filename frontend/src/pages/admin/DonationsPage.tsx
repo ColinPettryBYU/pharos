@@ -197,8 +197,8 @@ export default function DonationsPage() {
         <DataTableWrapper
           columns={columns}
           data={donations}
-          searchKey="campaign_name"
-          searchPlaceholder="Search by campaign..."
+          searchKey="supporter_name"
+          searchPlaceholder="Search by donor name..."
           isLoading={isLoading}
           filterComponent={
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? "all")}>

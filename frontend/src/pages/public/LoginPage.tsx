@@ -52,9 +52,17 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      const loggedInUser = await login(data.email, data.password);
       toast.success("Welcome back!");
-      navigate(redirectTo || "/admin");
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else if (loggedInUser.roles?.includes("Admin") || loggedInUser.roles?.includes("Staff")) {
+        navigate("/admin");
+      } else if (loggedInUser.roles?.includes("Donor")) {
+        navigate("/donor/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error: unknown) {
       setShake(true);
       setTimeout(() => setShake(false), 500);

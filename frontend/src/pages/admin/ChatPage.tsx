@@ -284,6 +284,10 @@ function ThinkingIndicator() {
     return () => clearInterval(interval);
   }, []);
 
+  const longestPhrase = THINKING_PHRASES.reduce((a, b) =>
+    a.length >= b.length ? a : b
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -300,30 +304,30 @@ function ThinkingIndicator() {
         </motion.div>
       </div>
       <div className="rounded-2xl rounded-tl-sm bg-card border px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1">
-            {[0, 1, 2].map((i) => (
-              <motion.span
-                key={i}
-                className="h-1.5 w-1.5 rounded-full bg-primary/60"
-                animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  delay: i * 0.15,
-                  ease: "easeInOut",
-                }}
-              />
-            ))}
-          </div>
+        <div className="relative inline-flex">
+          <span
+            className="invisible text-xs font-semibold whitespace-nowrap select-none"
+            aria-hidden="true"
+          >
+            {longestPhrase}
+          </span>
           <AnimatePresence mode="wait">
             <motion.span
               key={phraseIdx}
-              initial={{ opacity: 0, y: 4, filter: "blur(4px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: -4, filter: "blur(4px)" }}
+              initial={{ opacity: 0, filter: "blur(4px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, filter: "blur(4px)" }}
               transition={{ duration: 0.3 }}
-              className="text-xs font-medium text-muted-foreground"
+              className="absolute inset-0 flex items-center text-xs font-semibold whitespace-nowrap"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, var(--muted-foreground) 0%, var(--primary) 40%, var(--primary) 60%, var(--muted-foreground) 100%)",
+                backgroundSize: "200% 100%",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                animation: "shimmer 2s linear infinite",
+              }}
             >
               {THINKING_PHRASES[phraseIdx]}
             </motion.span>

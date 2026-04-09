@@ -15,11 +15,9 @@ import {
   Calendar,
   ArrowRight,
   MapPin,
-  TrendingUp,
   Globe,
   HandHeart,
   Sparkles,
-  BarChart3,
   Activity,
 } from "lucide-react";
 import { fmtDate } from "@/lib/utils";
@@ -238,17 +236,6 @@ export default function ImpactDashboard() {
             <p className="mx-auto mt-6 max-w-2xl text-lg text-white/65 leading-relaxed">
               Real data, real outcomes. Every number represents a life changed, a future restored.
             </p>
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.6 }}
-              className="mt-12 flex justify-center"
-            >
-              <div className="flex flex-col items-center gap-1.5 text-white/35">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-xs tracking-widest uppercase">Our Numbers</span>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
 
@@ -452,93 +439,6 @@ export default function ImpactDashboard() {
           </div>
         </AnimatedSection>
 
-        {/* ─── OUTCOME HIGHLIGHTS ─────────────────────────────────────────── */}
-        <AnimatedSection className="relative mb-14">
-          <div className="relative rounded-2xl overflow-hidden border border-border/60 shadow-sm" style={{ background: "var(--pharos-cream)" }}>
-            <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 70% 20%, rgba(176,196,216,0.12) 0%, transparent 50%)" }} />
-
-            <motion.div
-              className="pointer-events-none absolute top-[15%] right-[8%] h-14 w-14 rounded-full border"
-              style={{ borderColor: "rgba(176,196,216,0.15)" }}
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            />
-
-            <div className="relative p-8 sm:p-12">
-              <div className="flex items-center gap-3 mb-3">
-                <BarChart3 className="h-5 w-5" style={{ color: "var(--pharos-sage)" }} />
-                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: "var(--pharos-sage)" }}>Outcome Snapshot</span>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl mb-2" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>
-                Measuring What Matters
-              </h2>
-              <p className="text-muted-foreground max-w-xl mb-10">
-                We track progress across education, health, and well-being to ensure every girl is moving toward a brighter future.
-              </p>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                {[
-                  {
-                    label: "Education Progress",
-                    value: summary?.avg_education_progress ?? 0,
-                    suffix: "%",
-                    accent: "var(--pharos-sage)",
-                    bar: true,
-                    fmt: "decimal" as const,
-                    dp: 1,
-                  },
-                  {
-                    label: "Health & Well-being",
-                    value: summary?.avg_health_score ?? 0,
-                    suffix: " / 5",
-                    accent: "var(--pharos-blush)",
-                    bar: false,
-                    fmt: "decimal" as const,
-                    dp: 2,
-                  },
-                  {
-                    label: "Residents in Care",
-                    value: summary?.total_residents ?? 0,
-                    suffix: "+",
-                    accent: "var(--pharos-sky)",
-                    bar: false,
-                    fmt: "number" as const,
-                    dp: 0,
-                  },
-                ].map((metric, i) => (
-                  <motion.div
-                    key={metric.label}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                    className="rounded-xl bg-white/70 dark:bg-card/60 p-6 border border-border/40 backdrop-blur-sm"
-                  >
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">{metric.label}</p>
-                    <div className="flex items-baseline gap-1 mb-3">
-                      <span className="text-4xl font-bold tabular-nums" style={{ color: "var(--pharos-forest)", fontFamily: "var(--font-editorial)" }}>
-                        <AnimatedNumber value={metric.value} format={metric.fmt} decimals={metric.dp} />
-                      </span>
-                      <span className="text-lg font-semibold" style={{ color: metric.accent }}>{metric.suffix}</span>
-                    </div>
-                    {metric.bar && (
-                      <div className="h-2 w-full rounded-full bg-border/40 overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full"
-                          style={{ background: metric.accent }}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${Math.min(metric.value, 100)}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-                        />
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </AnimatedSection>
 
         {/* ─── MONTHLY REPORTS ────────────────────────────────────────────── */}
         {snapshotList.length > 0 && (
