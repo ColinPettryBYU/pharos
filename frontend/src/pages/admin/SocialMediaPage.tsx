@@ -51,6 +51,10 @@ import {
   TrendingUp,
   DollarSign,
   Send,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -102,23 +106,38 @@ export default function SocialMediaPage() {
     "All"
   );
   const [activeTab, setActiveTab] = useState("analytics");
-  const [actionTab, setActionTab] = useState("compose");
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [postsPage, setPostsPage] = useState(1);
+  const postsPageSize = 20;
 
   const platformFilter =
     activePlatform !== "All" ? { platform: activePlatform } : {};
-  const { data: postsData, isLoading: postsLoading } = useSocialPosts({
+  const { data: allPostsData, isLoading: postsLoading } = useSocialPosts({
     ...platformFilter,
     pageSize: 1000,
   });
-  const { data: commentsData } = useSocialComments(platformFilter);
+  const { data: pagedPostsData } = useSocialPosts({
+    ...platformFilter,
+    page: postsPage,
+    pageSize: postsPageSize,
+  });
+  const { data: commentsData, isLoading: commentsLoading, refetch: refetchComments } = useSocialComments(platformFilter);
   const { data: mlRecs } = useSocialMediaRecommendations();
   const composePost = useComposePost();
   const replyToComment = useReplyToComment();
 
-  const posts: SocialMediaPost[] = Array.isArray(postsData)
-    ? postsData
-    : (postsData?.data ?? []);
+  const posts: SocialMediaPost[] = Array.isArray(allPostsData)
+    ? allPostsData
+    : (allPostsData?.data ?? []);
+
+  const pagedPosts: SocialMediaPost[] = Array.isArray(pagedPostsData)
+    ? pagedPostsData
+    : (pagedPostsData?.data ?? []);
+  const totalPostsCount =
+    !Array.isArray(pagedPostsData) && pagedPostsData?.total
+      ? pagedPostsData.total
+      : posts.length;
+  const totalPages = Math.max(1, Math.ceil(totalPostsCount / postsPageSize));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const commentsRaw = commentsData as any;
   const comments = Array.isArray(commentsRaw)
@@ -201,7 +220,7 @@ export default function SocialMediaPage() {
             variant={activePlatform === value ? "default" : "ghost"}
             size="sm"
             className="gap-1.5 shrink-0"
-            onClick={() => setActivePlatform(value)}
+            onClick={() => { setActivePlatform(value); setPostsPage(1); }}
           >
             <Icon className="h-4 w-4" />
             {label}
@@ -209,12 +228,21 @@ export default function SocialMediaPage() {
         ))}
       </div>
 
-      {/* ── Section 1: Analytics / Data ─────────────────── */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
+          <Separator orientation="vertical" className="mx-2 h-5" />
+          <TabsTrigger value="compose">Create Post</TabsTrigger>
+          <TabsTrigger value="comments" className="gap-1.5">
+            Comments Inbox
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-xs">
+                {unreadCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Analytics Tab ─────────────────────────────────── */}
@@ -417,7 +445,7 @@ export default function SocialMediaPage() {
                     <Skeleton key={i} className="h-10 rounded-md" />
                   ))}
                 </div>
-              ) : posts.length === 0 ? (
+              ) : pagedPosts.length === 0 ? (
                 <p className="text-center text-muted-foreground py-12">
                   No posts found
                   {activePlatform !== "All"
@@ -425,61 +453,88 @@ export default function SocialMediaPage() {
                     : ""}
                 </p>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-b bg-muted/40">
-                        <TableHead>Platform</TableHead>
-                        <TableHead>Post Type</TableHead>
-                        <TableHead className="min-w-[200px]">Caption</TableHead>
-                        <TableHead>Topic</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Eng. Rate</TableHead>
-                        <TableHead className="text-right">Reach</TableHead>
-                        <TableHead className="text-right">Likes</TableHead>
-                        <TableHead className="text-right">Comments</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {posts.map((post) => (
-                        <TableRow key={post.post_id}>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {post.platform}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {post.post_type}
-                          </TableCell>
-                          <TableCell
-                            className="text-sm text-muted-foreground max-w-[260px] truncate"
-                            title={post.caption}
-                          >
-                            {truncate(post.caption, 60)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {post.content_topic}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatSafe(post.created_at, "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm font-medium">
-                            {(post.engagement_rate * 100).toFixed(1)}%
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm">
-                            {post.reach?.toLocaleString() ?? "—"}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm">
-                            {post.likes?.toLocaleString() ?? "—"}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-sm">
-                            {post.comments?.toLocaleString() ?? "—"}
-                          </TableCell>
+                <>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b bg-muted/40">
+                          <TableHead>Platform</TableHead>
+                          <TableHead>Post Type</TableHead>
+                          <TableHead className="min-w-[200px]">Caption</TableHead>
+                          <TableHead>Topic</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Eng. Rate</TableHead>
+                          <TableHead className="text-right">Reach</TableHead>
+                          <TableHead className="text-right">Likes</TableHead>
+                          <TableHead className="text-right">Comments</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {pagedPosts.map((post) => (
+                          <TableRow key={post.post_id}>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {post.platform}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {post.post_type}
+                            </TableCell>
+                            <TableCell
+                              className="text-sm text-muted-foreground max-w-[260px] truncate"
+                              title={post.caption ?? ""}
+                            >
+                              {truncate(post.caption, 60)}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {post.content_topic}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatSafe(post.created_at, "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm font-medium">
+                              {(post.engagement_rate * 100).toFixed(1)}%
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">
+                              {post.reach?.toLocaleString() ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">
+                              {post.likes?.toLocaleString() ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-sm">
+                              {post.comments?.toLocaleString() ?? "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="flex items-center justify-between pt-4">
+                    <p className="text-sm text-muted-foreground">
+                      Page {postsPage} of {totalPages} ({totalPostsCount} posts)
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={postsPage <= 1}
+                        onClick={() => setPostsPage((p) => Math.max(1, p - 1))}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={postsPage >= totalPages}
+                        onClick={() => setPostsPage((p) => p + 1)}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -534,36 +589,6 @@ export default function SocialMediaPage() {
             </Card>
           </div>
         </TabsContent>
-      </Tabs>
-
-      {/* ── Section 2: Operational Tools ────────────────── */}
-      <Separator className="my-8" />
-
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-heading text-xl font-semibold tracking-tight">
-            Tools
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create posts and manage comments
-          </p>
-        </div>
-
-        <Tabs value={actionTab} onValueChange={setActionTab} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="compose">Create Post</TabsTrigger>
-            <TabsTrigger value="comments" className="gap-1.5">
-              Comments Inbox
-              {unreadCount > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-5 min-w-5 px-1.5 text-xs"
-                >
-                  {unreadCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
 
           {/* ── Create Post Tab ────────────────────────────── */}
           <TabsContent value="compose">
@@ -634,18 +659,40 @@ export default function SocialMediaPage() {
             ) : (
               <Card>
                 <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">Comments Inbox</CardTitle>
-                    <Badge variant="outline">{activePlatform}</Badge>
-                    {unreadCount > 0 && (
-                      <Badge variant="secondary">
-                        {unreadCount} unread
-                      </Badge>
-                    )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">Comments Inbox</CardTitle>
+                      <Badge variant="outline">{activePlatform}</Badge>
+                      {unreadCount > 0 && (
+                        <Badge variant="secondary">
+                          {unreadCount} unread
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={commentsLoading}
+                      onClick={() => refetchComments()}
+                    >
+                      {commentsLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      Refresh
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {comments.length === 0 ? (
+                  {commentsLoading ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} className="h-20 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : comments.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
                       No comments from {activePlatform}
                     </p>
@@ -751,8 +798,7 @@ export default function SocialMediaPage() {
               </Card>
             )}
           </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
     </div>
   );
 }

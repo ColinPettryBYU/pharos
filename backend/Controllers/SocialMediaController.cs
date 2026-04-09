@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -72,6 +73,89 @@ public class SocialMediaController : ControllerBase
         if (result.Posts.Count == 0 && result.Errors?.Count > 0)
             return BadRequest(new { errors = result.Errors });
         return Ok(result);
+    }
+
+    // ── Insights Refresh ──
+
+    [HttpPost("refresh-insights")]
+    [AllowAnonymous]
+    public async Task<ActionResult> RefreshInsights([FromHeader(Name = "X-Api-Key")] string? apiKey)
+    {
+        var expectedKey = _config["SocialMedia:InsightsApiKey"];
+        if (string.IsNullOrWhiteSpace(expectedKey) || apiKey != expectedKey)
+            return Unauthorized(new { error = "Invalid API key" });
+
+        var accounts = await _db.SocialMediaAccounts
+            .Where(a => a.Status == "Active" && a.Platform == "Instagram")
+            .ToListAsync();
+
+        if (accounts.Count == 0)
+            return Ok(new { updated = 0, message = "No active Instagram accounts" });
+
+        var postsToUpdate = await _db.SocialMediaPosts
+            .Where(p => p.PlatformPostId != null && p.Platform == "Instagram")
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(100)
+            .ToListAsync();
+
+        var updated = 0;
+        foreach (var account in accounts)
+        {
+            var token = _tokenService.Decrypt(account.EncryptedAccessToken);
+
+            foreach (var post in postsToUpdate)
+            {
+                try
+                {
+                    using var http = new HttpClient();
+                    var url = $"https://graph.facebook.com/v25.0/{post.PlatformPostId}" +
+                              $"?fields=like_count,comments_count,insights.metric(impressions,reach,saved,shares)" +
+                              $"&access_token={token}";
+                    var response = await http.GetFromJsonAsync<System.Text.Json.JsonElement>(url);
+
+                    if (response.TryGetProperty("like_count", out var likes))
+                        post.Likes = likes.GetInt32();
+                    if (response.TryGetProperty("comments_count", out var comments))
+                        post.Comments = comments.GetInt32();
+
+                    if (response.TryGetProperty("insights", out var insights)
+                        && insights.TryGetProperty("data", out var insightsData))
+                    {
+                        foreach (var metric in insightsData.EnumerateArray())
+                        {
+                            var name = metric.GetProperty("name").GetString();
+                            var values = metric.GetProperty("values");
+                            var val = values.EnumerateArray().FirstOrDefault();
+                            if (val.TryGetProperty("value", out var v))
+                            {
+                                var intVal = v.GetInt32();
+                                switch (name)
+                                {
+                                    case "impressions": post.Impressions = intVal; break;
+                                    case "reach": post.Reach = intVal; break;
+                                    case "saved": post.Saves = intVal; break;
+                                    case "shares": post.Shares = intVal; break;
+                                }
+                            }
+                        }
+                    }
+
+                    var totalInteractions = (post.Likes ?? 0) + (post.Comments ?? 0) + (post.Shares ?? 0) + (post.Saves ?? 0);
+                    if (post.Reach > 0)
+                        post.EngagementRate = Math.Round((decimal)totalInteractions / post.Reach.Value * 100, 2);
+
+                    updated++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch insights for post {PostId}", post.PlatformPostId);
+                }
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Refreshed insights for {Count} posts", updated);
+        return Ok(new { updated, message = $"Updated {updated} posts" });
     }
 
     // ── Comments Inbox ──

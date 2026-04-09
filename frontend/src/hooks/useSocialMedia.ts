@@ -39,6 +39,9 @@ export function useSocialComments(filters: Record<string, unknown> = {}) {
     queryKey: ["socialComments", filters],
     queryFn: () =>
       api.get<CommentInboxResponse>("/admin/social-media/comments/inbox", filters),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

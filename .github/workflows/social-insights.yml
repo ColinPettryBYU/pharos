@@ -1,0 +1,24 @@
+name: Social Media Insights — Nightly Refresh
+
+on:
+  schedule:
+    - cron: '30 2 * * *'    # 2:30am UTC nightly (after ML pipeline)
+  workflow_dispatch:
+
+jobs:
+  refresh-insights:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Refresh Instagram Post Insights
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${{ secrets.BACKEND_URL }}/api/admin/social-media/refresh-insights" \
+            -H "X-Api-Key: ${{ secrets.INSIGHTS_API_KEY }}" \
+            -H "Content-Type: application/json")
+          echo "Response code: $response"
+          if [ "$response" != "200" ]; then
+            echo "Failed to refresh insights (HTTP $response)"
+            exit 1
+          fi
+          echo "Insights refreshed successfully"
