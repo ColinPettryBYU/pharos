@@ -196,9 +196,10 @@ export default function SocialMediaPage() {
     }));
   })();
 
-  const unreadCount = comments.filter(
+  const [localResponded, setLocalResponded] = useState<Set<string>>(new Set());
+  const unrespondedCount = comments.filter(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (c: any) => !c.is_read
+    (c: any) => !c.responded && !localResponded.has(c.comment_id)
   ).length;
 
   return (
@@ -237,9 +238,9 @@ export default function SocialMediaPage() {
           <TabsTrigger value="compose">Create Post</TabsTrigger>
           <TabsTrigger value="comments" className="gap-1.5">
             Comments Inbox
-            {unreadCount > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-xs">
-                {unreadCount}
+            {unrespondedCount > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5 text-xs">
+                {unrespondedCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -672,9 +673,9 @@ export default function SocialMediaPage() {
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-lg">Comments Inbox</CardTitle>
                       <Badge variant="outline">{activePlatform}</Badge>
-                      {unreadCount > 0 && (
-                        <Badge variant="secondary">
-                          {unreadCount} unread
+                      {unrespondedCount > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {unrespondedCount} unresponded
                         </Badge>
                       )}
                     </div>
@@ -713,33 +714,49 @@ export default function SocialMediaPage() {
                       className="space-y-3"
                     >
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {comments.map((comment: any) => (
+                      {comments.map((comment: any) => {
+                        const isResponded = comment.responded || localResponded.has(comment.comment_id);
+                        return (
                         <motion.div
                           key={comment.comment_id}
                           variants={item}
                           className={cn(
-                            "rounded-lg border p-4 transition-colors",
-                            !comment.is_read && "bg-primary/5 border-primary/20"
+                            "rounded-xl border p-4 transition-all",
+                            isResponded
+                              ? "bg-muted/30 border-border/50"
+                              : "bg-card border-border shadow-sm"
                           )}
                         >
                           <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0 flex-1">
-                              <span className="font-semibold text-sm leading-none">
-                                {comment.commenter_name}
-                              </span>
-                              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold uppercase text-muted-foreground">
+                                  {(comment.commenter_name || "?")[0]}
+                                </div>
+                                <span className="font-semibold text-sm">
+                                  {comment.commenter_name}
+                                </span>
+                                <Badge
+                                  variant={isResponded ? "secondary" : "destructive"}
+                                  className="text-[10px] px-1.5 py-0"
+                                >
+                                  {isResponded ? "Responded" : "Unresponded"}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-foreground/80 mt-2 ml-9 leading-relaxed">
                                 {comment.comment_text}
                               </p>
                             </div>
-                            <span className="text-xs text-muted-foreground shrink-0 pt-0.5">
-                              {formatSafe(comment.timestamp, "MMM d, h:mm a")}
+                            <span className="text-xs text-muted-foreground shrink-0 pt-1">
+                              {formatSafe(comment.created_at ?? comment.timestamp, "MMM d, h:mm a")}
                             </span>
                           </div>
 
-                          <div className="mt-3 flex gap-2">
+                          {!isResponded && (
+                          <div className="mt-3 ml-9 flex gap-2">
                             <Input
                               placeholder="Write a reply…"
-                              className="h-8 text-sm"
+                              className="h-8 text-sm rounded-lg"
                               value={replyTexts[comment.comment_id] || ""}
                               onChange={(e) =>
                                 setReplyTexts((prev) => ({
@@ -759,6 +776,7 @@ export default function SocialMediaPage() {
                                     })
                                     .then(() => {
                                       toast.success("Reply sent!");
+                                      setLocalResponded(prev => new Set(prev).add(comment.comment_id));
                                       setReplyTexts((prev) => ({
                                         ...prev,
                                         [comment.comment_id]: "",
@@ -770,12 +788,12 @@ export default function SocialMediaPage() {
                             />
                             <Button
                               size="sm"
-                              variant="outline"
                               className="gap-1.5"
                               disabled={
                                 replyToComment.isPending ||
                                 !replyTexts[comment.comment_id]
                               }
+                              style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
                               onClick={async () => {
                                 const text = replyTexts[comment.comment_id];
                                 if (!text) return;
@@ -786,6 +804,7 @@ export default function SocialMediaPage() {
                                     platform: comment.platform,
                                   });
                                   toast.success("Reply sent!");
+                                  setLocalResponded(prev => new Set(prev).add(comment.comment_id));
                                   setReplyTexts((prev) => ({
                                     ...prev,
                                     [comment.comment_id]: "",
@@ -799,8 +818,10 @@ export default function SocialMediaPage() {
                               Reply
                             </Button>
                           </div>
+                          )}
                         </motion.div>
-                      ))}
+                        );
+                      })}
                     </motion.div>
                   )}
                 </CardContent>

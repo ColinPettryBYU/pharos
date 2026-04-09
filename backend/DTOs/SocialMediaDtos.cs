@@ -136,6 +136,7 @@ public record CommentInboxDto(
     string CommentText,
     DateTime CreatedAt,
     bool IsRead,
+    bool Responded,
     string? PostThumbnail = null
 );
 

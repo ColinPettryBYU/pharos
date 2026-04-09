@@ -27,6 +27,9 @@ public class PharosDbContext : DbContext
     public DbSet<SocialMediaAccount> SocialMediaAccounts => Set<SocialMediaAccount>();
     public DbSet<SocialMediaCredential> SocialMediaCredentials => Set<SocialMediaCredential>();
 
+    // ── Comment Responses ──
+    public DbSet<CommentResponse> CommentResponses => Set<CommentResponse>();
+
     // ── Chat History ──
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
@@ -596,6 +599,20 @@ public class PharosDbContext : DbContext
             entity.Property(e => e.RiskTier).HasColumnName("risk_tier").HasMaxLength(50);
             entity.Property(e => e.TopFactors).HasColumnName("top_factors").HasMaxLength(2000);
             entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
+        });
+
+        // ── CommentResponse ──
+        modelBuilder.Entity<CommentResponse>(entity =>
+        {
+            entity.ToTable("comment_responses");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CommentId).HasColumnName("comment_id").HasMaxLength(200);
+            entity.Property(e => e.Platform).HasColumnName("platform").HasMaxLength(50);
+            entity.Property(e => e.ReplyText).HasColumnName("reply_text").HasMaxLength(2000);
+            entity.Property(e => e.RespondedAt).HasColumnName("responded_at");
+
+            entity.HasIndex(e => e.CommentId);
         });
 
         // ── ChatConversation ──

@@ -232,11 +232,20 @@ public class SocialMediaService : ISocialMediaService
         }
 
         var results = await Task.WhenAll(fetchTasks);
+
+        var allCommentIds = results.SelectMany(cl => cl).Select(c => c.CommentId).ToList();
+        var respondedSet = await _db.CommentResponses
+            .Where(cr => allCommentIds.Contains(cr.CommentId))
+            .Select(cr => cr.CommentId)
+            .ToHashSetAsync();
+
         foreach (var commentList in results)
         {
             allComments.AddRange(commentList.Select(c => new CommentInboxDto(
                 c.CommentId, c.Platform, c.PostId, c.CommenterName,
-                c.CommentText, c.CreatedAt, c.IsRead, c.PostThumbnail)));
+                c.CommentText, c.CreatedAt, c.IsRead,
+                respondedSet.Contains(c.CommentId),
+                c.PostThumbnail)));
         }
 
         var sorted = allComments.OrderByDescending(c => c.CreatedAt).ToList();
@@ -263,6 +272,24 @@ public class SocialMediaService : ISocialMediaService
             return false;
         }
 
-        return await client.ReplyToCommentAsync(account, commentId, message);
+        var success = await client.ReplyToCommentAsync(account, commentId, message);
+
+        if (success)
+        {
+            var existing = await _db.CommentResponses.FirstOrDefaultAsync(cr => cr.CommentId == commentId);
+            if (existing == null)
+            {
+                _db.CommentResponses.Add(new Models.CommentResponse
+                {
+                    CommentId = commentId,
+                    Platform = platform,
+                    ReplyText = message,
+                    RespondedAt = DateTime.UtcNow,
+                });
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        return success;
     }
 }
