@@ -191,7 +191,7 @@ function ChartBlockRenderer({ block }: { block: ChatBlock }) {
       case "pie":
         return (
           <PieChart>
-            <Pie data={data} dataKey={yKeys[0] ?? "value"} nameKey={xKey} cx="50%" cy="50%" outerRadius={80} label={(e: Record<string, unknown>) => String(e[xKey] ?? "")}>
+            <Pie data={data} dataKey={yKeys[0] ?? "value"} nameKey={xKey} cx="50%" cy="50%" outerRadius={80} label={({ name }) => String(name ?? "")}>
               {data.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
             </Pie>
             <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 12 }} />
