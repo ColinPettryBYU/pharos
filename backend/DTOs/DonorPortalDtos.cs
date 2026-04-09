@@ -56,3 +56,9 @@ public record InviteUserRequest(
     string Role,
     int? LinkedSupporterId
 );
+
+public record DonorDonateRequest(
+    decimal Amount,
+    bool IsRecurring,
+    string? Notes
+);

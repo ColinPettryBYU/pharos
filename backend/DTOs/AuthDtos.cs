@@ -27,3 +27,5 @@ public record MfaVerifyRequest(string Code);
 public record GoogleLoginRequest(string IdToken);
 
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+
+public record UpdateProfileRequest(string? DisplayName);

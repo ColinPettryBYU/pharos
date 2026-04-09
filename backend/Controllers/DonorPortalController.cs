@@ -63,4 +63,33 @@ public class DonorPortalController : ControllerBase
         if (result == null) return NotFound(new { message = "Impact data not found." });
         return Ok(result);
     }
+
+    [HttpPost("donate")]
+    public async Task<ActionResult<DonationDto>> Donate([FromBody] DonorDonateRequest request)
+    {
+        var supporterId = await GetLinkedSupporterId();
+        if (!supporterId.HasValue)
+            return BadRequest(new { message = "No linked supporter profile. Please contact support." });
+
+        if (request.Amount <= 0)
+            return BadRequest(new { message = "Amount must be greater than zero." });
+
+        var createReq = new CreateDonationRequest(
+            SupporterId: supporterId.Value,
+            DonationType: "Monetary",
+            DonationDate: DateTime.UtcNow,
+            IsRecurring: request.IsRecurring,
+            CampaignName: null,
+            ChannelSource: "Direct",
+            CurrencyCode: "PHP",
+            Amount: request.Amount,
+            EstimatedValue: null,
+            ImpactUnit: null,
+            Notes: request.Notes,
+            ReferralPostId: null
+        );
+
+        var result = await _donorService.CreateDonationAsync(createReq);
+        return Ok(result);
+    }
 }

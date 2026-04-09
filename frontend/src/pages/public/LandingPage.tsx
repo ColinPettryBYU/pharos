@@ -222,13 +222,13 @@ export default function LandingPage() {
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.4 }} className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link to="/impact">
-                <Button size="lg" className="w-full gap-2 sm:w-auto shadow-lg bg-white text-gray-900 hover:bg-gray-100 font-semibold">
+                <Button size="lg" className="w-full gap-2 sm:w-auto shadow-lg font-semibold" style={{ background: "var(--pharos-blush)", color: "var(--pharos-forest)" }}>
                   See Our Impact
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <a href="#mission">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/40 text-white hover:bg-white/15 hover:border-white/60 backdrop-blur font-medium">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto backdrop-blur font-medium" style={{ borderColor: "rgba(255,255,255,0.5)", color: "#fff", background: "rgba(255,255,255,0.08)" }}>
                   Our Mission
                 </Button>
               </a>
@@ -236,8 +236,12 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-background to-transparent" />
+        {/* Wavy bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 leading-[0]">
+          <svg viewBox="0 0 1440 100" fill="none" className="block w-full" preserveAspectRatio="none">
+            <path d="M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,100 L0,100 Z" className="fill-muted/40 dark:fill-muted/20" />
+          </svg>
+        </div>
       </section>
 
       {/* ─── STATS STRIP ───────────────────────────────────────────────────── */}
@@ -274,13 +278,13 @@ export default function LandingPage() {
 
       {/* ─── MISSION ───────────────────────────────────────────────────────── */}
       <AnimatedSection id="mission" className="relative py-20 sm:py-28 overflow-hidden">
-        {/* Ambient blobs — blush + sky (not green) */}
-        <div className="absolute -top-40 -right-40 h-[550px] w-[550px] rounded-full pointer-events-none blur-[120px]" style={{ background: "rgba(245,184,184,0.16)" }} />
-        <div className="absolute -bottom-20 -left-20 h-72 w-72 rounded-full pointer-events-none blur-3xl" style={{ background: "rgba(176,196,216,0.14)" }} />
+        {/* Gradient blobs */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 85% 15%, rgba(245,184,184,0.14) 0%, transparent 45%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 10% 85%, rgba(176,196,216,0.12) 0%, transparent 40%)" }} />
 
-        {/* Watermark rings */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 h-[500px] w-[500px] rounded-full border-[2px] pointer-events-none" style={{ borderColor: "rgba(176,196,216,0.10)" }} />
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/3 h-[340px] w-[340px] rounded-full border pointer-events-none" style={{ borderColor: "rgba(176,196,216,0.06)" }} />
+        {/* Animated geometric shapes */}
+        <motion.div className="pointer-events-none absolute top-[12%] left-[3%] h-20 w-20 rounded-full border-2" style={{ borderColor: "rgba(176,196,216,0.12)" }} animate={{ y: [0, -16, 0], rotate: [0, 10, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="pointer-events-none absolute bottom-[8%] right-[5%] h-10 w-10 rounded-lg" style={{ background: "rgba(245,184,184,0.10)" }} animate={{ y: [0, -12, 0], rotate: [0, 20, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-16 lg:grid-cols-2">
@@ -347,8 +351,13 @@ export default function LandingPage() {
 
       {/* ─── STORIES ───────────────────────────────────────────────────────── */}
       <AnimatedSection className="relative py-20 sm:py-28 overflow-hidden">
-        <div className="absolute -left-40 top-1/3 h-[500px] w-[500px] rounded-full pointer-events-none blur-[120px]" style={{ background: "rgba(176,196,216,0.15)" }} />
-        <div className="absolute -right-20 bottom-1/4 h-72 w-72 rounded-full pointer-events-none blur-3xl" style={{ background: "rgba(245,184,184,0.12)" }} />
+        {/* Gradients */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 10% 35%, rgba(176,196,216,0.13) 0%, transparent 45%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 90% 70%, rgba(245,184,184,0.10) 0%, transparent 40%)" }} />
+
+        {/* Animated shapes */}
+        <motion.div className="pointer-events-none absolute top-[8%] right-[6%] h-14 w-14 rounded-full border" style={{ borderColor: "rgba(245,184,184,0.18)" }} animate={{ y: [0, -14, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="pointer-events-none absolute bottom-[12%] left-[8%] h-10 w-10 rounded-xl" style={{ background: "rgba(176,196,216,0.08)" }} animate={{ y: [0, -10, 0], rotate: [10, 20, 10] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }} />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center mb-16">
@@ -367,17 +376,19 @@ export default function LandingPage() {
                   <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-lg transition-shadow">
                     <CardContent className="p-0">
                       <div className={`flex flex-col ${isEven ? "md:flex-row" : "md:flex-row-reverse"}`}>
-                        {/* Colored panel */}
-                        <div className="flex flex-col items-center justify-center gap-3 px-8 py-8 md:w-48 md:shrink-0" style={{ background: story.panelBg }}>
-                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm" style={{ background: "rgba(255,255,255,0.35)" }}>
-                            <Icon className="h-7 w-7" style={{ color: story.panelFg }} />
+                        {/* Colored accent strip — thin vertical bar + icon, not a big square */}
+                        <div className="relative flex items-center gap-4 px-6 py-5 md:flex-col md:justify-center md:px-5 md:py-8 md:w-24 md:shrink-0">
+                          <div className="absolute inset-0 opacity-20 md:opacity-25" style={{ background: story.panelBg }} />
+                          <div className={`absolute ${isEven ? "left-0 md:left-0 top-0 bottom-0 w-1 md:w-full md:h-1 md:bottom-auto" : "right-0 md:right-0 top-0 bottom-0 w-1 md:w-full md:h-1 md:bottom-auto"}`} style={{ background: story.panelBg }} />
+                          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl" style={{ background: story.panelBg }}>
+                            <Icon className="h-6 w-6" style={{ color: story.panelFg }} />
                           </div>
-                          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: story.panelFg }}>{story.pillar}</span>
+                          <span className="relative text-xs font-bold uppercase tracking-widest" style={{ color: story.panelFg }}>{story.pillar}</span>
                         </div>
                         {/* Content */}
                         <div className="flex flex-col justify-center gap-4 p-6 sm:p-8 flex-1">
                           <h3 className="text-xl font-semibold" style={{ fontFamily: "var(--font-editorial)", color: "var(--pharos-forest)" }}>{story.heading}</h3>
-                          <blockquote className="border-l-2 pl-4 text-[0.95rem] italic leading-relaxed text-muted-foreground" style={{ borderColor: "var(--pharos-sky)" }}>
+                          <blockquote className="border-l-2 pl-4 text-[0.95rem] italic leading-relaxed text-muted-foreground" style={{ borderColor: story.panelBg }}>
                             &ldquo;{story.quote}&rdquo;
                           </blockquote>
                           <p className="text-sm leading-relaxed text-muted-foreground/80">{story.description}</p>
@@ -398,8 +409,14 @@ export default function LandingPage() {
 
       {/* ─── TIMELINE ──────────────────────────────────────────────────────── */}
       <section className="relative py-20 sm:py-28 overflow-hidden" style={{ background: "var(--pharos-cream)" }}>
-        {/* Soft light beam in background */}
-        <LightBeam className="bottom-0 right-0 h-2/3 w-1/2" from="100% 100%" />
+        {/* Gradient background */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 80% 90%, rgba(176,196,216,0.18) 0%, transparent 60%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 20% 10%, rgba(245,184,184,0.12) 0%, transparent 50%)" }} />
+
+        {/* Animated geometric shapes */}
+        <motion.div className="pointer-events-none absolute top-[10%] right-[8%] h-24 w-24 rounded-full border-2" style={{ borderColor: "rgba(176,196,216,0.18)" }} animate={{ y: [0, -18, 0], rotate: [0, 8, 0] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="pointer-events-none absolute bottom-[15%] left-[5%] h-16 w-16 rounded-xl" style={{ background: "rgba(245,184,184,0.10)" }} animate={{ y: [0, -14, 0], rotate: [0, 15, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="pointer-events-none absolute top-[45%] left-[12%] h-8 w-8 rounded-lg border" style={{ borderColor: "rgba(90,112,85,0.15)" }} animate={{ y: [0, -10, 0], rotate: [45, 55, 45] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
 
         <div ref={timelineRef} className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={timelineInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} className="mx-auto max-w-2xl text-center mb-16">
@@ -454,17 +471,15 @@ export default function LandingPage() {
       {/* ─── CTA ───────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="relative py-20 sm:py-28" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #2d2d44 50%, #3d2b3d 100%)" }}>
-          {/* Soft light beams */}
-          <LightBeam className="top-0 left-0 h-full w-1/2" from="0% 30%" />
-          <LightBeam className="bottom-0 right-0 h-full w-1/2" from="100% 70%" />
+          {/* Gradient overlays */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 25% 20%, rgba(176,196,216,0.12) 0%, transparent 50%)" }} />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 75% 80%, rgba(245,184,184,0.10) 0%, transparent 50%)" }} />
 
-          {/* Colored blobs for warmth */}
-          <div className="absolute top-0 right-1/4 h-80 w-80 rounded-full blur-[100px] pointer-events-none" style={{ background: "rgba(245,184,184,0.15)" }} />
-          <div className="absolute bottom-0 left-1/4 h-64 w-64 rounded-full blur-[80px] pointer-events-none" style={{ background: "rgba(176,196,216,0.12)" }} />
-
-          {/* Floating shapes */}
-          <div className="pointer-events-none absolute top-[15%] left-[10%] h-16 w-16 rounded-full border border-white/10" style={{ animation: "float-slow-global 10s ease-in-out infinite" }} />
-          <div className="pointer-events-none absolute bottom-[20%] right-[8%] h-12 w-12 rounded-xl rotate-12" style={{ background: "rgba(245,184,184,0.08)", animation: "float-medium-global 7s ease-in-out infinite" }} />
+          {/* Animated geometric shapes */}
+          <motion.div className="pointer-events-none absolute top-[15%] left-[10%] h-16 w-16 rounded-full border border-white/10" animate={{ y: [0, -20, 0], rotate: [0, 6, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="pointer-events-none absolute bottom-[20%] right-[8%] h-12 w-12 rounded-xl" style={{ background: "rgba(245,184,184,0.08)" }} animate={{ y: [0, -14, 0], rotate: [12, 22, 12] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="pointer-events-none absolute top-[60%] right-[22%] h-6 w-6 rounded-md border border-white/8" animate={{ y: [0, -8, 0], rotate: [0, 45, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="pointer-events-none absolute top-[30%] right-[35%] h-20 w-20 rounded-full border border-white/5" animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
 
           <div ref={ctaRef} className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={ctaInView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7, ease: "easeOut" }} className="mx-auto max-w-2xl text-center">

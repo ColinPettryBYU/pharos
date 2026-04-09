@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,81 +10,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
-import { Mail, Lock, User, Loader2, Check, X } from "lucide-react";
+import { Mail, Lock, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 const registerSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(12, "Password must be at least 12 characters")
-    .regex(/[A-Z]/, "Must contain an uppercase letter")
-    .regex(/[a-z]/, "Must contain a lowercase letter")
-    .regex(/[0-9]/, "Must contain a digit")
-    .regex(/[^A-Za-z0-9]/, "Must contain a special character"),
+  password: z.string().min(14, "Password must be at least 14 characters"),
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
-function PasswordStrength({ password }: { password: string }) {
-  const checks = [
-    { label: "12+ characters", met: password.length >= 12 },
-    { label: "Uppercase letter", met: /[A-Z]/.test(password) },
-    { label: "Lowercase letter", met: /[a-z]/.test(password) },
-    { label: "Number", met: /[0-9]/.test(password) },
-    { label: "Special character", met: /[^A-Za-z0-9]/.test(password) },
-  ];
-  const met = checks.filter((c) => c.met).length;
-  const strength = met === 0 ? 0 : met <= 2 ? 1 : met <= 4 ? 2 : 3;
-  const colors = ["bg-destructive", "bg-orange-500", "bg-yellow-500", "bg-success"];
-  const labels = ["", "Weak", "Fair", "Strong"];
-
-  if (!password) return null;
-
-  return (
-    <div className="space-y-2 mt-2">
-      <div className="flex gap-1">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= strength ? colors[strength] : "bg-muted")} />
-        ))}
-      </div>
-      {strength > 0 && <p className="text-xs text-muted-foreground">{labels[strength]}</p>}
-      <div className="space-y-1">
-        {checks.map((check) => (
-          <div key={check.label} className="flex items-center gap-1.5">
-            {check.met ? <Check className="h-3 w-3 text-success" /> : <X className="h-3 w-3 text-muted-foreground" />}
-            <span className={cn("text-xs", check.met ? "text-success" : "text-muted-foreground")}>{check.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function RegisterPage() {
   const { register: registerUser, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
   const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
-
-  const password = watch("password", "");
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
       await registerUser(data.email, data.password, data.displayName);
       toast.success("Account created successfully!");
-      navigate("/admin");
+      navigate(redirectTo || "/admin");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Registration failed";
       toast.error(message);
@@ -146,7 +103,6 @@ export default function RegisterPage() {
                   <Input id="password" type="password" placeholder="Create a strong password" className="pl-9" {...register("password")} />
                 </div>
                 {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-                <PasswordStrength password={password} />
               </div>
               <Button type="submit" className="w-full font-semibold" disabled={isLoading} style={{ background: "var(--pharos-forest)", color: "white" }}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -171,7 +127,7 @@ export default function RegisterPage() {
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="font-medium hover:underline" style={{ color: "var(--pharos-forest)" }}>Sign in</Link>
+              <Link to={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"} className="font-medium hover:underline" style={{ color: "var(--pharos-forest)" }}>Sign in</Link>
             </p>
           </CardContent>
         </Card>

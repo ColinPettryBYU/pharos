@@ -14,13 +14,23 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IConfiguration _config;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+        SignInManager<ApplicationUser> signInManager,
+        IConfiguration config)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _config = config;
+    }
+
+    private string GetFrontendUrl()
+    {
+        return _config["FrontendUrl"]
+            ?? _config.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault()
+            ?? "http://localhost:5173";
     }
 
     [HttpPost("login")]
@@ -114,41 +124,41 @@ public class AuthController : ControllerBase
         });
     }
 
-    [HttpPost("google-login")]
-    public IActionResult GoogleLogin()
+    [HttpGet("google-login")]
+    public async Task<IActionResult> GoogleLogin(
+        [FromServices] IAuthenticationSchemeProvider schemeProvider)
     {
-        // Placeholder: Google OAuth will be handled by the challenge/callback flow
-        // The actual implementation requires frontend to redirect to Google and then
-        // the callback to be handled by the ASP.NET Google authentication handler
-        var redirectUrl = Url.Action("GoogleCallback", "Auth");
-        var properties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        var scheme = await schemeProvider.GetSchemeAsync("Google");
+        if (scheme == null)
         {
-            RedirectUri = redirectUrl
-        };
+            return Redirect($"{GetFrontendUrl()}/login?error=google-not-configured");
+        }
+
+        var redirectUrl = Url.Action("GoogleCallback", "Auth");
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
         return Challenge(properties, "Google");
     }
 
     [HttpGet("google-callback")]
     public async Task<IActionResult> GoogleCallback()
     {
+        var frontendUrl = GetFrontendUrl();
+
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info == null)
-            return Redirect("/login?error=google-failed");
+            return Redirect($"{frontendUrl}/login?error=google-failed");
 
-        // Attempt sign-in with external login
-        var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: true);
+        var result = await _signInManager.ExternalLoginSignInAsync(
+            info.LoginProvider, info.ProviderKey, isPersistent: true);
 
         if (result.Succeeded)
-        {
-            return Redirect("/");
-        }
+            return Redirect($"{frontendUrl}/admin");
 
-        // If user doesn't exist, create account from Google info
         var email = info.Principal.FindFirstValue(ClaimTypes.Email);
         var name = info.Principal.FindFirstValue(ClaimTypes.Name);
 
         if (email == null)
-            return Redirect("/login?error=no-email");
+            return Redirect($"{frontendUrl}/login?error=no-email");
 
         var user = new ApplicationUser
         {
@@ -163,10 +173,10 @@ public class AuthController : ControllerBase
         {
             await _userManager.AddLoginAsync(user, info);
             await _signInManager.SignInAsync(user, isPersistent: true);
-            return Redirect("/");
+            return Redirect($"{frontendUrl}/admin");
         }
 
-        return Redirect("/login?error=creation-failed");
+        return Redirect($"{frontendUrl}/login?error=creation-failed");
     }
 
     // ── MFA Endpoints ──
@@ -230,7 +240,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "MFA has been disabled." });
     }
 
-    [HttpPost("change-password")]
+    [HttpPut("change-password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
@@ -244,5 +254,26 @@ public class AuthController : ControllerBase
         }
 
         return Ok(new { message = "Password changed successfully." });
+    }
+
+    [HttpPut("update-profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound();
+
+        user.DisplayName = request.DisplayName;
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { message = "Profile update failed.", errors = result.Errors.Select(e => e.Description) });
+        }
+
+        return Ok(new { message = "Profile updated successfully.", display_name = user.DisplayName });
     }
 }

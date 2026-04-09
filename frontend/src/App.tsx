@@ -17,6 +17,7 @@ const LoginPage = lazy(() => import("@/pages/public/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/public/RegisterPage"));
 const ImpactDashboard = lazy(() => import("@/pages/public/ImpactDashboard"));
 const PrivacyPolicy = lazy(() => import("@/pages/public/PrivacyPolicy"));
+const DonatePage = lazy(() => import("@/pages/public/DonatePage"));
 
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const DonorsPage = lazy(() => import("@/pages/admin/DonorsPage"));
@@ -33,6 +34,7 @@ const UserManagementPage = lazy(() => import("@/pages/admin/UserManagementPage")
 const SocialAccountsPage = lazy(() => import("@/pages/admin/SocialAccountsPage"));
 const ReportsPage = lazy(() => import("@/pages/admin/ReportsPage"));
 const ChatPage = lazy(() => import("@/pages/admin/ChatPage"));
+const ProfilePage = lazy(() => import("@/pages/admin/ProfilePage"));
 
 const DonorDashboard = lazy(() => import("@/pages/donor/DonorDashboard"));
 
@@ -61,6 +63,7 @@ export default function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/donate" element={<DonatePage />} />
                   </Route>
 
                   {/* Admin Routes */}
@@ -86,6 +89,7 @@ export default function App() {
                     <Route path="/admin/reports" element={<ReportsPage />} />
                     <Route path="/admin/chat" element={<ChatPage />} />
                     <Route path="/admin/settings/social-accounts" element={<SocialAccountsPage />} />
+                    <Route path="/admin/profile" element={<ProfilePage />} />
                   </Route>
 
                   {/* Donor Routes */}

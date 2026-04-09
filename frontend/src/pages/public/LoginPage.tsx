@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,8 +23,23 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      const messages: Record<string, string> = {
+        "google-failed": "Google sign-in failed. Please try again.",
+        "google-not-configured": "Google sign-in is not available at this time.",
+        "no-email": "Could not retrieve email from your Google account.",
+        "creation-failed": "Failed to create account. Email may already be in use.",
+      };
+      toast.error(messages[error] || "Sign-in failed. Please try again.");
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -39,7 +54,7 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       toast.success("Welcome back!");
-      navigate("/admin");
+      navigate(redirectTo || "/admin");
     } catch (error: unknown) {
       setShake(true);
       setTimeout(() => setShake(false), 500);
@@ -128,7 +143,7 @@ export default function LoginPage() {
 
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link to="/register" className="font-medium hover:underline" style={{ color: "var(--pharos-forest)" }}>Create one</Link>
+                <Link to={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"} className="font-medium hover:underline" style={{ color: "var(--pharos-forest)" }}>Create one</Link>
               </p>
             </CardContent>
           </Card>

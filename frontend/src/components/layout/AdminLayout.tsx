@@ -41,6 +41,7 @@ import {
   LogOut,
   Search,
   Sparkles,
+  UserCog,
 } from "lucide-react";
 
 interface NavItem {
@@ -83,6 +84,7 @@ const navGroups: NavGroup[] = [
     title: "Social Media",
     items: [
       { label: "Command Center", href: "/admin/social", icon: Share2 },
+      { label: "Social Accounts", href: "/admin/settings/social-accounts", icon: Link2 },
     ],
   },
   {
@@ -96,7 +98,6 @@ const navGroups: NavGroup[] = [
     title: "Settings",
     items: [
       { label: "User Management", href: "/admin/users", icon: Shield },
-      { label: "Social Accounts", href: "/admin/settings/social-accounts", icon: Link2 },
     ],
   },
 ];
@@ -113,7 +114,7 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-4 border-b overflow-hidden">
+      <Link to="/" className="flex h-16 items-center gap-2.5 px-4 border-b overflow-hidden">
         <img
           src="/images/pharos-logo.png"
           alt="Pharos"
@@ -132,7 +133,7 @@ function SidebarContent({
             </motion.span>
           )}
         </AnimatePresence>
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
@@ -355,6 +356,10 @@ export function AdminLayout() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={() => navigate("/admin/profile")}>
+                    <UserCog className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign out

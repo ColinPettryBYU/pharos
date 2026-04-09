@@ -11,7 +11,7 @@ import { PageTransition } from "./PageTransition";
 const navLinks = [
   { label: "Mission", href: "/#mission" },
   { label: "Impact", href: "/impact" },
-  { label: "Privacy", href: "/privacy" },
+  { label: "Donate", href: "/donate" },
 ];
 
 function PharosLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
@@ -244,19 +244,19 @@ export function PublicLayout() {
                 </h3>
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li>
-                    <Link to="/" className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
+                    <Link to="/" onClick={() => window.scrollTo(0, 0)} className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
                       <span className="h-px w-3 bg-[var(--pharos-sage)] transition-all group-hover:w-5" />
                       Home
                     </Link>
                   </li>
                   <li>
-                    <Link to="/impact" className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
+                    <Link to="/impact" onClick={() => window.scrollTo(0, 0)} className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
                       <span className="h-px w-3 bg-[var(--pharos-sage)] transition-all group-hover:w-5" />
                       Impact Dashboard
                     </Link>
                   </li>
                   <li>
-                    <Link to="/login" className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
+                    <Link to="/login" onClick={() => window.scrollTo(0, 0)} className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
                       <span className="h-px w-3 bg-[var(--pharos-sage)] transition-all group-hover:w-5" />
                       Sign In
                     </Link>
@@ -271,7 +271,7 @@ export function PublicLayout() {
                 </h3>
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li>
-                    <Link to="/privacy" className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
+                    <Link to="/privacy" onClick={() => window.scrollTo(0, 0)} className="hover:text-[var(--pharos-forest)] transition-colors flex items-center gap-1.5 group">
                       <span className="h-px w-3 bg-[var(--pharos-sage)] transition-all group-hover:w-5" />
                       Privacy Policy
                     </Link>

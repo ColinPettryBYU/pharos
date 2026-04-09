@@ -21,12 +21,12 @@ builder.Services.AddDbContext<PharosIdentityDbContext>(options =>
 // ── ASP.NET Identity ──
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Password policy per CLAUDE.md — 12 char min, uppercase, lowercase, digit, special
-    options.Password.RequiredLength = 12;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireDigit = true;
-    options.Password.RequireNonAlphanumeric = true;
+    // Password policy: length-only (better than default 6-char minimum)
+    options.Password.RequiredLength = 14;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequireNonAlphanumeric = false;
     options.Password.RequiredUniqueChars = 1;
 
     // Account lockout

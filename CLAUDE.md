@@ -333,9 +333,9 @@ Pharos/
 7. `/api/donor/*` endpoints require Donor role, scoped to their supporter_id
 8. `/api/public/*` endpoints are open (landing page data, impact snapshots)
 
-### Password Policy (per class instruction — strict)
-- Minimum 12 characters
-- Require uppercase, lowercase, digit, and special character
+### Password Policy (per class instruction — length-only)
+- Minimum 14 characters (better than default 6)
+- No uppercase/lowercase/digit/special requirements
 - No common passwords (maintain a blocklist)
 - No part of username/email in password
 
