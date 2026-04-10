@@ -1,0 +1,33 @@
+{
+  "model_name": "resident_risk_predictor",
+  "trained_at_utc": "2026-04-09T19:37:11.400680",
+  "n_training_rows": 1174,
+  "test_roc_auc": NaN,
+  "features": [
+    "n_trauma_flags",
+    "has_special_needs",
+    "is_pwd",
+    "initial_risk_numeric",
+    "months_in_care",
+    "risk_numeric_at_ym",
+    "n_sessions_t",
+    "pct_concerns_flagged_t",
+    "pct_referral_made_t",
+    "emotional_start_score_mean",
+    "emotional_improvement_mean",
+    "n_distressed_sessions_t",
+    "health_score_t",
+    "nutrition_score_t",
+    "bmi_t",
+    "psychological_checkup_done_t",
+    "health_trend",
+    "attendance_rate_t",
+    "progress_percent_t",
+    "n_incidents_prior_3m",
+    "n_high_severity_prior_3m",
+    "selfharm_flag_prior",
+    "pct_unfavorable_visits_t",
+    "safety_concerns_noted_t",
+    "cooperation_score_mean"
+  ]
+}
