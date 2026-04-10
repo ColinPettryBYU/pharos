@@ -20,6 +20,7 @@ interface AuthContextType {
     displayName: string
   ) => Promise<void>;
   logout: () => Promise<void>;
+  setExternalUser: (u: User) => void;
   isAdmin: boolean;
   isDonor: boolean;
 }
@@ -113,6 +114,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cacheUser(null);
   };
 
+  const setExternalUser = useCallback((u: User) => {
+    setUser(u);
+    cacheUser(u);
+  }, []);
+
   const isAdmin = user?.roles?.includes("Admin") ?? false;
   const isDonor = user?.roles?.includes("Donor") ?? false;
 
@@ -125,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithGoogle,
         register,
         logout,
+        setExternalUser,
         isAdmin,
         isDonor,
       }}

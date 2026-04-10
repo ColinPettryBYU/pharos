@@ -23,7 +23,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, setExternalUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect");
@@ -58,6 +58,7 @@ export default function LoginPage() {
       })
       .then((data) => {
         if (data.user) {
+          setExternalUser(data.user);
           toast.success("Welcome back!");
           const dest =
             data.user.roles?.includes("Admin") ||

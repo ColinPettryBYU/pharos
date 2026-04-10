@@ -34,7 +34,14 @@ public class DonorPortalController : ControllerBase
     public async Task<ActionResult<DonorProfileDto>> GetMyProfile()
     {
         var supporterId = await GetLinkedSupporterId();
-        if (!supporterId.HasValue) return NotFound(new { message = "No linked supporter profile found." });
+        if (!supporterId.HasValue)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var appUser = userId != null ? await _userManager.FindByIdAsync(userId) : null;
+            return Ok(new DonorProfileDto(
+                0, appUser?.DisplayName ?? "Supporter", null, "Donor",
+                appUser?.Email, null, null, 0, 0));
+        }
 
         var result = await _donorService.GetDonorProfileAsync(supporterId.Value);
         if (result == null) return NotFound(new { message = "Supporter profile not found." });
@@ -47,7 +54,9 @@ public class DonorPortalController : ControllerBase
         [FromQuery] int pageSize = 500)
     {
         var supporterId = await GetLinkedSupporterId();
-        if (!supporterId.HasValue) return NotFound(new { message = "No linked supporter profile found." });
+        if (!supporterId.HasValue)
+            return Ok(new PagedResult<DonationDto>(
+                new List<DonationDto>(), 0, page, pageSize, 0));
 
         var result = await _donorService.GetDonorDonationsAsync(supporterId.Value, page, pageSize);
         return Ok(result);
@@ -57,10 +66,20 @@ public class DonorPortalController : ControllerBase
     public async Task<ActionResult<DonorImpactDto>> GetMyImpact()
     {
         var supporterId = await GetLinkedSupporterId();
-        if (!supporterId.HasValue) return NotFound(new { message = "No linked supporter profile found." });
+        if (!supporterId.HasValue)
+            return Ok(new DonorImpactDto(
+                0, 0, 0,
+                Enumerable.Empty<string>(),
+                Enumerable.Empty<DonationTimelineDto>(),
+                Enumerable.Empty<ImpactAllocationDto>()));
 
         var result = await _donorService.GetDonorImpactAsync(supporterId.Value);
-        if (result == null) return NotFound(new { message = "Impact data not found." });
+        if (result == null)
+            return Ok(new DonorImpactDto(
+                0, 0, 0,
+                Enumerable.Empty<string>(),
+                Enumerable.Empty<DonationTimelineDto>(),
+                Enumerable.Empty<ImpactAllocationDto>()));
         return Ok(result);
     }
 
