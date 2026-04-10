@@ -68,11 +68,11 @@ function TextBlockRenderer({ block }: { block: ChatBlock }) {
 
 function StatBlockRenderer({ block }: { block: ChatBlock }) {
   return (
-    <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 sm:p-4 flex flex-col gap-1">
-      <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 sm:p-4 flex flex-col gap-1 min-w-0">
+      <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">
         {block.label}
       </span>
-      <span className="text-xl sm:text-3xl font-bold tabular-nums tracking-tight text-primary">
+      <span className="text-lg sm:text-2xl font-bold tabular-nums tracking-tight text-primary whitespace-nowrap">
         {block.value}
       </span>
       {block.trend && (
@@ -763,20 +763,15 @@ export default function ChatPage() {
                             return (
                               <div
                                 key={i}
-                                className={cn(
-                                  "grid gap-2 sm:gap-3",
-                                  item.length === 1 && "grid-cols-1",
-                                  item.length === 2 && "grid-cols-2",
-                                  item.length >= 3 &&
-                                    "grid-cols-2 sm:grid-cols-3"
-                                )}
+                                className="flex flex-wrap gap-2 sm:gap-3"
                               >
                                 {item.map((stat, si) => (
-                                  <BlockRenderer
-                                    key={si}
-                                    block={stat}
-                                    index={i + si}
-                                  />
+                                  <div key={si} className="flex-1 min-w-[8rem]">
+                                    <BlockRenderer
+                                      block={stat}
+                                      index={i + si}
+                                    />
+                                  </div>
                                 ))}
                               </div>
                             );

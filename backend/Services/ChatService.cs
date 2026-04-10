@@ -53,31 +53,68 @@ public class ChatService : IChatService
         var model = "gemini-2.5-pro";
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
-        try
-        {
-            _logger.LogInformation("Calling Gemini API for user message: {Msg}", request.Message[..Math.Min(80, request.Message.Length)]);
-            var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest);
-            var responseJson = await httpResponse.Content.ReadAsStringAsync();
+        const int maxAttempts = 3;
 
-            if (!httpResponse.IsSuccessStatusCode)
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
             {
-                _logger.LogError("Gemini API returned {StatusCode}: {Body}", httpResponse.StatusCode, responseJson);
-                return new ChatResponse([new TextBlock($"Sorry, the AI service returned an error (HTTP {(int)httpResponse.StatusCode}). Check the server logs or verify your Google__GeminiApiKey is valid.")]);
-            }
+                _logger.LogInformation("Calling Gemini API (attempt {Attempt}/{Max}) for: {Msg}",
+                    attempt, maxAttempts, request.Message[..Math.Min(80, request.Message.Length)]);
 
-            var blocks = ParseGeminiResponse(responseJson);
-            return new ChatResponse(blocks);
+                var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest);
+                var responseJson = await httpResponse.Content.ReadAsStringAsync();
+
+                if (!httpResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Gemini API returned {StatusCode} on attempt {Attempt}: {Body}",
+                        httpResponse.StatusCode, attempt, responseJson);
+
+                    if (attempt < maxAttempts)
+                    {
+                        await Task.Delay(500 * attempt);
+                        continue;
+                    }
+
+                    return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
+                }
+
+                var blocks = ParseGeminiResponse(responseJson);
+
+                if (blocks.Count == 1 && blocks[0] is TextBlock tb && tb.Content.StartsWith("__RETRY__"))
+                {
+                    _logger.LogWarning("Gemini returned unparseable response on attempt {Attempt}, retrying", attempt);
+                    if (attempt < maxAttempts)
+                    {
+                        await Task.Delay(500 * attempt);
+                        continue;
+                    }
+                    return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
+                }
+
+                return new ChatResponse(blocks);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Network error on attempt {Attempt}", attempt);
+                if (attempt < maxAttempts)
+                {
+                    await Task.Delay(500 * attempt);
+                    continue;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error on attempt {Attempt}", attempt);
+                if (attempt < maxAttempts)
+                {
+                    await Task.Delay(500 * attempt);
+                    continue;
+                }
+            }
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Network error calling Gemini API");
-            return new ChatResponse([new TextBlock("Sorry, I couldn't reach the AI service. Please check the server's network connectivity.")]);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to call Gemini API");
-            return new ChatResponse([new TextBlock("Sorry, I had trouble connecting to the AI service. Please try again.")]);
-        }
+
+        return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
     }
 
     private async Task<string> BuildDatabaseContextAsync(string _message)
@@ -339,70 +376,78 @@ CRITICAL OUTPUT RULE: Your ENTIRE response must be ONLY the raw JSON array. Do N
                 {
                     foreach (var elem in blockDoc.RootElement.EnumerateArray())
                     {
-                        var type = elem.GetProperty("type").GetString();
-                        switch (type)
+                        try
                         {
-                            case "text":
-                                blocks.Add(new TextBlock(elem.GetProperty("content").GetString() ?? ""));
-                                break;
-                            case "stat":
-                                blocks.Add(new StatBlock(
-                                    elem.GetProperty("label").GetString() ?? "",
-                                    elem.GetProperty("value").GetString() ?? "",
-                                    elem.TryGetProperty("trend", out var t) && t.ValueKind != JsonValueKind.Null ? t.GetString() : null,
-                                    elem.TryGetProperty("icon", out var ic) && ic.ValueKind != JsonValueKind.Null ? ic.GetString() : null));
-                                break;
-                            case "table":
-                                var headers = elem.GetProperty("headers").EnumerateArray()
-                                    .Select(h => h.GetString() ?? "").ToList();
-                                var rows = elem.GetProperty("rows").EnumerateArray()
-                                    .Select(r => r.EnumerateArray().Select(c => c.ToString()).ToList())
-                                    .ToList();
-                                blocks.Add(new TableBlock(
-                                    elem.GetProperty("title").GetString() ?? "", headers, rows));
-                                break;
-                            case "list":
-                                var items = elem.GetProperty("items").EnumerateArray()
-                                    .Select(i => i.GetString() ?? "").ToList();
-                                blocks.Add(new ListBlock(
-                                    elem.GetProperty("title").GetString() ?? "", items));
-                                break;
-                            case "chart":
-                                var chartType = elem.TryGetProperty("chart_type", out var ct) ? ct.GetString() ?? "bar" : "bar";
-                                var chartTitle = elem.TryGetProperty("title", out var ctTitle) && ctTitle.ValueKind != JsonValueKind.Null ? ctTitle.GetString() : null;
-                                var xKey = elem.TryGetProperty("x_key", out var xk) ? xk.GetString() : "name";
-                                var yKeys = elem.TryGetProperty("y_keys", out var yk) && yk.ValueKind == JsonValueKind.Array
-                                    ? yk.EnumerateArray().Select(y => y.GetString() ?? "").ToList() : null;
-                                var chartColors = elem.TryGetProperty("colors", out var cc) && cc.ValueKind == JsonValueKind.Array
-                                    ? cc.EnumerateArray().Select(c => c.GetString() ?? "").ToList() : null;
-                                var chartData = new List<Dictionary<string, object>>();
-                                if (elem.TryGetProperty("data", out var dataArr) && dataArr.ValueKind == JsonValueKind.Array)
-                                {
-                                    foreach (var dataItem in dataArr.EnumerateArray())
+                            var type = elem.GetProperty("type").GetString();
+                            switch (type)
+                            {
+                                case "text":
+                                    blocks.Add(new TextBlock(elem.GetProperty("content").GetString() ?? ""));
+                                    break;
+                                case "stat":
+                                    blocks.Add(new StatBlock(
+                                        elem.GetProperty("label").GetString() ?? "",
+                                        elem.GetProperty("value").GetString() ?? "",
+                                        elem.TryGetProperty("trend", out var t) && t.ValueKind != JsonValueKind.Null ? t.GetString() : null,
+                                        elem.TryGetProperty("icon", out var ic) && ic.ValueKind != JsonValueKind.Null ? ic.GetString() : null));
+                                    break;
+                                case "table":
+                                    var headers = elem.GetProperty("headers").EnumerateArray()
+                                        .Select(h => h.GetString() ?? "").ToList();
+                                    var rows = elem.GetProperty("rows").EnumerateArray()
+                                        .Select(r => r.EnumerateArray().Select(c => c.ToString()).ToList())
+                                        .ToList();
+                                    blocks.Add(new TableBlock(
+                                        elem.GetProperty("title").GetString() ?? "", headers, rows));
+                                    break;
+                                case "list":
+                                    var items = elem.GetProperty("items").EnumerateArray()
+                                        .Select(i => i.GetString() ?? "").ToList();
+                                    blocks.Add(new ListBlock(
+                                        elem.GetProperty("title").GetString() ?? "", items));
+                                    break;
+                                case "chart":
+                                    var chartType = elem.TryGetProperty("chart_type", out var ct) ? ct.GetString() ?? "bar" : "bar";
+                                    var chartTitle = elem.TryGetProperty("title", out var ctTitle) && ctTitle.ValueKind != JsonValueKind.Null ? ctTitle.GetString() : null;
+                                    var xKey = elem.TryGetProperty("x_key", out var xk) ? xk.GetString() : "name";
+                                    var yKeys = elem.TryGetProperty("y_keys", out var yk) && yk.ValueKind == JsonValueKind.Array
+                                        ? yk.EnumerateArray().Select(y => y.GetString() ?? "").ToList() : null;
+                                    var chartColors = elem.TryGetProperty("colors", out var cc) && cc.ValueKind == JsonValueKind.Array
+                                        ? cc.EnumerateArray().Select(c => c.GetString() ?? "").ToList() : null;
+                                    var chartData = new List<Dictionary<string, object>>();
+                                    if (elem.TryGetProperty("data", out var dataArr) && dataArr.ValueKind == JsonValueKind.Array)
                                     {
-                                        var dict = new Dictionary<string, object>();
-                                        foreach (var prop in dataItem.EnumerateObject())
+                                        foreach (var dataItem in dataArr.EnumerateArray())
                                         {
-                                            dict[prop.Name] = prop.Value.ValueKind switch
+                                            var dict = new Dictionary<string, object>();
+                                            foreach (var prop in dataItem.EnumerateObject())
                                             {
-                                                JsonValueKind.Number => prop.Value.GetDouble(),
-                                                JsonValueKind.True => true,
-                                                JsonValueKind.False => false,
-                                                _ => prop.Value.GetString() ?? ""
-                                            };
+                                                dict[prop.Name] = prop.Value.ValueKind switch
+                                                {
+                                                    JsonValueKind.Number => prop.Value.GetDouble(),
+                                                    JsonValueKind.True => true,
+                                                    JsonValueKind.False => false,
+                                                    _ => prop.Value.GetString() ?? ""
+                                                };
+                                            }
+                                            chartData.Add(dict);
                                         }
-                                        chartData.Add(dict);
                                     }
-                                }
-                                blocks.Add(new ChartBlock(chartType, chartTitle, xKey, yKeys, chartData, chartColors));
-                                break;
+                                    blocks.Add(new ChartBlock(chartType, chartTitle, xKey, yKeys, chartData, chartColors));
+                                    break;
+                            }
+                        }
+                        catch (Exception elemEx)
+                        {
+                            _logger.LogWarning(elemEx, "Skipping malformed block element");
                         }
                     }
                 }
             }
-            catch
+            catch (JsonException jsonEx)
             {
-                blocks.Add(new TextBlock(text));
+                _logger.LogWarning(jsonEx, "Failed to parse Gemini JSON — likely truncated response, signaling retry");
+                return [new TextBlock("__RETRY__")];
             }
 
             if (blocks.Count == 0)
@@ -413,7 +458,7 @@ CRITICAL OUTPUT RULE: Your ENTIRE response must be ONLY the raw JSON array. Do N
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to parse Gemini response");
-            return [new TextBlock("Sorry, I had trouble processing that request. Please try again.")];
+            return [new TextBlock("__RETRY__")];
         }
     }
 }
