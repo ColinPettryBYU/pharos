@@ -9,6 +9,8 @@ using Pharos.Api.Models;
 using Pharos.Api.Services;
 using Pharos.Api.Services.PlatformClients;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);

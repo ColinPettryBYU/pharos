@@ -1,5 +1,9 @@
 {
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://pharos-api-cag3ejbbgrdqh0h8.eastus2-01.azurewebsites.net/api/:path*"
+    },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
