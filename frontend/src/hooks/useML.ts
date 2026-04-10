@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { DonorChurnRisk, ReintegrationReadiness, SocialMediaRecommendation, InterventionEffectiveness } from "@/types";
+import type { DonorChurnRisk, ReintegrationReadiness, SocialMediaRecommendation, InterventionEffectivenessResponse } from "@/types";
 
 export function useDonorChurnRisk() {
   return useQuery({
@@ -37,34 +37,31 @@ export function useSocialMediaRecommendations() {
 export function useInterventionEffectiveness() {
   return useQuery({
     queryKey: ["ml", "intervention-effectiveness"],
-    queryFn: async (): Promise<InterventionEffectiveness[]> => {
+    queryFn: async (): Promise<InterventionEffectivenessResponse> => {
       const raw: any = await api.get("/ml/intervention-effectiveness");
 
       const byCategory: any[] = raw?.by_category ?? [];
       const insights: any[] = raw?.insights ?? [];
+      const rawDrivers: any[] = raw?.key_drivers ?? [];
 
-      if (byCategory.length > 0) {
-        return byCategory.map((c: any) => ({
-          plan_category: c.category ?? c.plan_category ?? "Unknown",
-          effectiveness_score: (c.avg_outcome_improvement ?? c.effectiveness_score ?? 0) / 100,
-          key_factors: [c.most_effective_service].filter(Boolean),
-          recommendations: insights
-            .filter((i: any) => i.intervention_type === c.category)
-            .map((i: any) => i.description)
-            .filter(Boolean),
-        }));
-      }
+      const categories = byCategory.map((c: any) => ({
+        plan_category: c.category ?? c.plan_category ?? "Unknown",
+        effectiveness_score: (c.avg_outcome_improvement ?? c.effectiveness_score ?? 0) / 100,
+        key_factors: [c.most_effective_service].filter(Boolean),
+        recommendations: insights
+          .filter((i: any) => i.intervention_type === c.category)
+          .map((i: any) => i.description)
+          .filter(Boolean),
+      }));
 
-      if (Array.isArray(raw)) {
-        return raw.map((item: any) => ({
-          plan_category: item.plan_category ?? item.category ?? "Unknown",
-          effectiveness_score: item.effectiveness_score ?? 0,
-          key_factors: item.key_factors ?? [],
-          recommendations: item.recommendations ?? [],
-        }));
-      }
+      const key_drivers = rawDrivers.map((d: any) => ({
+        driver_name: d.driver_name ?? d.driverName ?? "Unknown",
+        effectiveness_score: (d.effectiveness_score ?? d.effectivenessScore ?? 0) / 100,
+        outcomes_affected: d.outcomes_affected ?? d.outcomesAffected ?? 0,
+        description: d.description ?? "",
+      }));
 
-      return [];
+      return { categories, key_drivers };
     },
   });
 }

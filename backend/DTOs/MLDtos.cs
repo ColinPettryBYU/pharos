@@ -48,7 +48,8 @@ public record PostInsightDto(
 
 public record InterventionEffectivenessDto(
     IEnumerable<InterventionInsightDto> Insights,
-    IEnumerable<CategoryEffectivenessDto> ByCategory
+    IEnumerable<CategoryEffectivenessDto> ByCategory,
+    IEnumerable<KeyDriverDto> KeyDrivers
 );
 
 public record InterventionInsightDto(
@@ -63,6 +64,13 @@ public record CategoryEffectivenessDto(
     double AvgOutcomeImprovement,
     int PlanCount,
     string MostEffectiveService
+);
+
+public record KeyDriverDto(
+    string DriverName,
+    double EffectivenessScore,
+    int OutcomesAffected,
+    string Description
 );
 
 public record ResidentRiskPredictionDto(

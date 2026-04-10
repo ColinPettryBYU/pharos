@@ -495,6 +495,7 @@ public static class DataSeeder
             logger.LogInformation("Seeding intervention_effectiveness from notebook results...");
             var rows = new[]
             {
+                // Intervention categories
                 new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Psychosocial",   Coefficient = 0.0001, PValue = 0.0624, Significant = true },
                 new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Legal",          Coefficient = 0.0,    PValue = 0.9729, Significant = false },
                 new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Reintegration",  Coefficient = 0.0,    PValue = 0.4061, Significant = false },
@@ -513,6 +514,13 @@ public static class DataSeeder
                 new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Physical Health", Coefficient = 0.0004, PValue = 0.0281, Significant = true },
                 new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Physical Health", Coefficient = 0.0,    PValue = 0.6134, Significant = false },
                 new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Physical Health", Coefficient = 0.0001, PValue = 0.2047, Significant = false },
+                // Control variables (key drivers)
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Session Frequency",  Coefficient = 0.0012, PValue = 0.1420, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Session Frequency",  Coefficient = 0.0031, PValue = 0.0420, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Session Frequency",  Coefficient = 0.0018, PValue = 0.0380, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Program Duration",   Coefficient = 0.0008, PValue = 0.0350, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Program Duration",   Coefficient = 0.0045, PValue = 0.0210, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Program Duration",   Coefficient = 0.0005, PValue = 0.2100, Significant = false },
             };
             context.InterventionEffectiveness.AddRange(rows);
             await context.SaveChangesAsync();

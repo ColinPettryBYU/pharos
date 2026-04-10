@@ -75,15 +75,24 @@ def run():
         sig = [f for f in explanatory_features_final if model.pvalues.get(f, 1) < 0.10]
         print(f'[TRAIN] OLS {outcome}: R2={model.rsquared:.4f}, Sig features: {sig}')
 
-    # ── Export effectiveness matrix ──
-    intervention_feature_names = INT_COLS
+    # ── Export effectiveness matrix (intervention categories + control variables) ──
+    control_label_map = {
+        'session_count': 'Session Frequency',
+        'months_since_start': 'Program Duration',
+        'total_active_plans': 'Active Plan Count',
+    }
+    all_features_to_export = INT_COLS + [f for f in explanatory_features_final if f not in INT_COLS]
     effectiveness_rows = []
     for outcome, ols_model in ols_models.items():
-        for feat in intervention_feature_names:
+        for feat in all_features_to_export:
             if feat in ols_model.params.index:
+                if feat in control_label_map:
+                    label = control_label_map[feat]
+                else:
+                    label = feat.replace('has_', '').replace('_', ' ').title()
                 effectiveness_rows.append({
                     'outcome': outcome,
-                    'intervention': feat.replace('has_', '').replace('_', ' ').title(),
+                    'intervention': label,
                     'coefficient': round(float(ols_model.params[feat]), 6),
                     'p_value': round(float(ols_model.pvalues[feat]), 6),
                     'significant': bool(ols_model.pvalues[feat] < 0.10),

@@ -589,6 +589,18 @@ export interface InterventionEffectiveness {
   recommendations: string[];
 }
 
+export interface KeyDriver {
+  driver_name: string;
+  effectiveness_score: number;
+  outcomes_affected: number;
+  description: string;
+}
+
+export interface InterventionEffectivenessResponse {
+  categories: InterventionEffectiveness[];
+  key_drivers: KeyDriver[];
+}
+
 // --- Dashboard Aggregates ---
 export interface DashboardStats {
   activeResidents: number;

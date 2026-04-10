@@ -96,6 +96,11 @@ public class MLService : IMLService
         );
     }
 
+    private static readonly HashSet<string> ControlVariableNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Session Frequency", "Program Duration", "Active Plan Count"
+    };
+
     public async Task<InterventionEffectivenessDto> GetInterventionEffectivenessAsync()
     {
         var rows = await _db.InterventionEffectiveness.ToListAsync();
@@ -103,28 +108,33 @@ public class MLService : IMLService
         if (!rows.Any())
             return new InterventionEffectivenessDto(
                 new List<InterventionInsightDto>(),
-                new List<CategoryEffectivenessDto>());
+                new List<CategoryEffectivenessDto>(),
+                new List<KeyDriverDto>());
 
-        var significantInsights = rows.Where(r => r.Significant).Select(r =>
+        var categoryRows = rows.Where(r => !ControlVariableNames.Contains(r.Intervention)).ToList();
+        var driverRows = rows.Where(r => ControlVariableNames.Contains(r.Intervention)).ToList();
+
+        // Intervention category insights
+        var significantInsights = categoryRows.Where(r => r.Significant).Select(r =>
             new InterventionInsightDto(
                 r.Intervention,
                 r.Coefficient,
-                rows.Count(x => x.Intervention == r.Intervention),
-                $"{r.Intervention} interventions show a statistically significant effect on {r.Outcome.Replace("delta_", "").Replace("_", " ")} (p={r.PValue:0.000})"
+                categoryRows.Count(x => x.Intervention == r.Intervention),
+                $"{r.Intervention} interventions show a statistically significant effect on {FormatOutcome(r.Outcome)} (p={r.PValue:0.000})"
             )).ToList();
 
-        var allCategories = rows.Select(r => r.Intervention).Distinct().ToList();
+        var allCategories = categoryRows.Select(r => r.Intervention).Distinct().ToList();
         var categoriesWithInsights = significantInsights.Select(i => i.InterventionType).Distinct().ToHashSet();
         var fallbackInsights = allCategories
             .Where(c => !categoriesWithInsights.Contains(c))
             .Select(c => new InterventionInsightDto(
-                c, 0, rows.Count(x => x.Intervention == c),
+                c, 0, categoryRows.Count(x => x.Intervention == c),
                 $"No statistically significant effects detected for {c} interventions in current data."
             )).ToList();
 
         var insights = significantInsights.Concat(fallbackInsights).ToList();
 
-        var byCategory = rows.GroupBy(r => r.Intervention).Select(g =>
+        var byCategory = categoryRows.GroupBy(r => r.Intervention).Select(g =>
         {
             var significantCount = g.Count(r => r.Significant);
             var totalOutcomes = g.Count();
@@ -137,8 +147,24 @@ public class MLService : IMLService
             );
         }).ToList();
 
-        return new InterventionEffectivenessDto(insights, byCategory);
+        // Key drivers from control variables
+        var keyDrivers = driverRows.GroupBy(r => r.Intervention).Select(g =>
+        {
+            var sigCount = g.Count(r => r.Significant);
+            var total = g.Count();
+            var score = total > 0 ? (double)sigCount / total * 100 : 0;
+            var sigOutcomes = g.Where(r => r.Significant).Select(r => FormatOutcome(r.Outcome));
+            var desc = sigCount > 0
+                ? $"{g.Key} significantly improves {string.Join(" and ", sigOutcomes)}"
+                : $"{g.Key} does not show significant effects in current data";
+            return new KeyDriverDto(g.Key, score, sigCount, desc);
+        }).OrderByDescending(d => d.EffectivenessScore).ToList();
+
+        return new InterventionEffectivenessDto(insights, byCategory, keyDrivers);
     }
+
+    private static string FormatOutcome(string outcome) =>
+        outcome.Replace("delta_", "").Replace("_", " ");
 
     public async Task<ResidentRiskPredictionDto?> GetResidentRiskAsync(int residentId)
     {

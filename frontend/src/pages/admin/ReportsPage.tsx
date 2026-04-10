@@ -288,7 +288,9 @@ function DonationTrendsTab() {
 // ──────────────────────────────────────────────────
 function ResidentOutcomesTab() {
   const { data, isLoading, error, refetch } = useOutcomeReports();
-  const { data: interventions, isLoading: interventionsLoading } = useInterventionEffectiveness();
+  const { data: interventionData, isLoading: interventionsLoading } = useInterventionEffectiveness();
+  const interventions = interventionData?.categories ?? [];
+  const keyDrivers = interventionData?.key_drivers ?? [];
 
   if (error) return <ErrorState message="Failed to load outcome reports" onRetry={refetch} />;
 
@@ -431,51 +433,92 @@ function ResidentOutcomesTab() {
         )}
       </div>
 
-      {!interventionsLoading && interventions && interventions.length > 0 && (
+      {!interventionsLoading && (interventions.length > 0 || keyDrivers.length > 0) && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Lightbulb className="h-4 w-4 text-accent" />
-                Intervention Plan Completion & Effectiveness
+                ML-Powered Intervention Analysis
               </CardTitle>
+              <p className="text-sm text-muted-foreground">OLS regression with resident fixed effects across health, education, and emotional outcomes</p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              {keyDrivers.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-success" />
+                    Key Drivers of Improvement
+                  </h4>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {keyDrivers.map((driver) => (
+                      <div key={driver.driver_name} className="rounded-lg border bg-card p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">{driver.driver_name}</span>
+                          <Badge variant={driver.effectiveness_score > 0 ? "default" : "outline"}>
+                            {(driver.effectiveness_score * 100).toFixed(0)}% significant
+                          </Badge>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden mb-2">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${driver.effectiveness_score * 100}%` }}
+                            transition={{ duration: 1, delay: 0.3 }}
+                            className="h-full rounded-full bg-success"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">{driver.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {interventionPlans.length > 0 && (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={interventionPlans}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="category" tick={axisTick} angle={-20} textAnchor="end" height={50} label={{ value: "Category", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
-                      <YAxis tick={axisTick} label={{ value: "Plans", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
-                      <Tooltip contentStyle={tooltipStyle} />
-                      <Legend />
-                      <Bar dataKey="completed" name="Completed" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="total" name="Total" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Plan Completion by Category</h4>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={interventionPlans}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                        <XAxis dataKey="category" tick={axisTick} angle={-20} textAnchor="end" height={50} label={{ value: "Category", position: "insideBottom", offset: -5, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <YAxis tick={axisTick} label={{ value: "Plans", angle: -90, position: "insideLeft", offset: 10, style: { fill: "var(--color-muted-foreground)", fontSize: 12 } }} />
+                        <Tooltip contentStyle={tooltipStyle} />
+                        <Legend />
+                        <Bar dataKey="completed" name="Completed" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="total" name="Total" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
-                <div className="space-y-3">
-                  {interventions.map((item) => (
-                    <div key={item.plan_category} className="rounded-lg border p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">{item.plan_category}</span>
-                        <Badge variant="outline">{((item.effectiveness_score ?? 0) * 100).toFixed(0)}% effective</Badge>
-                      </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden mb-2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(item.effectiveness_score ?? 0) * 100}%` }}
-                          transition={{ duration: 1, delay: 0.3 }}
-                          className="h-full rounded-full bg-primary"
-                        />
-                      </div>
-                      {(item.recommendations ?? []).length > 0 && (
-                        <p className="text-xs text-muted-foreground">{(item.recommendations ?? [])[0]}</p>
-                      )}
+                {interventions.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-3">Category Statistical Significance</h4>
+                    <div className="space-y-3">
+                      {interventions.map((item) => (
+                        <div key={item.plan_category} className="rounded-lg border p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">{item.plan_category}</span>
+                            <Badge variant="outline">{((item.effectiveness_score ?? 0) * 100).toFixed(0)}% significant</Badge>
+                          </div>
+                          <div className="h-2 rounded-full bg-muted overflow-hidden mb-2">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(item.effectiveness_score ?? 0) * 100}%` }}
+                              transition={{ duration: 1, delay: 0.3 }}
+                              className="h-full rounded-full bg-primary"
+                            />
+                          </div>
+                          {(item.recommendations ?? []).length > 0 ? (
+                            <p className="text-xs text-muted-foreground">{(item.recommendations ?? [])[0]}</p>
+                          ) : (item.effectiveness_score ?? 0) === 0 ? (
+                            <p className="text-xs text-muted-foreground">Not independently significant — consistency and duration matter more than category alone</p>
+                          ) : null}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
