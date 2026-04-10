@@ -270,7 +270,7 @@ export default function ProcessRecordingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Session Type</Label>
-            <Select value={filterSessionType || ALL_VALUE} onValueChange={(v) => setFilterSessionType(v === ALL_VALUE ? "" : v)}>
+            <Select value={filterSessionType || ALL_VALUE} onValueChange={(v) => setFilterSessionType(!v || v === ALL_VALUE ? "" : v)}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_VALUE}>Any</SelectItem>
@@ -290,7 +290,7 @@ export default function ProcessRecordingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Emotional State</Label>
-            <Select value={filterEmotionalState || ALL_VALUE} onValueChange={(v) => setFilterEmotionalState(v === ALL_VALUE ? "" : v)}>
+            <Select value={filterEmotionalState || ALL_VALUE} onValueChange={(v) => setFilterEmotionalState(!v || v === ALL_VALUE ? "" : v)}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_VALUE}>Any</SelectItem>
@@ -318,7 +318,7 @@ export default function ProcessRecordingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Concerns Flagged</Label>
-            <Select value={filterConcerns || ALL_VALUE} onValueChange={(v) => setFilterConcerns(v === ALL_VALUE ? "" : v)}>
+            <Select value={filterConcerns || ALL_VALUE} onValueChange={(v) => setFilterConcerns(!v || v === ALL_VALUE ? "" : v)}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_VALUE}>Any</SelectItem>
@@ -329,7 +329,7 @@ export default function ProcessRecordingsPage() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Progress Noted</Label>
-            <Select value={filterProgress || ALL_VALUE} onValueChange={(v) => setFilterProgress(v === ALL_VALUE ? "" : v)}>
+            <Select value={filterProgress || ALL_VALUE} onValueChange={(v) => setFilterProgress(!v || v === ALL_VALUE ? "" : v)}>
               <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_VALUE}>Any</SelectItem>
