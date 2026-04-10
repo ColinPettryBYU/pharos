@@ -68,11 +68,11 @@ function TextBlockRenderer({ block }: { block: ChatBlock }) {
 
 function StatBlockRenderer({ block }: { block: ChatBlock }) {
   return (
-    <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 flex flex-col gap-1">
-      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="rounded-xl border border-primary/15 bg-primary/5 p-3 sm:p-4 flex flex-col gap-1">
+      <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">
         {block.label}
       </span>
-      <span className="text-3xl font-bold tabular-nums tracking-tight text-primary">
+      <span className="text-xl sm:text-3xl font-bold tabular-nums tracking-tight text-primary">
         {block.value}
       </span>
       {block.trend && (
@@ -101,7 +101,7 @@ function TableBlockRenderer({ block }: { block: ChatBlock }) {
       {block.title && (
         <p className="text-sm font-semibold">{block.title}</p>
       )}
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-lg border overflow-x-auto -mx-1 px-1">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
@@ -305,10 +305,6 @@ function ThinkingIndicator() {
     return () => clearTimeout(timeout);
   }, [displayText, isDeleting, phraseIdx]);
 
-  const longestPhrase = THINKING_PHRASES.reduce((a, b) =>
-    a.length >= b.length ? a : b
-  );
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -325,33 +321,25 @@ function ThinkingIndicator() {
         </motion.div>
       </div>
       <div className="rounded-2xl rounded-tl-sm bg-card border px-4 py-3 shadow-sm">
-        <div className="relative inline-flex items-center">
-          <span
-            className="invisible text-xs font-semibold whitespace-nowrap select-none"
-            aria-hidden="true"
-          >
-            {longestPhrase}
-          </span>
-          <span
-            className="absolute inset-0 flex items-center text-xs font-semibold whitespace-nowrap"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, var(--muted-foreground) 0%, var(--primary) 40%, var(--primary) 60%, var(--muted-foreground) 100%)",
-              backgroundSize: "200% 100%",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              animation: "shimmer 2s linear infinite",
-            }}
-          >
-            {displayText}
-            <motion.span
-              animate={{ opacity: [1, 0] }}
-              transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse" }}
-              className="ml-px inline-block w-[2px] h-3 bg-primary rounded-full"
-            />
-          </span>
-        </div>
+        <span
+          className="inline-flex items-center text-xs font-semibold whitespace-nowrap"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, var(--muted-foreground) 0%, var(--primary) 40%, var(--primary) 60%, var(--muted-foreground) 100%)",
+            backgroundSize: "200% 100%",
+            backgroundClip: "text",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            animation: "shimmer 2s linear infinite",
+          }}
+        >
+          {displayText}
+          <motion.span
+            animate={{ opacity: [1, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse" }}
+            className="ml-px inline-block w-[2px] h-3 bg-primary rounded-full"
+          />
+        </span>
       </div>
     </motion.div>
   );
@@ -609,6 +597,7 @@ export default function ChatPage() {
         {
           onSuccess: (data) => {
             if (data.conversation_id && !activeConversationId) {
+              prevConvId.current = data.conversation_id;
               setActiveConversationId(data.conversation_id);
             }
 
@@ -656,7 +645,7 @@ export default function ChatPage() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] -m-4 sm:-m-6 lg:-m-8">
+    <div className="flex h-[calc(100vh-4rem)] -mx-4 -my-4 sm:-mx-6 sm:-my-6 lg:-mx-8 lg:-my-8">
       {/* Conversation sidebar */}
       <ConversationSidebar
         activeId={activeConversationId}
@@ -684,7 +673,7 @@ export default function ChatPage() {
         {/* Messages area */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6"
+          className="flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6"
         >
           {isLoadingMessages && activeConversationId ? (
             <div className="flex flex-col items-center justify-center h-full">
@@ -729,14 +718,14 @@ export default function ChatPage() {
                     Try asking
                   </p>
                 </div>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-2 px-2">
                   {SUGGESTED_QUESTIONS.map((q) => (
                     <motion.button
                       key={q}
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => sendMessage(q)}
-                      className="rounded-full border bg-card px-4 py-2 text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50 cursor-pointer"
+                      className="rounded-full border bg-card px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-foreground shadow-sm transition-colors hover:bg-muted/50 cursor-pointer"
                     >
                       {q}
                     </motion.button>
@@ -746,63 +735,63 @@ export default function ChatPage() {
             </motion.div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
-              <AnimatePresence initial={false}>
-                {messages.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-                    className={cn(
-                      "flex items-start gap-3",
-                      msg.role === "user" && "justify-end"
-                    )}
-                  >
-                    {msg.role === "assistant" && (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0 mt-0.5">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                      </div>
-                    )}
+              {messages.map((msg, msgIdx) => (
+                <motion.div
+                  key={msg.id}
+                  initial={msgIdx >= messages.length - 1 ? { opacity: 0, y: 12 } : false}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className={cn(
+                    "flex items-start gap-2 sm:gap-3",
+                    msg.role === "user" && "justify-end"
+                  )}
+                >
+                  {msg.role === "assistant" && (
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0 mt-0.5">
+                      <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+                    </div>
+                  )}
 
-                    {msg.role === "user" ? (
-                      <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 max-w-[80%] shadow-sm">
-                        <p className="text-sm leading-relaxed">{msg.content}</p>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl rounded-tl-sm bg-card border px-5 py-4 max-w-[85%] shadow-sm space-y-4">
-                        {msg.blocks &&
-                          groupStatBlocks(msg.blocks).map((item, i) => {
-                            if (Array.isArray(item)) {
-                              return (
-                                <div
-                                  key={i}
-                                  className={cn(
-                                    "grid gap-3",
-                                    item.length === 1 && "grid-cols-1",
-                                    item.length === 2 && "grid-cols-2",
-                                    item.length >= 3 &&
-                                      "grid-cols-2 sm:grid-cols-3"
-                                  )}
-                                >
-                                  {item.map((stat, si) => (
-                                    <BlockRenderer
-                                      key={si}
-                                      block={stat}
-                                      index={i + si}
-                                    />
-                                  ))}
-                                </div>
-                              );
-                            }
+                  {msg.role === "user" ? (
+                    <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-3 py-2 sm:px-4 sm:py-2.5 max-w-[85%] sm:max-w-[80%] shadow-sm">
+                      <p className="text-sm leading-relaxed">{msg.content}</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl rounded-tl-sm bg-card border px-3 py-3 sm:px-5 sm:py-4 max-w-[calc(100%-2.5rem)] sm:max-w-[85%] shadow-sm space-y-4 overflow-hidden">
+                      {msg.blocks &&
+                        groupStatBlocks(msg.blocks).map((item, i) => {
+                          if (Array.isArray(item)) {
                             return (
-                              <BlockRenderer key={i} block={item} index={i} />
+                              <div
+                                key={i}
+                                className={cn(
+                                  "grid gap-2 sm:gap-3",
+                                  item.length === 1 && "grid-cols-1",
+                                  item.length === 2 && "grid-cols-2",
+                                  item.length >= 3 &&
+                                    "grid-cols-2 sm:grid-cols-3"
+                                )}
+                              >
+                                {item.map((stat, si) => (
+                                  <BlockRenderer
+                                    key={si}
+                                    block={stat}
+                                    index={i + si}
+                                  />
+                                ))}
+                              </div>
                             );
-                          })}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+                          }
+                          return (
+                            <BlockRenderer key={i} block={item} index={i} />
+                          );
+                        })}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
 
+              <AnimatePresence>
                 {mutation.isPending && (
                   <ThinkingIndicator key="thinking" />
                 )}
@@ -812,7 +801,7 @@ export default function ChatPage() {
         </div>
 
         {/* Sticky input bar */}
-        <div className="shrink-0 border-t bg-background px-4 sm:px-6 lg:px-8 py-4">
+        <div className="shrink-0 border-t bg-background px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
           <form
             onSubmit={handleSubmit}
             className="max-w-3xl mx-auto"
