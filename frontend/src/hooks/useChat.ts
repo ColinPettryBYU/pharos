@@ -106,7 +106,7 @@ export function useSendMessage() {
     mutationFn: (data: ChatRequest) =>
       api.post<ChatResponse>("/admin/chat", data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat", "conversations"] });
+      qc.invalidateQueries({ queryKey: ["chat", "conversations"], exact: true });
     },
   });
 }

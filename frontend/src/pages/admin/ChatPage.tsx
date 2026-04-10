@@ -276,13 +276,34 @@ const THINKING_PHRASES = [
 
 function ThinkingIndicator() {
   const [phraseIdx, setPhraseIdx] = useState(0);
+  const [displayText, setDisplayText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPhraseIdx((prev) => (prev + 1) % THINKING_PHRASES.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+    const phrase = THINKING_PHRASES[phraseIdx];
+    let timeout: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting) {
+      if (displayText.length < phrase.length) {
+        timeout = setTimeout(() => {
+          setDisplayText(phrase.slice(0, displayText.length + 1));
+        }, 40 + Math.random() * 30);
+      } else {
+        timeout = setTimeout(() => setIsDeleting(true), 1500);
+      }
+    } else {
+      if (displayText.length > 0) {
+        timeout = setTimeout(() => {
+          setDisplayText(displayText.slice(0, -1));
+        }, 25);
+      } else {
+        setIsDeleting(false);
+        setPhraseIdx((prev) => (prev + 1) % THINKING_PHRASES.length);
+      }
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, phraseIdx]);
 
   const longestPhrase = THINKING_PHRASES.reduce((a, b) =>
     a.length >= b.length ? a : b
@@ -304,34 +325,32 @@ function ThinkingIndicator() {
         </motion.div>
       </div>
       <div className="rounded-2xl rounded-tl-sm bg-card border px-4 py-3 shadow-sm">
-        <div className="relative inline-flex">
+        <div className="relative inline-flex items-center">
           <span
             className="invisible text-xs font-semibold whitespace-nowrap select-none"
             aria-hidden="true"
           >
             {longestPhrase}
           </span>
-          <AnimatePresence mode="wait">
+          <span
+            className="absolute inset-0 flex items-center text-xs font-semibold whitespace-nowrap"
+            style={{
+              backgroundImage:
+                "linear-gradient(90deg, var(--muted-foreground) 0%, var(--primary) 40%, var(--primary) 60%, var(--muted-foreground) 100%)",
+              backgroundSize: "200% 100%",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              animation: "shimmer 2s linear infinite",
+            }}
+          >
+            {displayText}
             <motion.span
-              key={phraseIdx}
-              initial={{ opacity: 0, filter: "blur(4px)" }}
-              animate={{ opacity: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, filter: "blur(4px)" }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0 flex items-center text-xs font-semibold whitespace-nowrap"
-              style={{
-                backgroundImage:
-                  "linear-gradient(90deg, var(--muted-foreground) 0%, var(--primary) 40%, var(--primary) 60%, var(--muted-foreground) 100%)",
-                backgroundSize: "200% 100%",
-                backgroundClip: "text",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                animation: "shimmer 2s linear infinite",
-              }}
-            >
-              {THINKING_PHRASES[phraseIdx]}
-            </motion.span>
-          </AnimatePresence>
+              animate={{ opacity: [1, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse" }}
+              className="ml-px inline-block w-[2px] h-3 bg-primary rounded-full"
+            />
+          </span>
         </div>
       </div>
     </motion.div>
@@ -490,12 +509,15 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const mutation = useSendMessage();
 
+  const prevConvId = useRef<number | null>(null);
   const { data: conversationData, isLoading: isLoadingMessages } =
     useConversationMessages(activeConversationId);
 
-  // Load messages when switching to an existing conversation
+  // Load messages only when the conversation ID actually changes
   useEffect(() => {
     if (!conversationData) return;
+    if (prevConvId.current === activeConversationId) return;
+    prevConvId.current = activeConversationId;
 
     const loaded: Message[] = conversationData.messages.map((m) => {
       if (m.role === "user") {
@@ -529,10 +551,11 @@ export default function ChatPage() {
     });
 
     setMessages(loaded);
-  }, [conversationData]);
+  }, [conversationData, activeConversationId]);
 
   // Clear messages when starting a new chat
   const handleSelectConversation = useCallback((id: number | null) => {
+    prevConvId.current = null;
     setActiveConversationId(id);
     if (id === null) {
       setMessages([]);
@@ -703,7 +726,7 @@ export default function ChatPage() {
                   </h1>
                   <p className="text-muted-foreground text-sm leading-relaxed">
                     I can help you understand your organization's data.
-                    Try asking:
+                    Try asking
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -730,7 +753,6 @@ export default function ChatPage() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-                    layout
                     className={cn(
                       "flex items-start gap-3",
                       msg.role === "user" && "justify-end"
