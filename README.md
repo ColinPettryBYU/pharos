@@ -13,6 +13,7 @@ Pharos is a full-stack web application built for a US-based 501(c)(3) nonprofit 
 - Personalized donor impact dashboard connecting donations to anonymized outcomes
 - ML-powered donor churn risk predictions to flag at-risk supporters
 - In-kind donation itemization and allocation tracking across safehouses
+- AI bot powered by database
 
 ### Case Management
 - Full resident lifecycle from intake through reintegration
@@ -28,6 +29,10 @@ Pharos is a full-stack web application built for a US-based 501(c)(3) nonprofit 
 - ML-powered posting recommendations (best time, content type, platform)
 - Direct correlation between social media activity and donation referrals
 - Engagement rate prediction for planned posts
+<<<<<<< HEAD
+=======
+- API integration into each social platform for automated posting.
+>>>>>>> 5cb6a50d0efc7980de1029c6e611824ab07173ef
 
 ### ML Pipelines
 - **Donor Churn Predictor** — Identifies supporters at risk of lapsing based on donation patterns
@@ -48,7 +53,11 @@ Pharos is a full-stack web application built for a US-based 501(c)(3) nonprofit 
 | Charts | Recharts |
 | Backend | .NET 10 / C# |
 | ORM | Entity Framework Core |
+<<<<<<< HEAD
 | Auth | ASP.NET Identity (cookie-based) + Google OAuth + TOTP MFA |
+=======
+| Auth | ASP.NET Identity (cookie-based) + Google OAuth  |
+>>>>>>> 5cb6a50d0efc7980de1029c6e611824ab07173ef
 | Database | PostgreSQL (Supabase) |
 | ML Pipelines | Python (Jupyter, scikit-learn, statsmodels) |
 | ML Automation | GitHub Actions (scheduled + manual triggers) |
@@ -97,7 +106,10 @@ Pharos/
 
 - Cookie-based authentication with httpOnly, Secure, SameSite attributes
 - Google OAuth for third-party login
+<<<<<<< HEAD
 - TOTP MFA (authenticator app) support
+=======
+>>>>>>> 5cb6a50d0efc7980de1029c6e611824ab07173ef
 - 24-hour session expiration
 - Minimum 14-character password with complexity requirements
 
@@ -132,7 +144,10 @@ Each pipeline follows an ETL → Train → Inference pattern, reading from the l
 | Role | Email | Notes |
 |---|---|---|
 | Admin | admin@pharos.org | No MFA |
+<<<<<<< HEAD
 | Admin + MFA | admin-mfa@pharos.org | TOTP enabled |
+=======
+>>>>>>> 5cb6a50d0efc7980de1029c6e611824ab07173ef
 | Donor | donor@pharos.org | Linked to supporter with donation history |
 
 ---
