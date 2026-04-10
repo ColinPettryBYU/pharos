@@ -139,6 +139,11 @@ export default function ResidentsPage() {
 
   const columns: ColumnDef<Resident>[] = useMemo(() => [
     {
+      accessorKey: "resident_id",
+      header: "ID",
+      cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.getValue("resident_id")}</span>,
+    },
+    {
       accessorKey: "case_control_no",
       header: "Case No.",
       cell: ({ row }) => <span className="font-mono text-sm font-medium">{row.getValue("case_control_no")}</span>,

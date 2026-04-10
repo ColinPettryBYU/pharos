@@ -99,6 +99,11 @@ export default function DonorsPage() {
 
   const columns: ColumnDef<Supporter>[] = useMemo(() => [
     {
+      accessorKey: "supporter_id",
+      header: "ID",
+      cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.getValue("supporter_id")}</span>,
+    },
+    {
       accessorKey: "display_name",
       header: "Name",
       cell: ({ row }) => <span className="font-medium">{row.getValue("display_name")}</span>,

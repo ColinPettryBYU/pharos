@@ -90,11 +90,11 @@ export default function DonorDashboard() {
   const { data: impact, isLoading: impactLoading } = useDonorImpact();
 
   const donations: Donation[] = Array.isArray(donationsData) ? donationsData : (donationsData as any)?.data ?? [];
-  const totalDonated = impact?.totalDonated ?? donations.reduce((s: number, d: Donation) => s + d.amount, 0);
+  const totalDonated = impact?.total_donated ?? donations.reduce((s: number, d: Donation) => s + d.amount, 0);
   const isLoading = profileLoading || donationsLoading || impactLoading;
 
   const allocationByArea = (impact?.allocations ?? []).reduce<Record<string, number>>((acc, a) => {
-    acc[a.program_area] = (acc[a.program_area] || 0) + a.amount_allocated;
+    acc[a.program_area] = (acc[a.program_area] || 0) + a.total_allocated;
     return acc;
   }, {});
   const pieData = Object.entries(allocationByArea).map(([name, value]) => ({ name, value: Math.round(value) }));
@@ -147,7 +147,7 @@ export default function DonorDashboard() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  across {impact?.donationsCount ?? donations.length} donations
+                  across {impact?.total_donations ?? donations.length} donations
                 </p>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function DonorDashboard() {
             },
             {
               label: "Donations Made",
-              value: impact?.donationsCount ?? donations.length,
+              value: impact?.total_donations ?? donations.length,
               format: "number" as const,
               icon: TrendingUp,
               color: "var(--pharos-sky)",
@@ -186,7 +186,7 @@ export default function DonorDashboard() {
             },
             {
               label: "Safehouses Reached",
-              value: impact?.safehousesReached ?? 0,
+              value: impact?.safehouses_impacted ?? 0,
               format: "number" as const,
               icon: Building2,
               color: "var(--pharos-blush)",
@@ -333,7 +333,7 @@ export default function DonorDashboard() {
               </h3>
               <p className="text-muted-foreground leading-relaxed max-w-xl">
                 Your contributions have reached{" "}
-                <strong className="text-foreground">{impact?.safehousesReached ?? 0} safehouses</strong> across
+                <strong className="text-foreground">{impact?.safehouses_impacted ?? 0} safehouses</strong> across
                 the Philippines, providing education, healthcare, and counseling services to girls
                 who need it most. Every peso directly funds their recovery and future.
               </p>

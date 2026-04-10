@@ -142,18 +142,44 @@ public class AuthController : ControllerBase
         }
 
         var redirectUrl = Url.Action("GoogleCallback", "Auth");
-        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
         return Challenge(properties, "Google");
     }
 
     [HttpGet("google-callback")]
-    public async Task<IActionResult> GoogleCallback()
+    public async Task<IActionResult> GoogleCallback(
+        [FromServices] ILoggerFactory loggerFactory)
     {
+        var log = loggerFactory.CreateLogger("GoogleCallback");
         var frontendUrl = GetFrontendUrl();
+
+        var hasExternalCookie = Request.Cookies.ContainsKey("Identity.External");
+        log.LogWarning("GoogleCallback entered. Identity.External cookie present: {Has}", hasExternalCookie);
+
+        var authResult = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+        log.LogWarning("AuthenticateAsync result — Succeeded: {Ok}, Failure: {Fail}, Principal null: {Null}",
+            authResult.Succeeded,
+            authResult.Failure?.Message,
+            authResult.Principal == null);
+
+        if (authResult.Principal != null)
+        {
+            var claims = authResult.Principal.Claims.Select(c => $"{c.Type}={c.Value}");
+            log.LogWarning("Claims: {Claims}", string.Join(" | ", claims));
+        }
 
         var info = await _signInManager.GetExternalLoginInfoAsync();
         if (info == null)
-            return Redirect($"{frontendUrl}/login?error=google-failed");
+        {
+            var detail = !hasExternalCookie
+                ? "no-external-cookie"
+                : !authResult.Succeeded
+                    ? $"auth-failed:{authResult.Failure?.Message ?? "unknown"}"
+                    : "info-null-with-valid-auth";
+
+            log.LogError("GetExternalLoginInfoAsync returned null. Detail: {Detail}", detail);
+            return Redirect($"{frontendUrl}/login?error=google-failed&detail={Uri.EscapeDataString(detail)}");
+        }
 
         ApplicationUser? user = null;
 
@@ -197,10 +223,9 @@ public class AuthController : ControllerBase
         if (user == null)
             return Redirect($"{frontendUrl}/login?error=google-failed");
 
-        var token = Guid.NewGuid().ToString("N");
-        _cache.Set($"google_auth_{token}", user.Id, TimeSpan.FromMinutes(2));
-
-        return Redirect($"{frontendUrl}/login?google_token={token}");
+        var roles = await _userManager.GetRolesAsync(user);
+        var dest = roles.Contains("Admin") || roles.Contains("Staff") ? "/admin" : "/donor/dashboard";
+        return Redirect($"{frontendUrl}{dest}");
     }
 
     [HttpPost("exchange-google-token")]

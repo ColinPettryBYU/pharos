@@ -107,8 +107,8 @@ export default function HomeVisitationsPage() {
     },
     {
       accessorKey: "resident_id",
-      header: "Resident",
-      cell: ({ row }) => <span className="font-medium text-sm">R-{String(row.getValue("resident_id")).padStart(3, "0")}</span>,
+      header: "Resident ID",
+      cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.getValue("resident_id")}</span>,
     },
     { accessorKey: "social_worker", header: "Social Worker" },
     {

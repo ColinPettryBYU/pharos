@@ -98,6 +98,11 @@ export default function DonationsPage() {
 
   const columns: ColumnDef<Donation>[] = useMemo(() => [
     {
+      accessorKey: "supporter_id",
+      header: "Supporter ID",
+      cell: ({ row }) => <span className="font-mono text-sm text-muted-foreground">{row.getValue("supporter_id")}</span>,
+    },
+    {
       accessorKey: "donation_date",
       header: "Date",
       cell: ({ row }) => <span className="tabular-nums">{fmtDate(row.getValue("donation_date"))}</span>,
