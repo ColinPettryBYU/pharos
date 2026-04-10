@@ -35,10 +35,9 @@ class ApiError extends Error {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 401) {
-    // Only redirect if not already on login page
-    if (!window.location.pathname.includes("/login")) {
-      window.location.href = "/login";
-    }
+    // Let the auth guards and route protection handle redirects — a hard
+    // window.location reload here causes a bounce loop when cross-origin
+    // cookies are blocked (incognito / mobile Safari).
     throw new ApiError(401, "Unauthorized");
   }
 

@@ -138,7 +138,6 @@ builder.Services.AddHttpClient<IChatService, ChatService>();
 
 // ── Social Media Platform Clients ──
 builder.Services.AddMemoryCache();
-builder.Services.AddDataProtection();
 builder.Services.AddSingleton<ITokenEncryptionService, TokenEncryptionService>();
 builder.Services.AddHttpClient<FacebookClient>();
 builder.Services.AddHttpClient<InstagramClient>();

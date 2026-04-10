@@ -36,7 +36,7 @@ type ResetForm = z.infer<typeof resetSchema>;
 const inviteSchema = z.object({
   Email: z.string().email("Valid email required"),
   DisplayName: z.string().min(1, "Name is required"),
-  Password: z.string().min(12, "Minimum 12 characters"),
+  Password: z.string().min(14, "Minimum 14 characters"),
   Role: z.string().min(1, "Role is required"),
   LinkedSupporterId: z.coerce.number().optional(),
 });
@@ -91,7 +91,7 @@ export default function UserManagementPage() {
   const onSubmit = form.handleSubmit(async (values) => {
     try {
       await inviteUser.mutateAsync(values as unknown as Record<string, unknown>);
-      toast.success("User invited successfully");
+      toast.success("User created successfully");
       form.reset();
       setDialogOpen(false);
     } catch { /* handled by api client */ }
@@ -113,7 +113,7 @@ export default function UserManagementPage() {
         description="Manage user accounts and role assignments."
         breadcrumbs={[{ label: "Dashboard", href: "/admin" }, { label: "User Management" }]}
         actions={
-          <Button onClick={() => setDialogOpen(true)} className="gap-2"><Plus className="h-4 w-4" />Invite User</Button>
+          <Button onClick={() => setDialogOpen(true)} className="gap-2"><Plus className="h-4 w-4" />Create User</Button>
         }
       />
 
@@ -124,8 +124,8 @@ export default function UserManagementPage() {
       ) : userList.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-lg font-medium mb-2">No users found</p>
-          <p className="text-muted-foreground mb-4">Invite the first user to get started</p>
-          <Button onClick={() => setDialogOpen(true)}>Invite User</Button>
+          <p className="text-muted-foreground mb-4">Create the first user to get started</p>
+          <Button onClick={() => setDialogOpen(true)}>Create User</Button>
         </div>
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-3">
@@ -189,7 +189,7 @@ export default function UserManagementPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite User</DialogTitle>
+            <DialogTitle>Create User</DialogTitle>
             <DialogDescription>Create a new user account.</DialogDescription>
           </DialogHeader>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -197,7 +197,7 @@ export default function UserManagementPage() {
             <div className="space-y-2"><Label>Email</Label><Input type="email" {...form.register("Email")} placeholder="user@pharos.org" /></div>
             <div className="space-y-2">
               <Label>Password</Label>
-              <Input type="password" {...form.register("Password")} placeholder="Minimum 12 characters" />
+              <Input type="password" {...form.register("Password")} placeholder="Minimum 14 characters" />
               {form.formState.errors.Password && <p className="text-xs text-destructive">{form.formState.errors.Password.message}</p>}
             </div>
             <div className="space-y-2">
@@ -217,7 +217,7 @@ export default function UserManagementPage() {
               </div>
             )}
             <Button type="submit" className="w-full" disabled={inviteUser.isPending}>
-              {inviteUser.isPending ? "Inviting..." : "Invite User"}
+              {inviteUser.isPending ? "Creating..." : "Create User"}
             </Button>
           </form>
         </DialogContent>
