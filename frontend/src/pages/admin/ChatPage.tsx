@@ -645,7 +645,7 @@ export default function ChatPage() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] -mx-4 -my-4 sm:-mx-6 sm:-my-6 lg:-mx-8 lg:-my-8">
+    <div className="flex h-[calc(100dvh-4rem)] -mx-4 -my-4 sm:-mx-6 sm:-my-6 lg:-mx-8 lg:-my-8 overflow-hidden">
       {/* Conversation sidebar */}
       <ConversationSidebar
         activeId={activeConversationId}
@@ -714,8 +714,7 @@ export default function ChatPage() {
                     Pharos AI Assistant
                   </h1>
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    I can help you understand your organization's data.
-                    Try asking
+                    Ask about residents, donations, social media, and more
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2 px-2">
@@ -812,7 +811,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about residents, donations, social media..."
+                placeholder="Ask about residents, donations, etc."
                 rows={1}
                 className="w-full resize-none rounded-2xl border border-border bg-card pl-4 pr-14 py-3.5 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
                 style={{ maxHeight: "120px" }}
