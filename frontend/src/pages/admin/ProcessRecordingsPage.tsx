@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +24,7 @@ import {
 import { useProcessRecordings, useCreateProcessRecording, useUpdateProcessRecording } from "@/hooks/useProcessRecordings";
 import { fmtDate } from "@/lib/utils";
 import type { ProcessRecording } from "@/types";
-import { Plus, MoreHorizontal, Pencil, Filter, X, CalendarIcon } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, CalendarIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -47,57 +47,26 @@ const recordingSchema = z.object({
 type RecordingForm = z.infer<typeof recordingSchema>;
 
 const emotionalStates = ["Calm", "Anxious", "Sad", "Angry", "Hopeful", "Withdrawn", "Happy", "Distressed"];
-const ALL_VALUE = "__all__";
 
 export default function ProcessRecordingsPage() {
   const navigate = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProcessRecording | null>(null);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"latest" | "oldest">("latest");
 
-  // Filter state
-  const [filterResidentId, setFilterResidentId] = useState("");
-  const [filterSessionType, setFilterSessionType] = useState("");
-  const [filterSocialWorker, setFilterSocialWorker] = useState("");
-  const [filterEmotionalState, setFilterEmotionalState] = useState("");
-  const [filterStartDate, setFilterStartDate] = useState("");
-  const [filterEndDate, setFilterEndDate] = useState("");
-  const [filterConcerns, setFilterConcerns] = useState("");
-  const [filterProgress, setFilterProgress] = useState("");
-  const [filtersVisible, setFiltersVisible] = useState(false);
-
-  const filters = useMemo(() => {
-    const f: Record<string, unknown> = { pageSize: 3000 };
-    if (filterResidentId) f.residentId = Number(filterResidentId);
-    if (filterSessionType) f.sessionType = filterSessionType;
-    if (filterSocialWorker) f.search = filterSocialWorker;
-    if (filterEmotionalState) f.emotionalState = filterEmotionalState;
-    if (filterStartDate) f.startDate = filterStartDate;
-    if (filterEndDate) f.endDate = filterEndDate;
-    if (filterConcerns === "yes") f.concernsFlagged = true;
-    if (filterConcerns === "no") f.concernsFlagged = false;
-    if (filterProgress === "yes") f.progressNoted = true;
-    if (filterProgress === "no") f.progressNoted = false;
-    return f;
-  }, [filterResidentId, filterSessionType, filterSocialWorker, filterEmotionalState, filterStartDate, filterEndDate, filterConcerns, filterProgress]);
-
-  const { data, isLoading, error, refetch } = useProcessRecordings(filters);
+  const { data, isLoading, error, refetch } = useProcessRecordings({
+    pageSize: 3000,
+    ...(typeFilter !== "all" ? { sessionType: typeFilter } : {}),
+  });
   const createRecording = useCreateProcessRecording();
   const updateRecording = useUpdateProcessRecording();
 
-  const recordings = Array.isArray(data) ? data : (data?.data ?? []);
-
-  const activeFilterCount = [filterResidentId, filterSessionType, filterSocialWorker, filterEmotionalState, filterStartDate, filterEndDate, filterConcerns, filterProgress].filter(Boolean).length;
-
-  const clearFilters = useCallback(() => {
-    setFilterResidentId("");
-    setFilterSessionType("");
-    setFilterSocialWorker("");
-    setFilterEmotionalState("");
-    setFilterStartDate("");
-    setFilterEndDate("");
-    setFilterConcerns("");
-    setFilterProgress("");
-  }, []);
+  const rawRecordings = Array.isArray(data) ? data : (data?.data ?? []);
+  const recordings = useMemo(
+    () => sortOrder === "oldest" ? [...rawRecordings].reverse() : rawRecordings,
+    [rawRecordings, sortOrder],
+  );
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -232,117 +201,6 @@ export default function ProcessRecordingsPage() {
 
   const isPending = editTarget ? updateRecording.isPending : createRecording.isPending;
 
-  const filterBar = (
-    <div className="space-y-3">
-      {/* Toggle + active count */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant={filtersVisible ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFiltersVisible(!filtersVisible)}
-          className="gap-1.5"
-        >
-          <Filter className="h-3.5 w-3.5" />
-          Filters
-          {activeFilterCount > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{activeFilterCount}</Badge>
-          )}
-        </Button>
-        {activeFilterCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground text-xs">
-            <X className="h-3 w-3" /> Clear all
-          </Button>
-        )}
-      </div>
-
-      {/* Filter fields */}
-      {filtersVisible && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4 rounded-lg border bg-muted/30">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Resident ID</Label>
-            <Input
-              type="number"
-              placeholder="Any"
-              value={filterResidentId}
-              onChange={(e) => setFilterResidentId(e.target.value)}
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Session Type</Label>
-            <Select value={filterSessionType || ALL_VALUE} onValueChange={(v) => setFilterSessionType(!v || v === ALL_VALUE ? "" : v)}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Any</SelectItem>
-                <SelectItem value="Individual">Individual</SelectItem>
-                <SelectItem value="Group">Group</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Social Worker</Label>
-            <Input
-              placeholder="Search..."
-              value={filterSocialWorker}
-              onChange={(e) => setFilterSocialWorker(e.target.value)}
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Emotional State</Label>
-            <Select value={filterEmotionalState || ALL_VALUE} onValueChange={(v) => setFilterEmotionalState(!v || v === ALL_VALUE ? "" : v)}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Any</SelectItem>
-                {emotionalStates.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Start Date</Label>
-            <Input
-              type="date"
-              value={filterStartDate}
-              onChange={(e) => setFilterStartDate(e.target.value)}
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">End Date</Label>
-            <Input
-              type="date"
-              value={filterEndDate}
-              onChange={(e) => setFilterEndDate(e.target.value)}
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Concerns Flagged</Label>
-            <Select value={filterConcerns || ALL_VALUE} onValueChange={(v) => setFilterConcerns(!v || v === ALL_VALUE ? "" : v)}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Any</SelectItem>
-                <SelectItem value="yes">Flagged</SelectItem>
-                <SelectItem value="no">Not Flagged</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Progress Noted</Label>
-            <Select value={filterProgress || ALL_VALUE} onValueChange={(v) => setFilterProgress(!v || v === ALL_VALUE ? "" : v)}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Any" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Any</SelectItem>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div>
       <PageHeader
@@ -356,24 +214,40 @@ export default function ProcessRecordingsPage() {
         }
       />
 
-      {!isLoading && recordings.length === 0 && activeFilterCount === 0 ? (
+      {!isLoading && recordings.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-lg font-medium mb-2">No recordings yet</p>
           <p className="text-muted-foreground mb-4">Record the first session to get started</p>
           <Button onClick={() => setSheetOpen(true)}>Record Session</Button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {filterBar}
-          <DataTableWrapper
-            columns={columns}
-            data={recordings}
-            searchKey="social_worker"
-            searchPlaceholder="Search by social worker or narrative..."
-            isLoading={isLoading}
-            onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}?tab=recordings`)}
-          />
-        </div>
+        <DataTableWrapper
+          columns={columns}
+          data={recordings}
+          searchKey="social_worker"
+          searchPlaceholder="Search by social worker..."
+          isLoading={isLoading}
+          onRowClick={(row) => navigate(`/admin/residents/${row.resident_id}?tab=recordings`)}
+          filterComponent={
+            <div className="flex gap-2">
+              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? "all")}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Session Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Individual">Individual</SelectItem>
+                  <SelectItem value="Group">Group</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortOrder} onValueChange={(v) => setSortOrder((v as "latest" | "oldest") ?? "latest")}>
+                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="latest">Latest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          }
+        />
       )}
 
       <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) { setEditTarget(null); form.reset(); } }}>
