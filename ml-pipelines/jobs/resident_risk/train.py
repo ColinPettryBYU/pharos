@@ -32,7 +32,7 @@ def run():
     groups = df['resident_id'].values
 
     numeric_cols = X.select_dtypes(include='number').columns.tolist()
-    categorical_cols = X.select_dtypes(include='object').columns.tolist()
+    categorical_cols = X.select_dtypes(include=['object', 'string']).columns.tolist()
 
     numeric_pipe = Pipeline([
         ('imputer', SimpleImputer(strategy='median')),
@@ -98,15 +98,20 @@ def run():
     y_proba = best_model.predict_proba(X_test)[:, 1]
     y_pred = best_model.predict(X_test)
 
-    if len(np.unique(y_test)) > 1:
+    n_test_classes = len(np.unique(y_test))
+    if n_test_classes > 1:
         test_auc = roc_auc_score(y_test, y_proba)
         print(f'[TRAIN] Test AUC-ROC: {test_auc:.3f}')
     else:
         test_auc = float('nan')
         print('[TRAIN] Test set has only one class — AUC undefined')
 
-    print(classification_report(y_test, y_pred, target_names=['No Elevation', 'Elevated Risk'],
-                                zero_division=0))
+    if n_test_classes > 1:
+        print(classification_report(y_test, y_pred, target_names=['No Elevation', 'Elevated Risk'],
+                                    zero_division=0))
+    else:
+        print(f'[TRAIN] Skipping classification_report (only {n_test_classes} class in test set)')
+        print(f'[TRAIN] Test predictions — 0: {(y_pred == 0).sum()}, 1: {(y_pred == 1).sum()}')
 
     # ── Save artifacts ──
     model_path = ARTIFACTS_DIR / 'resident_risk_pipeline.sav'

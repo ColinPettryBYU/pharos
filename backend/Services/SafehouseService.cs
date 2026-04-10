@@ -153,7 +153,7 @@ public class SafehouseService : ISafehouseService
             ? Math.Round(healthRecords.Average(h => h.GeneralHealthScore), 2) : 0m;
 
         var regionBreakdown = safehouses
-            .GroupBy(s => s.Region)
+            .GroupBy(s => s.Region ?? "Unknown")
             .ToDictionary(g => g.Key, g => g.Count());
 
         var reintegratedGirlsCount = await _db.Residents
