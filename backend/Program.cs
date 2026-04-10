@@ -52,7 +52,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.None; // None required for cross-origin (Vercel→Azure)
     options.Cookie.Name = "Pharos.Auth";
-    options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    options.ExpireTimeSpan = TimeSpan.FromHours(24);
     options.SlidingExpiration = true;
 
     // Return 401/403 JSON instead of redirecting to a login page

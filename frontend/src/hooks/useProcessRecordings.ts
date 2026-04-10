@@ -8,6 +8,12 @@ interface RecordingFilters {
   residentId?: number;
   sessionType?: string;
   search?: string;
+  socialWorker?: string;
+  emotionalState?: string;
+  startDate?: string;
+  endDate?: string;
+  concernsFlagged?: boolean;
+  progressNoted?: boolean;
 }
 
 export function useProcessRecordings(filters: RecordingFilters = {}) {

@@ -488,20 +488,40 @@ public static class DataSeeder
         }
     }
 
-    /// <summary>
-    /// ML prediction tables are now managed by the Python pipelines
-    /// (ml-pipelines/jobs/). The nightly GitHub Actions workflow
-    /// (ml-pipeline.yml) runs ETL → Train → Inference for each pipeline
-    /// and upserts results directly into the database.
-    /// </summary>
     public static async Task SeedMLPredictionsAsync(PharosDbContext context, string mlDir, ILogger logger)
     {
-        logger.LogInformation(
-            "ML prediction tables are now managed by Python pipelines. " +
-            "Skipping CSV-based seeding. Run the GitHub Actions workflow " +
-            "'ML Pipeline — Nightly Refresh' or execute the Python jobs " +
-            "manually to populate these tables.");
-        await Task.CompletedTask;
+        if (!await context.InterventionEffectiveness.AnyAsync())
+        {
+            logger.LogInformation("Seeding intervention_effectiveness from notebook results...");
+            var rows = new[]
+            {
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Psychosocial",   Coefficient = 0.0001, PValue = 0.0624, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Legal",          Coefficient = 0.0,    PValue = 0.9729, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Reintegration",  Coefficient = 0.0,    PValue = 0.4061, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Psychosocial",   Coefficient = 0.0001, PValue = 0.0967, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Legal",          Coefficient = 0.0001, PValue = 0.0974, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Reintegration",  Coefficient = -0.0001,PValue = 0.7225, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Psychosocial",   Coefficient = 0.0,    PValue = 0.7032, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Legal",          Coefficient = 0.0,    PValue = 0.7328, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Reintegration",  Coefficient = 0.0,    PValue = 0.7289, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Safety",         Coefficient = 0.0002, PValue = 0.0512, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Safety",         Coefficient = 0.0,    PValue = 0.3841, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Safety",         Coefficient = 0.0001, PValue = 0.1523, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Education",      Coefficient = 0.0,    PValue = 0.4210, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Education",      Coefficient = 0.0003, PValue = 0.0389, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Education",      Coefficient = 0.0,    PValue = 0.5612, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_health_score",     Intervention = "Physical Health", Coefficient = 0.0004, PValue = 0.0281, Significant = true },
+                new InterventionEffectivenessRow { Outcome = "delta_edu_progress",     Intervention = "Physical Health", Coefficient = 0.0,    PValue = 0.6134, Significant = false },
+                new InterventionEffectivenessRow { Outcome = "delta_pct_positive_end", Intervention = "Physical Health", Coefficient = 0.0001, PValue = 0.2047, Significant = false },
+            };
+            context.InterventionEffectiveness.AddRange(rows);
+            await context.SaveChangesAsync();
+            logger.LogInformation("Seeded {Count} intervention_effectiveness rows.", rows.Length);
+        }
+        else
+        {
+            logger.LogInformation("intervention_effectiveness already populated, skipping.");
+        }
     }
 
     // ── Helpers ──

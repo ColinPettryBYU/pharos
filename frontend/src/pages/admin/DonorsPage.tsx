@@ -34,6 +34,7 @@ const supporterSchema = z.object({
   Email: z.string().email("Valid email required").or(z.literal("")),
   Phone: z.string().optional(),
   SupporterType: z.string().min(1, "Type is required"),
+  RelationshipType: z.string().min(1, "Relationship type is required"),
   AcquisitionChannel: z.string().optional(),
   Region: z.string().optional(),
   Country: z.string().min(1, "Country is required"),
@@ -62,7 +63,7 @@ export default function DonorsPage() {
     resolver: zodResolver(supporterSchema),
     defaultValues: {
       FirstName: "", LastName: "", DisplayName: "", Email: "", Phone: "",
-      SupporterType: "", AcquisitionChannel: "", Region: "", Country: "Philippines",
+      SupporterType: "", RelationshipType: "", AcquisitionChannel: "", Region: "", Country: "Philippines",
     },
   });
 
@@ -75,6 +76,7 @@ export default function DonorsPage() {
         Email: editTarget.email || "",
         Phone: editTarget.phone || "",
         SupporterType: editTarget.supporter_type || "",
+        RelationshipType: editTarget.relationship_type || "",
         AcquisitionChannel: editTarget.acquisition_channel || "",
         Region: editTarget.region || "",
         Country: editTarget.country || "Philippines",
@@ -267,6 +269,18 @@ export default function DonorsPage() {
                 </SelectContent>
               </Select>
               {form.formState.errors.SupporterType && <p className="text-xs text-destructive">{form.formState.errors.SupporterType.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Relationship Type <span className="text-destructive">*</span></Label>
+              <Select value={form.watch("RelationshipType") ?? ""} onValueChange={(v) => form.setValue("RelationshipType", v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="Select relationship" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Local">Local</SelectItem>
+                  <SelectItem value="International">International</SelectItem>
+                  <SelectItem value="PartnerOrganization">Partner Organization</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.formState.errors.RelationshipType && <p className="text-xs text-destructive">{form.formState.errors.RelationshipType.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>Acquisition Channel</Label>

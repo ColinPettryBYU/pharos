@@ -12,7 +12,7 @@ public interface IResidentService
     Task<bool> DeleteAsync(int id);
 
     // Process Recordings
-    Task<PagedResult<ProcessRecordingDto>> GetProcessRecordingsAsync(int page, int pageSize, int? residentId, string? sessionType, string? search);
+    Task<PagedResult<ProcessRecordingDto>> GetProcessRecordingsAsync(int page, int pageSize, int? residentId, string? sessionType, string? search, string? socialWorker = null, string? emotionalState = null, DateTime? startDate = null, DateTime? endDate = null, bool? concernsFlagged = null, bool? progressNoted = null);
     Task<ProcessRecordingDto?> GetProcessRecordingByIdAsync(int id);
     Task<ProcessRecordingDto> CreateProcessRecordingAsync(CreateProcessRecordingRequest request);
     Task<ProcessRecordingDto?> UpdateProcessRecordingAsync(int id, UpdateProcessRecordingRequest request);

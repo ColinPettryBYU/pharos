@@ -21,9 +21,15 @@ public class ProcessRecordingsController : ControllerBase
         [FromQuery] int pageSize = 500,
         [FromQuery] int? residentId = null,
         [FromQuery] string? sessionType = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? socialWorker = null,
+        [FromQuery] string? emotionalState = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] bool? concernsFlagged = null,
+        [FromQuery] bool? progressNoted = null)
     {
-        var result = await _service.GetProcessRecordingsAsync(page, pageSize, residentId, sessionType, search);
+        var result = await _service.GetProcessRecordingsAsync(page, pageSize, residentId, sessionType, search, socialWorker, emotionalState, startDate, endDate, concernsFlagged, progressNoted);
         return Ok(result);
     }
 

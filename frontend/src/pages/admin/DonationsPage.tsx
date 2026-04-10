@@ -295,7 +295,7 @@ export default function DonationsPage() {
       <DeleteConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        itemName={deleteTarget ? `${formatCurrency(deleteTarget.amount)} donation #${deleteTarget.donation_id}` : ""}
+        itemName={deleteTarget ? `donation #${deleteTarget.donation_id}` : ""}
         onConfirm={async () => {
           if (deleteTarget) {
             await deleteDonationMut.mutateAsync(deleteTarget.donation_id);

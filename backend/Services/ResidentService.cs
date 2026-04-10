@@ -189,11 +189,24 @@ public class ResidentService : IResidentService
 
     // ── Process Recordings ──
 
-    public async Task<PagedResult<ProcessRecordingDto>> GetProcessRecordingsAsync(int page, int pageSize, int? residentId, string? sessionType, string? search)
+    public async Task<PagedResult<ProcessRecordingDto>> GetProcessRecordingsAsync(
+        int page, int pageSize, int? residentId, string? sessionType, string? search,
+        string? socialWorker = null, string? emotionalState = null,
+        DateTime? startDate = null, DateTime? endDate = null,
+        bool? concernsFlagged = null, bool? progressNoted = null)
     {
         var query = _db.ProcessRecordings.Include(p => p.Resident).AsQueryable();
         if (residentId.HasValue) query = query.Where(p => p.ResidentId == residentId.Value);
         if (!string.IsNullOrWhiteSpace(sessionType)) query = query.Where(p => p.SessionType == sessionType);
+        if (!string.IsNullOrWhiteSpace(socialWorker)) query = query.Where(p => p.SocialWorker.Contains(socialWorker));
+        if (!string.IsNullOrWhiteSpace(emotionalState))
+            query = query.Where(p => p.EmotionalStateObserved == emotionalState || p.EmotionalStateEnd == emotionalState);
+        if (startDate.HasValue) query = query.Where(p => p.SessionDate >= startDate.Value);
+        if (endDate.HasValue) query = query.Where(p => p.SessionDate <= endDate.Value);
+        if (concernsFlagged.HasValue)
+            query = query.Where(p => concernsFlagged.Value ? p.ConcernsFlagged != null && p.ConcernsFlagged != "false" && p.ConcernsFlagged != "" : (p.ConcernsFlagged == null || p.ConcernsFlagged == "false" || p.ConcernsFlagged == ""));
+        if (progressNoted.HasValue)
+            query = query.Where(p => progressNoted.Value ? p.ProgressNoted != null && p.ProgressNoted != "false" && p.ProgressNoted != "" : (p.ProgressNoted == null || p.ProgressNoted == "false" || p.ProgressNoted == ""));
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(p => p.SocialWorker.Contains(search) || (p.SessionNarrative != null && p.SessionNarrative.Contains(search)));
 
