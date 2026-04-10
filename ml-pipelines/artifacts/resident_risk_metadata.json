@@ -1,6 +1,6 @@
 {
   "model_name": "resident_risk_predictor",
-  "trained_at_utc": "2026-04-09T19:37:11.400680",
+  "trained_at_utc": "2026-04-09T20:15:33.437856",
   "n_training_rows": 1174,
   "test_roc_auc": NaN,
   "features": [

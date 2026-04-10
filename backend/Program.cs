@@ -98,7 +98,32 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
             options.CorrelationCookie.SameSite = SameSiteMode.None;
             options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
             options.CorrelationCookie.HttpOnly = true;
+
+            options.Events.OnRemoteFailure = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("GoogleOAuth");
+                logger.LogError(context.Failure,
+                    "Google OAuth remote failure: {Message}", context.Failure?.Message);
+
+                var frontendUrl = builder.Configuration["FrontendUrl"]
+                    ?? builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault()
+                    ?? "https://pharos-snowy.vercel.app";
+
+                context.Response.Redirect(
+                    $"{frontendUrl}/login?error=google-failed&detail={Uri.EscapeDataString(context.Failure?.Message ?? "unknown")}");
+                context.HandleResponse();
+                return Task.CompletedTask;
+            };
         });
+}
+else
+{
+    var startupLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
+    startupLogger.LogWarning(
+        "Google OAuth NOT configured. ClientId present: {HasId}, ClientSecret present: {HasSecret}",
+        !string.IsNullOrEmpty(googleClientId), !string.IsNullOrEmpty(googleClientSecret));
 }
 
 // ── CORS ──

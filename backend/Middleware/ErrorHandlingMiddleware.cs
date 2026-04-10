@@ -42,7 +42,17 @@ public class ErrorHandlingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception processing {Method} {Path}", context.Request.Method, context.Request.Path);
-            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, "An unexpected error occurred. Please try again later.");
+
+            var message = "An unexpected error occurred. Please try again later.";
+            if (context.Request.Path.StartsWithSegments("/signin-google")
+                || context.Request.Path.StartsWithSegments("/api/auth"))
+            {
+                message = $"Auth error: {ex.GetType().Name}: {ex.Message}";
+                _logger.LogError("Auth detail — InnerException: {Inner}, StackTrace: {Stack}",
+                    ex.InnerException?.Message, ex.StackTrace);
+            }
+
+            await WriteErrorResponse(context, HttpStatusCode.InternalServerError, message);
         }
     }
 
