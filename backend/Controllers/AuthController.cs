@@ -223,9 +223,9 @@ public class AuthController : ControllerBase
         if (user == null)
             return Redirect($"{frontendUrl}/login?error=google-failed");
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var dest = roles.Contains("Admin") || roles.Contains("Staff") ? "/admin" : "/donor/dashboard";
-        return Redirect($"{frontendUrl}{dest}");
+        var token = Guid.NewGuid().ToString("N");
+        _cache.Set($"google_auth_{token}", user.Id, TimeSpan.FromMinutes(2));
+        return Redirect($"{frontendUrl}/login?google_token={token}");
     }
 
     [HttpPost("exchange-google-token")]

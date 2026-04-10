@@ -31,6 +31,8 @@ export default function LoginPage() {
   const [shake, setShake] = useState(false);
 
   const googleExchangeAttempted = useRef(false);
+  const hasGoogleToken = searchParams.has("google_token");
+  const [exchangingGoogle, setExchangingGoogle] = useState(hasGoogleToken);
 
   useEffect(() => {
     const error = searchParams.get("error");
@@ -49,7 +51,6 @@ export default function LoginPage() {
     const googleToken = searchParams.get("google_token");
     if (!googleToken || googleExchangeAttempted.current) return;
     googleExchangeAttempted.current = true;
-    setIsLoading(true);
 
     api
       .post<{ success: boolean; user: User }>("/auth/exchange-google-token", {
@@ -70,8 +71,8 @@ export default function LoginPage() {
       })
       .catch(() => {
         toast.error("Google sign-in failed. Please try again.");
-      })
-      .finally(() => setIsLoading(false));
+        setExchangingGoogle(false);
+      });
   }, [searchParams, navigate]);
 
   const {
@@ -110,6 +111,17 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  if (exchangingGoogle) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-y-auto px-4 py-8 sm:py-12">
