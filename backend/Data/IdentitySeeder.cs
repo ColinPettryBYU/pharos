@@ -5,10 +5,11 @@ namespace Pharos.Api.Data;
 
 /// <summary>
 /// Seeds the required Identity accounts and roles per grading requirements.
-/// Creates 2 roles (Admin, Donor) and 3 accounts:
+/// Creates 2 roles (Admin, Donor) and 4 accounts:
 ///   1. admin@pharos.org      - Admin, no MFA
 ///   2. donor@pharos.org      - Donor, no MFA, linked to supporter_id
 ///   3. admin-mfa@pharos.org  - Admin, TOTP MFA enabled
+///   4. grader@pharos.org     - Admin, no MFA, simple password
 /// </summary>
 public static class IdentitySeeder
 {
@@ -33,6 +34,7 @@ public static class IdentitySeeder
         var adminPassword = configuration["SeedPasswords:Admin"] ?? "Pharos@Admin2025!";
         var donorPassword = configuration["SeedPasswords:Donor"] ?? "Pharos@Donor2025!";
         var mfaAdminPassword = configuration["SeedPasswords:MfaAdmin"] ?? "Pharos@MfaAdmin25!";
+        var simpleAdminPassword = configuration["SeedPasswords:SimpleAdmin"] ?? "adminadminadmin";
 
         // 1. Admin (no MFA)
         await CreateUserIfNotExists(userManager, logger,
@@ -60,6 +62,15 @@ public static class IdentitySeeder
             role: "Admin",
             linkedSupporterId: null,
             enableMfa: true);
+
+        // 4. Simple admin (no MFA) — easy access for grading
+        await CreateUserIfNotExists(userManager, logger,
+            email: "grader@pharos.org",
+            displayName: "Grader Admin",
+            password: simpleAdminPassword,
+            role: "Admin",
+            linkedSupporterId: null,
+            enableMfa: false);
 
         logger.LogInformation("Identity seeding completed.");
     }
