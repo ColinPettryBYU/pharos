@@ -100,11 +100,31 @@ export function useDeleteConversation() {
   });
 }
 
+async function sendChatDirect(data: ChatRequest): Promise<ChatResponse> {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  if (!backendUrl) {
+    return api.post<ChatResponse>("/admin/chat", data);
+  }
+
+  const res = await fetch(`${backendUrl}/api/admin/chat`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.message ?? `Chat request failed (${res.status})`);
+  }
+
+  return res.json();
+}
+
 export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: ChatRequest) =>
-      api.post<ChatResponse>("/admin/chat", data),
+    mutationFn: sendChatDirect,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["chat", "conversations"], exact: true });
     },

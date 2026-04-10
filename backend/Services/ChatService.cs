@@ -50,10 +50,11 @@ public class ChatService : IChatService
             }
         };
 
-        var model = "gemini-2.5-pro";
+        var model = "gemini-3.1-pro-preview";
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
-        const int maxAttempts = 3;
+        const int maxAttempts = 2;
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -62,19 +63,15 @@ public class ChatService : IChatService
                 _logger.LogInformation("Calling Gemini API (attempt {Attempt}/{Max}) for: {Msg}",
                     attempt, maxAttempts, request.Message[..Math.Min(80, request.Message.Length)]);
 
-                var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest);
-                var responseJson = await httpResponse.Content.ReadAsStringAsync();
+                var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest, cts.Token);
+                var responseJson = await httpResponse.Content.ReadAsStringAsync(cts.Token);
 
                 if (!httpResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Gemini API returned {StatusCode} on attempt {Attempt}: {Body}",
                         httpResponse.StatusCode, attempt, responseJson);
 
-                    if (attempt < maxAttempts)
-                    {
-                        await Task.Delay(500 * attempt);
-                        continue;
-                    }
+                    if (attempt < maxAttempts) continue;
 
                     return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
                 }
@@ -84,33 +81,26 @@ public class ChatService : IChatService
                 if (blocks.Count == 1 && blocks[0] is TextBlock tb && tb.Content.StartsWith("__RETRY__"))
                 {
                     _logger.LogWarning("Gemini returned unparseable response on attempt {Attempt}, retrying", attempt);
-                    if (attempt < maxAttempts)
-                    {
-                        await Task.Delay(500 * attempt);
-                        continue;
-                    }
+                    if (attempt < maxAttempts) continue;
                     return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
                 }
 
                 return new ChatResponse(blocks);
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Gemini API call timed out on attempt {Attempt}", attempt);
+                if (attempt < maxAttempts) continue;
+            }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Network error on attempt {Attempt}", attempt);
-                if (attempt < maxAttempts)
-                {
-                    await Task.Delay(500 * attempt);
-                    continue;
-                }
+                if (attempt < maxAttempts) continue;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error on attempt {Attempt}", attempt);
-                if (attempt < maxAttempts)
-                {
-                    await Task.Delay(500 * attempt);
-                    continue;
-                }
+                if (attempt < maxAttempts) continue;
             }
         }
 
