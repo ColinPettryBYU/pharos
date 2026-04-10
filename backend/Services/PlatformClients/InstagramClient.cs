@@ -186,12 +186,40 @@ public class InstagramClient : ISocialPlatformClient
                 return new PostResult(false, PlatformName, null, Error: error);
             }
 
-            // Step 2: Publish the container
+            var containerIdStr = containerId.GetString()!;
+
+            // Step 2: Poll until the container is ready (required for video, helps with images too)
+            const int maxAttempts = 15;
+            const int pollIntervalMs = 3000;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var statusResponse = await _http.GetFromJsonAsync<JsonElement>(
+                    $"{GraphApiBase}/{containerIdStr}?fields=status_code,status&access_token={token}");
+
+                var statusCode = statusResponse.TryGetProperty("status_code", out var sc)
+                    ? sc.GetString() : null;
+
+                if (statusCode == "FINISHED")
+                    break;
+
+                if (statusCode == "ERROR")
+                {
+                    var statusMsg = statusResponse.TryGetProperty("status", out var sm)
+                        ? sm.GetString() : "Media processing failed";
+                    return new PostResult(false, PlatformName, null, Error: statusMsg);
+                }
+
+                _logger.LogInformation("Container {Id} status: {Status}, waiting... (attempt {N}/{Max})",
+                    containerIdStr, statusCode ?? "unknown", attempt + 1, maxAttempts);
+                await Task.Delay(pollIntervalMs);
+            }
+
+            // Step 3: Publish the container
             var publishResponse = await _http.PostAsync(
                 $"{GraphApiBase}/{igUserId}/media_publish",
                 new FormUrlEncodedContent(new Dictionary<string, string>
                 {
-                    ["creation_id"] = containerId.GetString()!,
+                    ["creation_id"] = containerIdStr,
                     ["access_token"] = token
                 }));
 
