@@ -50,61 +50,50 @@ public class ChatService : IChatService
             }
         };
 
-        var model = "gemini-3.1-pro-preview";
+        var model = "gemini-3-flash-preview";
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
-        const int maxAttempts = 2;
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        try
         {
-            try
+            _logger.LogInformation("Calling Gemini API ({Model}) for: {Msg}",
+                model, request.Message[..Math.Min(80, request.Message.Length)]);
+
+            var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest);
+            var responseJson = await httpResponse.Content.ReadAsStringAsync();
+
+            if (!httpResponse.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Calling Gemini API (attempt {Attempt}/{Max}) for: {Msg}",
-                    attempt, maxAttempts, request.Message[..Math.Min(80, request.Message.Length)]);
-
-                var httpResponse = await _http.PostAsJsonAsync(url, geminiRequest, cts.Token);
-                var responseJson = await httpResponse.Content.ReadAsStringAsync(cts.Token);
-
-                if (!httpResponse.IsSuccessStatusCode)
-                {
-                    _logger.LogError("Gemini API returned {StatusCode} on attempt {Attempt}: {Body}",
-                        httpResponse.StatusCode, attempt, responseJson);
-
-                    if (attempt < maxAttempts) continue;
-
-                    return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
-                }
-
-                var blocks = ParseGeminiResponse(responseJson);
-
-                if (blocks.Count == 1 && blocks[0] is TextBlock tb && tb.Content.StartsWith("__RETRY__"))
-                {
-                    _logger.LogWarning("Gemini returned unparseable response on attempt {Attempt}, retrying", attempt);
-                    if (attempt < maxAttempts) continue;
-                    return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
-                }
-
-                return new ChatResponse(blocks);
+                _logger.LogError("Gemini API returned {StatusCode}: {Body}",
+                    httpResponse.StatusCode, responseJson[..Math.Min(500, responseJson.Length)]);
+                return new ChatResponse([new TextBlock($"The AI model returned an error ({(int)httpResponse.StatusCode}). Please try rephrasing your question.")]);
             }
-            catch (OperationCanceledException)
+
+            _logger.LogInformation("Gemini response length: {Len} chars", responseJson.Length);
+            var blocks = ParseGeminiResponse(responseJson);
+
+            if (blocks.Count == 1 && blocks[0] is TextBlock tb && tb.Content.StartsWith("__RETRY__"))
             {
-                _logger.LogWarning("Gemini API call timed out on attempt {Attempt}", attempt);
-                if (attempt < maxAttempts) continue;
+                _logger.LogWarning("Gemini returned unparseable JSON, falling back to text");
+                return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
             }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "Network error on attempt {Attempt}", attempt);
-                if (attempt < maxAttempts) continue;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error on attempt {Attempt}", attempt);
-                if (attempt < maxAttempts) continue;
-            }
+
+            return new ChatResponse(blocks);
         }
-
-        return new ChatResponse([new TextBlock("I couldn't find any data that matched, could you try rephrasing?")]);
+        catch (TaskCanceledException ex)
+        {
+            _logger.LogError(ex, "Gemini API call timed out");
+            return new ChatResponse([new TextBlock("The request took too long. Try asking a simpler question.")]);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error calling Gemini API");
+            return new ChatResponse([new TextBlock("I couldn't reach the AI service right now. Please try again.")]);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error in chat");
+            return new ChatResponse([new TextBlock("Something went wrong. Please try again.")]);
+        }
     }
 
     private async Task<string> BuildDatabaseContextAsync(string _message)
