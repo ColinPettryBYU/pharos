@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Mail, Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import type { User } from "@/types";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -28,6 +30,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [shake, setShake] = useState(false);
 
+  const googleExchangeAttempted = useRef(false);
+
   useEffect(() => {
     const error = searchParams.get("error");
     if (error) {
@@ -40,6 +44,35 @@ export default function LoginPage() {
       toast.error(messages[error] || "Sign-in failed. Please try again.");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const googleToken = searchParams.get("google_token");
+    if (!googleToken || googleExchangeAttempted.current) return;
+    googleExchangeAttempted.current = true;
+    setIsLoading(true);
+
+    api
+      .post<{ success: boolean; user: User }>("/auth/exchange-google-token", {
+        token: googleToken,
+      })
+      .then((data) => {
+        if (data.user) {
+          toast.success("Welcome back!");
+          const dest =
+            data.user.roles?.includes("Admin") ||
+            data.user.roles?.includes("Staff")
+              ? "/admin"
+              : data.user.roles?.includes("Donor")
+                ? "/donor/dashboard"
+                : "/";
+          navigate(dest, { replace: true });
+        }
+      })
+      .catch(() => {
+        toast.error("Google sign-in failed. Please try again.");
+      })
+      .finally(() => setIsLoading(false));
+  }, [searchParams, navigate]);
 
   const {
     register,

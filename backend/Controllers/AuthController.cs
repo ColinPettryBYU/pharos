@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Pharos.Api.DTOs;
 using Pharos.Api.Models;
 
@@ -15,15 +16,18 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IConfiguration _config;
+    private readonly IMemoryCache _cache;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        IConfiguration config)
+        IConfiguration config,
+        IMemoryCache cache)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _config = config;
+        _cache = cache;
     }
 
     private string GetFrontendUrl()
@@ -151,36 +155,79 @@ public class AuthController : ControllerBase
         if (info == null)
             return Redirect($"{frontendUrl}/login?error=google-failed");
 
+        ApplicationUser? user = null;
+
         var result = await _signInManager.ExternalLoginSignInAsync(
             info.LoginProvider, info.ProviderKey, isPersistent: true);
 
         if (result.Succeeded)
-            return Redirect($"{frontendUrl}/admin");
-
-        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-        var name = info.Principal.FindFirstValue(ClaimTypes.Name);
-
-        if (email == null)
-            return Redirect($"{frontendUrl}/login?error=no-email");
-
-        var user = new ApplicationUser
         {
-            UserName = email,
-            Email = email,
-            DisplayName = name,
-            EmailConfirmed = true
-        };
-
-        var createResult = await _userManager.CreateAsync(user);
-        if (createResult.Succeeded)
+            user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+        }
+        else
         {
-            await _userManager.AddToRoleAsync(user, "Donor");
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = info.Principal.FindFirstValue(ClaimTypes.Name);
+
+            if (email == null)
+                return Redirect($"{frontendUrl}/login?error=no-email");
+
+            user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    DisplayName = name,
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                    return Redirect($"{frontendUrl}/login?error=creation-failed");
+
+                await _userManager.AddToRoleAsync(user, "Donor");
+            }
+
             await _userManager.AddLoginAsync(user, info);
             await _signInManager.SignInAsync(user, isPersistent: true);
-            return Redirect($"{frontendUrl}/admin");
         }
 
-        return Redirect($"{frontendUrl}/login?error=creation-failed");
+        if (user == null)
+            return Redirect($"{frontendUrl}/login?error=google-failed");
+
+        var token = Guid.NewGuid().ToString("N");
+        _cache.Set($"google_auth_{token}", user.Id, TimeSpan.FromMinutes(2));
+
+        return Redirect($"{frontendUrl}/login?google_token={token}");
+    }
+
+    [HttpPost("exchange-google-token")]
+    [AllowAnonymous]
+    public async Task<ActionResult<LoginResponse>> ExchangeGoogleToken(
+        [FromBody] ExchangeGoogleTokenRequest request)
+    {
+        if (!_cache.TryGetValue($"google_auth_{request.Token}", out string? userId)
+            || userId == null)
+        {
+            return Unauthorized(new LoginResponse(false, "Invalid or expired token."));
+        }
+
+        _cache.Remove($"google_auth_{request.Token}");
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+            return Unauthorized(new LoginResponse(false, "User not found."));
+
+        await _signInManager.SignInAsync(user, isPersistent: true);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var mfaEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
+
+        return Ok(new LoginResponse(true, "Login successful.", User: new UserInfoDto(
+            user.Id, user.Email!, user.DisplayName, roles,
+            user.LinkedSupporterId, mfaEnabled)));
     }
 
     // ── MFA Endpoints ──

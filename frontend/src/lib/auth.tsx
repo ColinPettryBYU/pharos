@@ -83,10 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    // Redirect to backend Google OAuth endpoint
-    window.location.href = `${
-      import.meta.env.VITE_API_URL || "/api"
-    }/auth/google-login`;
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    if (backendUrl) {
+      window.location.href = `${backendUrl}/api/auth/google-login`;
+    } else {
+      window.location.href = `${
+        import.meta.env.VITE_API_URL || "/api"
+      }/auth/google-login`;
+    }
   };
 
   const register = async (
