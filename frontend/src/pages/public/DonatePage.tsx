@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/auth";
 import { api, formatCurrency } from "@/lib/api";
+import { usePublicSafehouses } from "@/hooks/usePublicData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,9 +23,12 @@ const frequencyOptions: { value: Frequency; label: string; icon: typeof Gift }[]
   { value: "yearly", label: "Yearly", icon: Repeat },
 ];
 
+const DONATION_GOAL = 1_000_000;
+
 export default function DonatePage() {
   const { user } = useAuth();
   const isLoggedIn = !!user;
+  const { data: summary } = usePublicSafehouses();
 
   const [amount, setAmount] = useState<number | null>(1000);
   const [customAmount, setCustomAmount] = useState("");
@@ -138,6 +142,36 @@ export default function DonatePage() {
               <div className="text-xs sm:text-sm text-muted-foreground">{stat.label}</div>
             </div>
           ))}
+        </motion.div>
+
+        {/* Donation goal progress */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.5 }}
+          className="max-w-xl mx-auto mb-10"
+        >
+          <div className="text-center mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Donations Received</span>
+            <div className="flex items-baseline justify-center gap-2 mt-1">
+              <span className="text-2xl font-bold tabular-nums" style={{ color: "var(--pharos-forest)" }}>
+                {formatCurrency(summary?.total_donations ?? 0)}
+              </span>
+              <span className="text-sm text-muted-foreground">of {formatCurrency(DONATION_GOAL)} goal</span>
+            </div>
+          </div>
+          <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: "linear-gradient(to right, var(--pharos-sage), var(--pharos-forest))" }}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(((summary?.total_donations ?? 0) / DONATION_GOAL) * 100, 100)}%` }}
+              transition={{ duration: 1.2, delay: 0.4, ease: "easeOut" as const }}
+            />
+          </div>
+          <p className="text-center mt-2 text-xs text-muted-foreground">
+            {Math.round(((summary?.total_donations ?? 0) / DONATION_GOAL) * 100)}% raised — every contribution counts
+          </p>
         </motion.div>
 
         {/* Main card */}

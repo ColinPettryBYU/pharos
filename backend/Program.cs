@@ -1,4 +1,6 @@
 
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Pharos.Api.Data;
@@ -62,6 +64,23 @@ builder.Services.ConfigureApplicationCookie(options =>
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         return Task.CompletedTask;
     };
+});
+
+// ── Data Protection (persist keys so OAuth correlation cookies survive app restarts) ──
+var dpKeysDir = builder.Environment.IsProduction()
+    ? "/home/dp-keys"
+    : Path.Combine(builder.Environment.ContentRootPath, "dp-keys");
+Directory.CreateDirectory(dpKeysDir);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dpKeysDir))
+    .SetApplicationName("Pharos");
+
+// Configure external auth cookie (used during Google OAuth flow)
+builder.Services.ConfigureExternalCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
 });
 
 // ── Google OAuth (placeholder — configure secrets in Azure App Settings) ──
@@ -150,11 +169,21 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // ── Middleware Pipeline ──
 
-// Error handling — first in pipeline to catch all exceptions
+// Forwarded headers — must be first so HTTPS detection works behind Azure proxy
+app.UseForwardedHeaders();
+
+// Error handling
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // HTTPS redirect and HSTS

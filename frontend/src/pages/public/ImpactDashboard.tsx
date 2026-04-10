@@ -157,7 +157,7 @@ export default function ImpactDashboard() {
     { label: "Education Progress", value: summary?.avg_education_progress ?? 0, icon: GraduationCap, suffix: "%", accent: "var(--pharos-sage)", description: "Average academic achievement rate", fmt: "decimal" as const, dp: 1 },
     { label: "Avg Health Score", value: summary?.avg_health_score ?? 0, icon: HeartPulse, accent: "var(--pharos-blush)", description: "Physical & mental well-being (out of 5)", fmt: "decimal" as const, dp: 2, suffix: "/5" },
     { label: "Active Safehouses", value: summary?.total_safehouses ?? 0, icon: Building2, accent: "#f0c96e", description: "Safe homes operating in the Philippines", fmt: "number" as const },
-    { label: "Donations Received", value: summary?.total_donations ?? 0, icon: HandHeart, suffix: "", accent: "var(--pharos-sky)", description: "Total contributions from generous supporters", fmt: "currency" as const },
+    { label: "Donations Received", value: summary?.total_donations ?? 0, icon: HandHeart, suffix: "", accent: "var(--pharos-sky)", description: "Goal: ₱1,000,000 — help us get there", fmt: "currency" as const, goal: 1000000 },
     { label: "Regions Covered", value: summary?.regions_count ?? 0, icon: Globe, accent: "var(--pharos-sage)", description: "Expanding reach across the Philippines", fmt: "number" as const },
   ];
 
@@ -287,6 +287,23 @@ export default function ImpactDashboard() {
                             )}
                           </div>
                           <p className="mt-1.5 text-xs text-muted-foreground/70 leading-relaxed">{stat.description}</p>
+                          {"goal" in stat && stat.goal && (
+                            <div className="mt-3">
+                              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: stat.accent }}
+                                  initial={{ width: 0 }}
+                                  whileInView={{ width: `${Math.min((stat.value / (stat as { goal: number }).goal) * 100, 100)}%` }}
+                                  viewport={{ once: true }}
+                                  transition={{ duration: 1, delay: 0.3, ease: "easeOut" as const }}
+                                />
+                              </div>
+                              <p className="mt-1 text-[10px] text-muted-foreground/60 tabular-nums">
+                                {Math.round((stat.value / (stat as { goal: number }).goal) * 100)}% of ₱1,000,000 goal
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>

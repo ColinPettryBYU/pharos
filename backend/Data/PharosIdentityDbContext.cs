@@ -15,7 +15,6 @@ public class PharosIdentityDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
-        // Optionally customize Identity table names
         builder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(e => e.LinkedSupporterId).HasColumnName("linked_supporter_id");

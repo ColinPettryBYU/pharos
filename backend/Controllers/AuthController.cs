@@ -28,8 +28,10 @@ public class AuthController : ControllerBase
 
     private string GetFrontendUrl()
     {
-        return _config["FrontendUrl"]
-            ?? _config.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault()
+        var url = _config["FrontendUrl"];
+        if (!string.IsNullOrEmpty(url)) return url;
+
+        return _config.GetSection("AllowedOrigins").Get<string[]>()?.FirstOrDefault()
             ?? "https://pharos-snowy.vercel.app";
     }
 

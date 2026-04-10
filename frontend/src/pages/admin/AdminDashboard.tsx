@@ -17,10 +17,8 @@ import {
   DollarSign,
   AlertTriangle,
   Share2,
-  UserPlus,
   FileText,
   Heart,
-  PenSquare,
   Gift,
   Siren,
   Megaphone,
@@ -284,21 +282,6 @@ export default function AdminDashboard() {
         </motion.div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/admin/residents"><Button variant="outline" className="gap-2"><UserPlus className="h-4 w-4" />New Resident</Button></Link>
-              <Link to="/admin/process-recordings"><Button variant="outline" className="gap-2"><FileText className="h-4 w-4" />Record Session</Button></Link>
-              <Link to="/admin/donations"><Button variant="outline" className="gap-2"><Heart className="h-4 w-4" />Log Donation</Button></Link>
-              <Link to="/admin/social"><Button variant="outline" className="gap-2"><PenSquare className="h-4 w-4" />Compose Post</Button></Link>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
     </div>
   );
 }

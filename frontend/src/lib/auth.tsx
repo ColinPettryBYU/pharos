@@ -26,6 +26,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const SESSION_KEY = "pharos_user";
+
+function cacheUser(u: User | null) {
+  if (u) {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(u));
+  } else {
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+}
+
+function getCachedUser(): User | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,9 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useCallback(async () => {
     try {
       const data = await api.get<{ user: User | null }>("/auth/me");
-      setUser(data.user ?? null);
+      const serverUser = data.user ?? null;
+      setUser(serverUser);
+      cacheUser(serverUser);
     } catch {
-      setUser(null);
+      // Cookie-based auth failed — fall back to cached session (helps on
+      // mobile browsers that block cross-origin cookies)
+      const cached = getCachedUser();
+      setUser(cached);
     } finally {
       setIsLoading(false);
     }
@@ -54,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("MFA_REQUIRED");
     }
     setUser(data.user);
+    cacheUser(data.user);
     return data.user;
   };
 
@@ -75,11 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       display_name: displayName,
     });
     setUser(data.user);
+    cacheUser(data.user);
   };
 
   const logout = async () => {
     await api.post("/auth/logout");
     setUser(null);
+    cacheUser(null);
   };
 
   const isAdmin = user?.roles?.includes("Admin") ?? false;
